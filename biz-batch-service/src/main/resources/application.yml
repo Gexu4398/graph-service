@@ -1,0 +1,74 @@
+server:
+  port: 8082
+  servlet:
+    context-path: "/api/v1"
+
+spring:
+  application:
+    name: biz-batch-service
+  datasource:
+    url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/batch
+    username: root
+    password: ${PGSQL_PASSWORD:example}
+    driver-class-name: org.postgresql.Driver
+    tomcat:
+      max-active: 8192
+  cloud:
+    zookeeper:
+      connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 86400000
+            readTimeout: 86400000
+            loggerLevel: full
+      autoconfiguration:
+        jackson:
+          enabled: true
+  profiles:
+    active: @activatedProfile@
+  batch:
+    jdbc:
+      initialize-schema: always
+  elasticsearch:
+    uris: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+  kafka:
+    listener:
+      ack-mode: manual_immediate
+    consumer:
+      group-id: minio
+      bootstrap-servers: ${KAFKA_HOST:localhost}:9093
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      heartbeat-interval: 5s
+      auto-offset-reset: latest
+      enable-auto-commit: false
+
+minio:
+  endpoint: http://${MINIO_HOST:localhost}:${MINIO_PORT:9000}/
+  username: ${MINIO_ROOT_USER:minio-root-user}
+  password: ${MINIO_PORT_PASSWORD:minio-root-password}
+  bucket: ${MINIO_DEFAULT_BUCKET:graph-bucket}
+  bucket-notification-topic: minio_bucket_notification
+
+app:
+  ddl-auto: validate
+  datasource:
+    biz:
+      url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/graph
+      jdbcUrl: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/graph
+      username: root
+      password: ${PGSQL_PASSWORD:example}
+      driver-class-name: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      hikari:
+        connection-timeout: 3600000
+      liquibase:
+        enabled: false
+  show-sql: false
+  batch:
+    task-executor:
+      core-pool-size: 5
+      max-pool-size: 10
+      queue-capacity: 10

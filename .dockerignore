@@ -1,0 +1,4 @@
+*
+!/biz-batch-service/target/biz-batch-service.jar
+!/biz-service/target/biz-service.jar
+!/biz-shell/target/biz-shell.jar

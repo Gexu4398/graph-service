@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: biz-shell
+  profiles:
+    active: @activatedProfile@
+  jpa:
+    open-in-view: true
+  shell:
+    interactive:
+      enabled: false
+  elasticsearch:
+    uris: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+
+logging:
+  level:
+    org.springframework.orm.jpa: warn
+    org.springframework.transaction: warn
+    root: info
+
+app:
+  hibernate:
+    search:
+      backend:
+        hosts: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+  datasource:
+    biz:
+      url: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/tp
+      jdbcUrl: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/tp
+      username: root
+      password: ${MYSQL_ROOT_PASSWORD:example}
+      driver-class-name: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      hikari:
+        maximum-pool-size: 100
+        minimum-idle: 30
+      liquibase:
+        change-log: db/changelog/changelog-master.xml
+        enabled: false
+
+minio:
+  endpoint: http://${MINIO_HOST:localhost}:${MINIO_PORT:9000}/
+  username: ${MINIO_ROOT_USER:minio-root-user}
+  password: ${MINIO_ROOT_PASSWORD:minio-root-password}
+  bucket: ${MINIO_DEFAULT_BUCKET:tp-bucket}

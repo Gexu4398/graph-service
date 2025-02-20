@@ -1,0 +1,98 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /api/v1
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-exception: false
+    include-stacktrace: on_param
+  forward-headers-strategy: framework
+  tomcat:
+    max-swallow-size: 50MB
+    max-http-form-post-size: 50MB
+
+spring:
+  application:
+    name: biz-service
+  cloud:
+    zookeeper:
+      connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 5000
+            read-timeout: 3600000
+            logger-level: full
+      autoconfiguration:
+        jackson:
+          enabled: false
+  profiles:
+    active: @activatedProfile@
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://${SWAGGER_KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8080}/auth/realms/${KEYCLOAK_REALM:console-app}/protocol/openid-connect/certs
+  jpa:
+    open-in-view: true
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  elasticsearch:
+    uris: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+management:
+  endpoints:
+    access:
+      default: unrestricted
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    doc-expansion: none
+    oauth:
+      client-id: ${KEYCLOAK_CLIENT_ID:console-cli}
+
+minio:
+  endpoint: http://${MINIO_HOST:localhost}:${MINIO_PORT:9000}/
+  username: ${MINIO_ROOT_USER:minio-root-user}
+  password: ${MINIO_PORT_PASSWORD:minio-root-password}
+  bucket: ${MINIO_DEFAULT_BUCKET:graph-bucket}
+
+keycloak:
+  realm: ${KEYCLOAK_REALM:console-app}
+  client-id: ${KEYCLOAK_CLIENT_ID:console-cli}
+  auth-server-url: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8080}/auth
+  admin:
+    password: admin
+    username: admin
+
+app:
+  hibernate:
+    search:
+      backend:
+        hosts: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+  datasource:
+    biz:
+      url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/graph
+      jdbcUrl: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/graph
+      username: root
+      password: ${PGSQL_PASSWORD:example}
+      driver-class-name: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      hikari:
+        maximum-pool-size: 100
+        minimum-idle: 30
+      liquibase:
+        change-log: db/changelog/changelog-master.xml
+    keycloak:
+      url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/keycloak
+      jdbcUrl: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/keycloak
+      username: root
+      password: ${PGSQL_PASSWORD:example}
+      driver-class-name: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect

@@ -1,0 +1,26 @@
+keycloak:
+  realm: console-app
+  client-id: console-cli
+  auth-server-url: http://localhost:8080/auth
+  admin:
+    password: admin
+    username: admin
+
+app:
+  datasource:
+    keycloak:
+      url: jdbc:postgresql://localhost:5432/keycloak
+      jdbcUrl: jdbc:postgresql://localhost:5432/keycloak
+      username: root
+      password: example
+      driver-class-name: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    root: info
+    com:
+      example:
+        testservice:
+          bizbatchservice:
+            tasklet: debug

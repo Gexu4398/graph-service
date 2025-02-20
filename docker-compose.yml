@@ -1,0 +1,109 @@
+services:
+
+  postgres:
+    image: postgres:alpine3.21
+    restart: always
+    command: postgres -c 'max_connections=250'
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=example
+    volumes:
+      - ./init-postgres:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+  keycloak:
+    image: keycloak/keycloak:26.1.2
+    environment:
+      - BASE_URL=http://localhost/
+      - APP_NAME=MyApp
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=root
+      - KC_DB_PASSWORD=example
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME=localhost
+      - KC_HTTP_RELATIVE_PATH=/auth
+      - KC_PROXY_HEADERS=xforwarded
+    command: start --http-enabled=true --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+    volumes:
+      - ./init-keycloak/realm.json:/opt/keycloak/data/import/realm.json
+      - ./init-keycloak/tp-theme:/opt/keycloak/themes/tp-theme
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9.3
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    restart: always
+
+  kafka:
+    image: bitnami/kafka:3.9.0
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    restart: always
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    depends_on:
+      - zookeeper
+
+  minio:
+    image: bitnami/minio:2025.2.18
+    environment:
+      - MINIO_SERVER_HOST=localhost
+      - MINIO_ROOT_USER=minio-root-user
+      - MINIO_ROOT_PASSWORD=minio-root-password
+      - MINIO_DEFAULT_BUCKETS=graph-bucket:public
+      - MINIO_NOTIFY_KAFKA_BROKERS_GRAPH=kafka:9092
+      - MINIO_NOTIFY_KAFKA_ENABLE_GRAPH=on
+      - MINIO_NOTIFY_KAFKA_TOPIC_GRAPH=minio_bucket_notification
+    restart: always
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    depends_on:
+      - kafka
+
+  elasticsearch:
+    image: elasticsearch:8.15.3
+    restart: always
+    environment:
+      - "ES_JAVA_OPTS=-Xms8192m -Xmx8192m"
+      - cluster.name=elasticsearch
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    volumes:
+      - ./init-elasticsearch/plugins:/usr/share/elasticsearch/plugins
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+  neo4j:
+    image: neo4j:5.26.2
+    environment:
+      - NEO4J_AUTH=none
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_use_neo4j_config=true
+    volumes:
+      - ./init-neo4j/plugins:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: always
