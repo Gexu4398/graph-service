@@ -43,6 +43,10 @@ spring:
       max-request-size: 50MB
   elasticsearch:
     uris: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+  neo4j:
+    uri: bolt://${NRO4J_HOST:localhost}:7687
+    username: neo4j
+    password: neo4jexample
 management:
   endpoints:
     access:
