@@ -26,6 +26,7 @@
     <module>biz-batch-service</module>
       <module>test-environments</module>
     <module>testcontainers-minio</module>
+      <module>biz-graph</module>
   </modules>
 
   <profiles>

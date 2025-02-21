@@ -69,8 +69,8 @@ public class BizLoggerAspect {
     final var contentValues = new ArrayList<String>();
     Arrays.stream(resolves).forEachOrdered(resolve -> {
       final var beanPath = resolve.value();
-      contentValues.add(beanPath.startsWith("response") ? "" :
-          getValueFromResolve(joinPoint, resolve));
+      contentValues.add(beanPath.startsWith("response") ?
+          "" : getValueFromResolve(joinPoint, resolve));
     });
     return contentValues;
   }
@@ -141,9 +141,9 @@ public class BizLoggerAspect {
 
     try {
       bizLog.setTarget(BizLogTarget.builder()
-          .targetId(StringUtils.isNotBlank(targetResolves.get(0)) ? targetResolves.get(0)
-              : bizLogger.isLogin() ? ""
-                  : keycloakService.getUserResource(username).toRepresentation().getId())
+          .targetId(StringUtils.isNotBlank(targetResolves.get(0)) ?
+              targetResolves.get(0) : bizLogger.isLogin() ?
+              "" : keycloakService.getUserResource(username).toRepresentation().getId())
           .targetName(targetResolves.get(1))
           .targetType(targetResolves.get(2))
           .build());
@@ -185,13 +185,11 @@ public class BizLoggerAspect {
       String username;
       if (bizLogger.isLogin()) {
         username = JwtHelper.getUsername();
-        bizLog.setUsername(username);
-        bizLog.setType(type);
       } else {
         username = targetResolves.get(1);
-        bizLog.setUsername(username);
-        bizLog.setType(type);
       }
+      bizLog.setUsername(username);
+      bizLog.setType(type);
 
       bizLog.setIp(JakartaServletUtil.getClientIP(getRequest()));
 
@@ -207,15 +205,13 @@ public class BizLoggerAspect {
 
       try {
         bizLog.setTarget(BizLogTarget.builder()
-            .targetId(StringUtils.isNotBlank(targetResolves.get(0)) ? targetResolves.get(0)
-                : bizLogger.isLogin() ? ""
-                    : keycloakService.getUserResource(username).toRepresentation().getId())
+            .targetId(StringUtils.isNotBlank(targetResolves.get(0)) ?
+                targetResolves.get(0) : bizLogger.isLogin() ?
+                "" : keycloakService.getUserResource(username).toRepresentation().getId())
             .targetName(targetResolves.get(1))
             .targetType(targetResolves.get(2))
             .build());
 
-        // 因为所包裹的执行是否在事务中，在哪个事务中并不确定，并且 findAll 需要在事务中执行才能解决 lazy load 的问题
-        // 所以，此处手工指定 findAll 在事务中执行。
         new TransactionTemplate(keycloakTransactionManager).executeWithoutResult(
             transactionStatus ->
                 userEntityRepository.findByUsernameAndRealmId(username, keycloakService.getRealm())
