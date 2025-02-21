@@ -20,7 +20,6 @@ import org.neo4j.cypherdsl.core.Expression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.neo4j.core.Neo4jTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -39,19 +38,16 @@ public class VertexServiceImpl implements VertexService {
 
   private final FeatureRepository featureRepository;
 
-  private final Neo4jTemplate neo4jTemplate;
-
   @Autowired
   public VertexServiceImpl(VertexRepository vertexRepository, EdgeRepository edgeRepository,
       PropertyRepository propertyRepository, PropertyValueRepository propertyValueRepository,
-      FeatureRepository featureRepository, Neo4jTemplate neo4jTemplate) {
+      FeatureRepository featureRepository) {
 
     this.vertexRepository = vertexRepository;
     this.edgeRepository = edgeRepository;
     this.propertyRepository = propertyRepository;
     this.propertyValueRepository = propertyValueRepository;
     this.featureRepository = featureRepository;
-    this.neo4jTemplate = neo4jTemplate;
   }
 
   @Override
