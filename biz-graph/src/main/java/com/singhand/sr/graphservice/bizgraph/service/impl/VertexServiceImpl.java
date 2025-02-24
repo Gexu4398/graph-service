@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.neo4j.cypherdsl.core.Condition;
 import org.neo4j.cypherdsl.core.Cypher;
 import org.neo4j.cypherdsl.core.Expression;
+import org.neo4j.cypherdsl.core.Node;
+import org.neo4j.cypherdsl.core.RelationshipPattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -83,7 +85,7 @@ public class VertexServiceImpl implements VertexService {
     final var name = vertex.property("name");
     final var type = vertex.property("type");
 
-    Condition condition = Cypher.noCondition();
+    var condition = Cypher.noCondition();
     if (StrUtil.isNotBlank(keyword)) {
       condition = name.contains(Cypher.literalOf(keyword));
     }
@@ -94,6 +96,33 @@ public class VertexServiceImpl implements VertexService {
           .toArray(Expression[]::new));
       final var typeIn = type.in(namesList);
       condition = condition.and(typeIn);
+    }
+
+    if (CollUtil.isNotEmpty(properties)) {
+      for (Map.Entry<String, String> entry : properties.entrySet()) {
+        final var propKey = entry.getKey();
+        final var propValue = entry.getValue();
+
+        final var propertyAlias = "prop_" + propKey;
+        final var valueAlias = "val_" + propKey;
+
+        final var propertyNode = Cypher.node("Property")
+            .named(propertyAlias)
+            .withProperties("name", Cypher.literalOf(propKey));
+
+        final var valueNode = Cypher.node("PropertyValue")
+            .named(valueAlias)
+            .withProperties("value", Cypher.literalOf(propValue));
+
+        // 构建路径模式
+        final var pathPattern = vertex
+            .relationshipTo(propertyNode, "HAS_PROPERTY")
+            .relationshipTo(valueNode, "HAS_VALUE");
+
+        // 生成EXISTS子句
+        final var existsCondition = Cypher.exists(pathPattern);
+        condition = condition.and(existsCondition);
+      }
     }
 
     return vertexRepository.findAll(condition, pageable);

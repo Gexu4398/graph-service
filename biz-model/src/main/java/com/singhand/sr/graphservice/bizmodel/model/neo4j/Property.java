@@ -26,7 +26,7 @@ public class Property {
   @GeneratedValue
   private Long id;
 
-  private String key;
+  private String name;
 
   @Relationship(type = "HAS_VALUE", direction = Relationship.Direction.OUTGOING)
   @Builder.Default
