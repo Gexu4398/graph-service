@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service;
 
+import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.Vertex;
 import jakarta.validation.constraints.NotBlank;
@@ -18,4 +19,6 @@ public interface VertexService {
 
   Page<Vertex> getVertices(String keyword, Set<String> types,
       Map<String, String> properties, Pageable pageable);
+
+  void newVertexProperty(Vertex vertex, String key, NewPropertyRequest newPropertyRequest);
 }

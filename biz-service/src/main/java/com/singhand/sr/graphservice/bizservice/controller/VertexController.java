@@ -1,9 +1,12 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.Vertex;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.PropertyValueRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,11 +42,15 @@ public class VertexController {
 
   private final VertexRepository vertexRepository;
 
+  private final PropertyValueRepository propertyValueRepository;
+
   @Autowired
-  public VertexController(VertexService vertexService, VertexRepository vertexRepository) {
+  public VertexController(VertexService vertexService, VertexRepository vertexRepository,
+      PropertyValueRepository propertyValueRepository) {
 
     this.vertexService = vertexService;
     this.vertexRepository = vertexRepository;
+    this.propertyValueRepository = propertyValueRepository;
   }
 
   @Operation(summary = "获取实体详情")
@@ -110,5 +117,25 @@ public class VertexController {
     }
 
     return vertexService.updateVertex(vertex, request);
+  }
+
+  @Operation(summary = "添加实体属性")
+  @PostMapping(path = "{id}/property")
+  @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
+  public void newVertexProperty(@PathVariable String id, @RequestParam String key,
+      @Valid @RequestBody NewPropertyRequest newPropertyRequest) {
+
+    final var vertex = vertexService.getVertex(id);
+
+    final var md5 = MD5.create().digestHex(newPropertyRequest.getValue());
+    final var exists = propertyValueRepository.existsByProperty_VertexAndProperty_NameAndMd5(
+        vertex, key, md5);
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "属性值已存在");
+    }
+
+    vertexService.newVertexProperty(vertex, key, newPropertyRequest);
   }
 }

@@ -12,6 +12,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 @Getter
 @Setter
@@ -23,8 +24,8 @@ import org.springframework.data.neo4j.core.schema.Node;
 public class Feature {
 
   @Id
-  @GeneratedValue
-  private Long id;
+  @GeneratedValue(UUIDStringGenerator.class)
+  private String id;
 
   private String name;
 

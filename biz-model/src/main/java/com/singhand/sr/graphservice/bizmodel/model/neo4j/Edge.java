@@ -16,6 +16,7 @@ import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
+import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 @Getter
 @Setter
@@ -27,8 +28,8 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 public class Edge {
 
   @Id
-  @GeneratedValue
-  private Long id;
+  @GeneratedValue(UUIDStringGenerator.class)
+  private String id;
 
   private String name;
 

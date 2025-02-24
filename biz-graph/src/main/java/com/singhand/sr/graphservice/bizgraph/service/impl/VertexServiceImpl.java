@@ -2,8 +2,11 @@ package com.singhand.sr.graphservice.bizgraph.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.Property;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.PropertyValue;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.Vertex;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.FeatureRepository;
@@ -14,11 +17,8 @@ import jakarta.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.neo4j.cypherdsl.core.Condition;
 import org.neo4j.cypherdsl.core.Cypher;
 import org.neo4j.cypherdsl.core.Expression;
-import org.neo4j.cypherdsl.core.Node;
-import org.neo4j.cypherdsl.core.RelationshipPattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -126,5 +126,25 @@ public class VertexServiceImpl implements VertexService {
     }
 
     return vertexRepository.findAll(condition, pageable);
+  }
+
+  @Override
+  public void newVertexProperty(Vertex vertex, String key, NewPropertyRequest newPropertyRequest) {
+
+    final var managedProperty = propertyRepository.findByVertexAndName(vertex, key)
+        .orElseGet(() -> {
+          final var property = new Property();
+          property.setName(key);
+          return propertyRepository.save(property);
+        });
+
+    final var propertyValue = new PropertyValue();
+    propertyValue.setValue(newPropertyRequest.getValue());
+    final var managedPropertyValue = propertyValueRepository.save(propertyValue);
+    managedProperty.getValues().add(managedPropertyValue);
+
+    final var property = propertyRepository.save(managedProperty);
+    vertex.getProperties().add(property);
+    vertexRepository.save(vertex);
   }
 }
