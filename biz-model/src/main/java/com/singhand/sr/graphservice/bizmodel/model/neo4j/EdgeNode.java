@@ -1,6 +1,9 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -12,6 +15,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 @Getter
@@ -20,8 +24,8 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Builder
-@Node("Feature")
-public class Feature {
+@Node("EdgeNode")
+public class EdgeNode {
 
   @Id
   @GeneratedValue(UUIDStringGenerator.class)
@@ -29,7 +33,13 @@ public class Feature {
 
   private String name;
 
-  private String value;
+  @Relationship(type = "RELATES_TO", direction = Relationship.Direction.OUTGOING)
+  private VertexNode targetVertexNode;
+
+  @Relationship(type = "HAS_PROPERTY", direction = Relationship.Direction.OUTGOING)
+  @Builder.Default
+  @JsonIgnore
+  private Set<PropertyNode> properties = new HashSet<>();
 
   @CreatedDate
   private LocalDateTime createdAt;

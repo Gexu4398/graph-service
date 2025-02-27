@@ -5,20 +5,22 @@ import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.Property;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.PropertyValue;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.Vertex;
-import com.singhand.sr.graphservice.bizmodel.repository.neo4j.EdgeRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.neo4j.FeatureRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.neo4j.PropertyRepository;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.PropertyNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.PropertyValueNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.EdgeNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.FeatureNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.PropertyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.PropertyValueRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import jakarta.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.neo4j.cypherdsl.core.Condition;
 import org.neo4j.cypherdsl.core.Cypher;
 import org.neo4j.cypherdsl.core.Expression;
+import org.neo4j.cypherdsl.core.Node;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,58 +32,62 @@ import org.springframework.web.server.ResponseStatusException;
 @Slf4j
 public class VertexServiceImpl implements VertexService {
 
-  private final VertexRepository vertexRepository;
+  private final VertexNodeRepository vertexNodeRepository;
 
-  private final EdgeRepository edgeRepository;
+  private final EdgeNodeRepository edgeNodeRepository;
 
-  private final PropertyRepository propertyRepository;
+  private final PropertyNodeRepository propertyNodeRepository;
 
   private final PropertyValueRepository propertyValueRepository;
 
-  private final FeatureRepository featureRepository;
+  private final FeatureNodeRepository featureNodeRepository;
 
   @Autowired
-  public VertexServiceImpl(VertexRepository vertexRepository, EdgeRepository edgeRepository,
-      PropertyRepository propertyRepository, PropertyValueRepository propertyValueRepository,
-      FeatureRepository featureRepository) {
+  public VertexServiceImpl(VertexNodeRepository vertexNodeRepository,
+      EdgeNodeRepository edgeNodeRepository,
+      PropertyNodeRepository propertyNodeRepository,
+      PropertyValueRepository propertyValueRepository,
+      FeatureNodeRepository featureNodeRepository) {
 
-    this.vertexRepository = vertexRepository;
-    this.edgeRepository = edgeRepository;
-    this.propertyRepository = propertyRepository;
+    this.vertexNodeRepository = vertexNodeRepository;
+    this.edgeNodeRepository = edgeNodeRepository;
+    this.propertyNodeRepository = propertyNodeRepository;
     this.propertyValueRepository = propertyValueRepository;
-    this.featureRepository = featureRepository;
+    this.featureNodeRepository = featureNodeRepository;
   }
 
   @Override
-  public Vertex newVertex(@Nonnull NewVertexRequest request) {
+  public VertexNode newVertex(@Nonnull NewVertexRequest request) {
 
-    final var vertex = new Vertex();
+    final var vertex = new VertexNode();
     vertex.setName(request.getName());
     vertex.setType(request.getType());
 
-    return vertexRepository.save(vertex);
+    return vertexNodeRepository.save(vertex);
   }
 
   @Override
-  public Vertex updateVertex(@Nonnull Vertex vertex, @Nonnull NewVertexRequest request) {
+  public VertexNode updateVertex(@Nonnull VertexNode vertexNode,
+      @Nonnull NewVertexRequest request) {
 
-    vertex.setName(request.getName());
-    vertex.setType(request.getType());
-    return vertexRepository.save(vertex);
+    vertexNode.setName(request.getName());
+    vertexNode.setType(request.getType());
+    return vertexNodeRepository.save(vertexNode);
   }
 
   @Override
-  public Vertex getVertex(String id) {
+  public VertexNode getVertex(String id) {
 
-    return vertexRepository.findById(id)
+    return vertexNodeRepository.findById(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
   }
 
   @Override
-  public Page<Vertex> getVertices(String keyword, Set<String> types, Map<String, String> properties,
+  public Page<VertexNode> getVertices(String keyword, Set<String> types,
+      Map<String, String> properties,
       Pageable pageable) {
 
-    final var vertex = Cypher.node("Vertex").named("vertex");
+    final var vertex = Cypher.node("VertexNode").named("VertexNode");
     final var name = vertex.property("name");
     final var type = vertex.property("type");
 
@@ -100,51 +106,53 @@ public class VertexServiceImpl implements VertexService {
 
     if (CollUtil.isNotEmpty(properties)) {
       for (Map.Entry<String, String> entry : properties.entrySet()) {
-        final var propKey = entry.getKey();
-        final var propValue = entry.getValue();
-
-        final var propertyAlias = "prop_" + propKey;
-        final var valueAlias = "val_" + propKey;
-
-        final var propertyNode = Cypher.node("Property")
-            .named(propertyAlias)
-            .withProperties("name", Cypher.literalOf(propKey));
-
-        final var valueNode = Cypher.node("PropertyValue")
-            .named(valueAlias)
-            .withProperties("value", Cypher.literalOf(propValue));
-
-        // 构建路径模式
-        final var pathPattern = vertex
-            .relationshipTo(propertyNode, "HAS_PROPERTY")
-            .relationshipTo(valueNode, "HAS_VALUE");
-
-        // 生成EXISTS子句
-        final var existsCondition = Cypher.exists(pathPattern);
-        condition = condition.and(existsCondition);
+        condition = condition.and(propertyValueIs(entry.getKey(), entry.getValue(), vertex));
       }
     }
 
-    return vertexRepository.findAll(condition, pageable);
+    return vertexNodeRepository.findAll(condition, pageable);
+  }
+
+  private static @Nonnull Condition propertyValueIs(@Nonnull String key, @Nonnull String value,
+      @Nonnull Node vertex) {
+
+    final var propertyAlias = "prop_" + key;
+    final var valueAlias = "val_" + key;
+
+    final var propertyNode = Cypher.node("PropertyNode")
+        .named(propertyAlias)
+        .withProperties("name", Cypher.literalOf(key));
+
+    final var valueNode = Cypher.node("PropertyValueNode")
+        .named(valueAlias)
+        .withProperties("value", Cypher.literalOf(value));
+
+    // 构建路径模式
+    final var pathPattern = vertex
+        .relationshipTo(propertyNode, "HAS_PROPERTY")
+        .relationshipTo(valueNode, "HAS_VALUE");
+
+    return Cypher.exists(pathPattern);
   }
 
   @Override
-  public void newVertexProperty(Vertex vertex, String key, NewPropertyRequest newPropertyRequest) {
+  public void newVertexProperty(VertexNode vertexNode, String key,
+      NewPropertyRequest newPropertyRequest) {
 
-    final var managedProperty = propertyRepository.findByVertexAndName(vertex, key)
+    final var managedProperty = propertyNodeRepository.findByVertexAndName(vertexNode, key)
         .orElseGet(() -> {
-          final var property = new Property();
+          final var property = new PropertyNode();
           property.setName(key);
-          return propertyRepository.save(property);
+          return propertyNodeRepository.save(property);
         });
 
-    final var propertyValue = new PropertyValue();
+    final var propertyValue = new PropertyValueNode();
     propertyValue.setValue(newPropertyRequest.getValue());
     final var managedPropertyValue = propertyValueRepository.save(propertyValue);
     managedProperty.getValues().add(managedPropertyValue);
 
-    final var property = propertyRepository.save(managedProperty);
-    vertex.getProperties().add(property);
-    vertexRepository.save(vertex);
+    final var property = propertyNodeRepository.save(managedProperty);
+    vertexNode.getProperties().add(property);
+    vertexNodeRepository.save(vertexNode);
   }
 }

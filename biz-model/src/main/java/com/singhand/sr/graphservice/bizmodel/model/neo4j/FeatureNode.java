@@ -1,17 +1,17 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 @Getter
@@ -20,8 +20,8 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Builder
-@Node("Property")
-public class Property {
+@Node("FeatureNode")
+public class FeatureNode {
 
   @Id
   @GeneratedValue(UUIDStringGenerator.class)
@@ -29,7 +29,11 @@ public class Property {
 
   private String name;
 
-  @Relationship(type = "HAS_VALUE", direction = Relationship.Direction.OUTGOING)
-  @Builder.Default
-  private Set<PropertyValue> values = new HashSet<>();
+  private String value;
+
+  @CreatedDate
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 }

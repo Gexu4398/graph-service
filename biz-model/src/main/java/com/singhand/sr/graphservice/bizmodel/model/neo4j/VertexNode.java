@@ -25,8 +25,8 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Builder
-@Node("Vertex")
-public class Vertex {
+@Node("VertexNode")
+public class VertexNode {
 
   @Id
   @GeneratedValue(UUIDStringGenerator.class)
@@ -39,12 +39,12 @@ public class Vertex {
   @Relationship(type = "HAS_EDGE", direction = Direction.OUTGOING)
   @Builder.Default
   @JsonIgnore
-  private Set<Edge> edges = new HashSet<>();
+  private Set<EdgeNode> edges = new HashSet<>();
 
   @Relationship(type = "HAS_PROPERTY", direction = Direction.OUTGOING)
   @Builder.Default
   @JsonIgnore
-  private Set<Property> properties = new HashSet<>();
+  private Set<PropertyNode> properties = new HashSet<>();
 
   @CreatedDate
   private LocalDateTime createdAt;

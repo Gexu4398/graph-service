@@ -2,7 +2,7 @@ package com.singhand.sr.graphservice.bizgraph.service;
 
 import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.Vertex;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
 import java.util.Set;
@@ -11,14 +11,14 @@ import org.springframework.data.domain.Pageable;
 
 public interface VertexService {
 
-  Vertex newVertex(NewVertexRequest request);
+  VertexNode newVertex(NewVertexRequest request);
 
-  Vertex updateVertex(Vertex vertex, NewVertexRequest request);
+  VertexNode updateVertex(VertexNode vertexNode, NewVertexRequest request);
 
-  Vertex getVertex(@NotBlank String id);
+  VertexNode getVertex(@NotBlank String id);
 
-  Page<Vertex> getVertices(String keyword, Set<String> types,
+  Page<VertexNode> getVertices(String keyword, Set<String> types,
       Map<String, String> properties, Pageable pageable);
 
-  void newVertexProperty(Vertex vertex, String key, NewPropertyRequest newPropertyRequest);
+  void newVertexProperty(VertexNode vertexNode, String key, NewPropertyRequest newPropertyRequest);
 }

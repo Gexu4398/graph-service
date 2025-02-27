@@ -5,9 +5,9 @@ import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.Vertex;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.PropertyValueRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -40,23 +40,23 @@ public class VertexController {
 
   private final VertexService vertexService;
 
-  private final VertexRepository vertexRepository;
+  private final VertexNodeRepository vertexNodeRepository;
 
   private final PropertyValueRepository propertyValueRepository;
 
   @Autowired
-  public VertexController(VertexService vertexService, VertexRepository vertexRepository,
+  public VertexController(VertexService vertexService, VertexNodeRepository vertexNodeRepository,
       PropertyValueRepository propertyValueRepository) {
 
     this.vertexService = vertexService;
-    this.vertexRepository = vertexRepository;
+    this.vertexNodeRepository = vertexNodeRepository;
     this.propertyValueRepository = propertyValueRepository;
   }
 
   @Operation(summary = "获取实体详情")
   @GetMapping("{id}")
   @SneakyThrows
-  public Vertex getVertex(@PathVariable String id) {
+  public VertexNode getVertex(@PathVariable String id) {
 
     return vertexService.getVertex(id);
   }
@@ -64,7 +64,7 @@ public class VertexController {
   @Operation(summary = "获取实体列表")
   @GetMapping
   @SneakyThrows
-  public Page<Vertex> getVertices(
+  public Page<VertexNode> getVertices(
       @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
       @RequestParam(name = "type", required = false, defaultValue = "") Set<String> types,
       @RequestParam(name = "keyValue", required = false, defaultValue = "") Set<String> keyValues,
@@ -84,11 +84,11 @@ public class VertexController {
   @PostMapping
   @SneakyThrows
   @Transactional("bizNeo4jTransactionManager")
-  public Vertex newVertex(@Valid @RequestBody NewVertexRequest request) {
+  public VertexNode newVertex(@Valid @RequestBody NewVertexRequest request) {
 
     request.setName(StrUtil.trim(request.getName()));
 
-    if (vertexRepository.existsByNameAndType(request.getName(), request.getType())) {
+    if (vertexNodeRepository.existsByNameAndType(request.getName(), request.getType())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "实体已存在");
     }
 
@@ -99,20 +99,20 @@ public class VertexController {
   @PutMapping("{id}")
   @SneakyThrows
   @Transactional("bizNeo4jTransactionManager")
-  public Vertex updateVertex(@PathVariable String id,
+  public VertexNode updateVertex(@PathVariable String id,
       @Valid @RequestBody NewVertexRequest request) {
 
     request.setName(StrUtil.trim(request.getName()));
 
-    final var vertex = vertexRepository.findById(id).orElse(null);
+    final var vertex = vertexNodeRepository.findById(id).orElse(null);
     if (null == vertex) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "实体不存在");
     } else if (StrUtil.equals(vertex.getName(), request.getName()) &&
         StrUtil.equals(vertex.getType(), request.getType())) {
-      return vertexRepository.save(vertex);
+      return vertexNodeRepository.save(vertex);
     }
 
-    if (vertexRepository.existsByNameAndType(request.getName(), request.getType())) {
+    if (vertexNodeRepository.existsByNameAndType(request.getName(), request.getType())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "实体已存在");
     }
 
@@ -129,7 +129,7 @@ public class VertexController {
     final var vertex = vertexService.getVertex(id);
 
     final var md5 = MD5.create().digestHex(newPropertyRequest.getValue());
-    final var exists = propertyValueRepository.existsByProperty_VertexAndProperty_NameAndMd5(
+    final var exists = propertyValueRepository.existsByProperty_VertexNodeAndPropertyNode_NameAndMd5(
         vertex, key, md5);
 
     if (exists) {
