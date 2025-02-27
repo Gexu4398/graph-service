@@ -4,16 +4,19 @@ import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.NewOntologyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.dto.OntologyTreeDTO;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,6 +50,14 @@ public class OntologyController {
   public OntologyNode getOntology(@PathVariable String id) {
 
     return ontologyService.getOntology(id);
+  }
+
+  @Operation(summary = "获取本体树")
+  @GetMapping("tree")
+  @SneakyThrows
+  public List<OntologyTreeDTO> getOntologyTree() {
+
+    return ontologyService.getOntologyTree();
   }
 
   @Operation(summary = "添加本体")
@@ -91,5 +102,15 @@ public class OntologyController {
     }
 
     return ontologyService.updateOntology(ontologyNode, request);
+  }
+
+  @Operation(summary = "删除本体")
+  @DeleteMapping("{id}")
+  @SneakyThrows
+  public void deleteOntology(@PathVariable String id) {
+
+    final var ontologyNode = ontologyService.getOntology(id);
+
+    ontologyService.deleteOntology(ontologyNode);
   }
 }
