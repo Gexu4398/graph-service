@@ -26,34 +26,36 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Node("VertexNode")
-@Schema(description = "实体节点")
-public class VertexNode {
+@Node("OntologyNode")
+@Schema(description = "本体节点")
+public class OntologyNode {
 
   @Id
   @GeneratedValue(UUIDStringGenerator.class)
   @Schema(description = "主键")
   private String id;
 
-  @Schema(description = "名称")
+  @Schema(description = "关系名称")
   private String name;
 
-  @Schema(description = "类型")
-  private String type;
-
-  @Relationship(type = "HAS_EDGE", direction = Direction.OUTGOING)
+  @Relationship(type = "HAS_RELATION", direction = Direction.OUTGOING)
   @Builder.Default
   @JsonIgnore
   @Schema(description = "关系")
   @Exclude
-  private Set<EdgeNode> edges = new HashSet<>();
+  private Set<RelationNode> relationNodes = new HashSet<>();
 
-  @Relationship(type = "HAS_PROPERTY", direction = Direction.OUTGOING)
+  @Relationship(type = "HAS_CHILD", direction = Direction.OUTGOING)
   @Builder.Default
   @JsonIgnore
-  @Schema(description = "属性")
+  @Schema(description = "子节点")
   @Exclude
-  private Set<PropertyNode> properties = new HashSet<>();
+  private Set<OntologyNode> childOntologies = new HashSet<>();
+
+  @Relationship(type = "HAS_CHILD", direction = Direction.INCOMING)
+  @JsonIgnore
+  @Schema(description = "父节点")
+  private OntologyNode parent;
 
   @CreatedDate
   @Schema(description = "创建时间")
@@ -72,7 +74,7 @@ public class VertexNode {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VertexNode v = (VertexNode) o;
+    OntologyNode v = (OntologyNode) o;
     return id != null && Objects.equals(id, v.id);
   }
 

@@ -8,7 +8,7 @@ import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PropertyNodeRepository extends BaseNodeRepository<PropertyNode, Long> {
+public interface PropertyNodeRepository extends BaseNodeRepository<PropertyNode, String> {
 
   @Query("""
       MATCH (v:VertexNode)-[:HAS_PROPERTY]->(p:PropertyNode)

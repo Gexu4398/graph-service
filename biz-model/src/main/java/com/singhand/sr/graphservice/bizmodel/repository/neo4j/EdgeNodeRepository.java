@@ -4,6 +4,6 @@ import com.singhand.sr.graphservice.bizmodel.model.neo4j.EdgeNode;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface EdgeNodeRepository extends BaseNodeRepository<EdgeNode, Long> {
+public interface EdgeNodeRepository extends BaseNodeRepository<EdgeNode, String> {
 
 }
