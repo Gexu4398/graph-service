@@ -11,6 +11,7 @@ import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelati
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.RelationNodeRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -48,14 +49,18 @@ public class OntologyController {
 
   private final OntologyPropertyNodeRepository ontologyPropertyNodeRepository;
 
+  private final RelationNodeRepository relationNodeRepository;
+
   @Autowired
   public OntologyController(OntologyService ontologyService,
       OntologyNodeRepository ontologyNodeRepository,
-      OntologyPropertyNodeRepository ontologyPropertyNodeRepository) {
+      OntologyPropertyNodeRepository ontologyPropertyNodeRepository,
+      RelationNodeRepository relationNodeRepository) {
 
     this.ontologyService = ontologyService;
     this.ontologyNodeRepository = ontologyNodeRepository;
     this.ontologyPropertyNodeRepository = ontologyPropertyNodeRepository;
+    this.relationNodeRepository = relationNodeRepository;
   }
 
   @Operation(summary = "获取本体详情（不包含关系）")
@@ -216,6 +221,10 @@ public class OntologyController {
 
     final var outOntology = ontologyService.getOntology(outId);
 
+    if (!relationNodeRepository.existsByName(name)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在");
+    }
+
     return ontologyService.newRelation(inOntology, name, outOntology);
   }
 
@@ -224,12 +233,15 @@ public class OntologyController {
   @SneakyThrows
   @Transactional("bizNeo4jTransactionManager")
   public OntologyRelationNodeItem updateRelation(@PathVariable String inId,
-      @PathVariable String outId,
-      @RequestParam String name, @RequestParam String newName) {
+      @PathVariable String outId, @RequestParam String name, @RequestParam String newName) {
 
     final var inOntology = ontologyService.getOntology(inId);
 
     final var outOntology = ontologyService.getOntology(outId);
+
+    if (!relationNodeRepository.existsByName(newName)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在");
+    }
 
     return ontologyService.updateRelation(inOntology, name, outOntology, newName);
   }
