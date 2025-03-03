@@ -8,13 +8,10 @@ import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.dto.OntologyTreeDTO;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import jakarta.annotation.Nonnull;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.neo4j.cypherdsl.core.Cypher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.neo4j.core.Neo4jTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,14 +21,10 @@ public class OntologyServiceImpl implements OntologyService {
 
   private final OntologyNodeRepository ontologyNodeRepository;
 
-  private final Neo4jTemplate neo4jTemplate;
-
   @Autowired
-  public OntologyServiceImpl(OntologyNodeRepository ontologyNodeRepository,
-      Neo4jTemplate neo4jTemplate) {
+  public OntologyServiceImpl(OntologyNodeRepository ontologyNodeRepository) {
 
     this.ontologyNodeRepository = ontologyNodeRepository;
-    this.neo4jTemplate = neo4jTemplate;
   }
 
   @Override
@@ -93,21 +86,20 @@ public class OntologyServiceImpl implements OntologyService {
   @Override
   public List<OntologyTreeDTO> getOntologyTree() {
 
-    final var ontologyNode = Cypher.node("OntologyNode").named("n");
+    final var ontologyNodes = ontologyNodeRepository.findAll();
 
-    final var hasChildRel = Cypher.anyNode()
-        .relationshipTo(ontologyNode, "HAS_CHILD")
-        .named("r");
+    if (CollUtil.isEmpty(ontologyNodes)){
+      return List.of();
+    }
 
-    final var noParentCondition = Cypher.not(Cypher.exists(hasChildRel));
+    return buildTree(ontologyNodes);
+  }
 
-    final var statement = Cypher.match(ontologyNode)
-        .where(noParentCondition)
-        .returning(ontologyNode)
-        .build();
+  private List<OntologyTreeDTO> buildTree(@Nonnull List<OntologyNode> allNodes) {
 
-    // todo 待完善，无法查询到子集内容
-    final var rootNodes = neo4jTemplate.findAll(statement, OntologyNode.class);
+    final var rootNodes = allNodes.stream()
+        .filter(node -> node.getParent() == null)
+        .toList();
 
     return rootNodes.stream()
         .map(this::convertToTreeDTO)
@@ -122,14 +114,10 @@ public class OntologyServiceImpl implements OntologyService {
     dto.setCreatedAt(node.getCreatedAt());
     dto.setUpdatedAt(node.getUpdatedAt());
 
-    // 递归处理子节点
-    if (CollUtil.isNotEmpty(node.getChildOntologies())) {
-      final var children = node.getChildOntologies().stream()
-          .sorted(Comparator.comparing(OntologyNode::getCreatedAt))
-          .map(this::convertToTreeDTO)
-          .collect(Collectors.toList());
-      dto.setChildren(children);
+    for (OntologyNode child : node.getChildOntologies()) {
+      dto.getChildOntologies().add(convertToTreeDTO(child));
     }
+
     return dto;
   }
 
