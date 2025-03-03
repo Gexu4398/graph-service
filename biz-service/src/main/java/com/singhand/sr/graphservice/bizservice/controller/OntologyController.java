@@ -6,7 +6,9 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.dto.OntologyTreeDTO;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +17,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -76,7 +79,7 @@ public class OntologyController {
   @Operation(summary = "获取本体树")
   @GetMapping("tree")
   @SneakyThrows
-  public List<OntologyTreeDTO> getOntologyTree() {
+  public List<OntologyTreeItem> getOntologyTree() {
 
     return ontologyService.getOntologyTree();
   }
@@ -135,6 +138,16 @@ public class OntologyController {
     ontologyService.deleteOntology(ontologyNode);
   }
 
+  @Operation(summary = "查询本体属性")
+  @GetMapping("{id}/property")
+  @SneakyThrows
+  public Set<OntologyPropertyNode> getProperties(@PathVariable String id) {
+
+    final var ontologyNode = ontologyService.getOntology(id);
+
+    return ontologyNode.getProperties();
+  }
+
   @Operation(summary = "新增本体属性")
   @PostMapping("{id}/property")
   @SneakyThrows
@@ -150,6 +163,7 @@ public class OntologyController {
   @Operation(summary = "修改本体属性")
   @PutMapping("{id}/property/{propertyId}")
   @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
   public OntologyNode updateProperty(@PathVariable String id, @PathVariable String propertyId,
       @Valid @RequestBody UpdateOntologyPropertyRequest request) {
 
@@ -164,11 +178,72 @@ public class OntologyController {
   @Operation(summary = "删除本体属性")
   @DeleteMapping("{id}/property")
   @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
   public void deleteProperties(@PathVariable String id,
       @RequestParam(name = "propertyId") Set<String> propertyIds) {
 
     final var ontology = ontologyService.getOntology(id);
 
     ontologyService.deleteProperties(ontology, propertyIds);
+  }
+
+  @Operation(summary = "查询本体关系")
+  @GetMapping("{id}/relation")
+  @SneakyThrows
+  public Set<OntologyRelationNodeItem> getRelations(@PathVariable String id) {
+
+    final var ontology = ontologyService.getOntology(id);
+
+    return ontology.getRelations().stream()
+        .map(it -> OntologyRelationNodeItem.builder()
+            .id(it.getId())
+            .name(it.getName())
+            .inOntology(ontology)
+            .outOntology(it.getTargetOntologyNode())
+            .createdAt(it.getCreatedAt())
+            .updatedAt(it.getUpdatedAt())
+            .build()).collect(Collectors.toSet());
+  }
+
+  @Operation(summary = "新增关系")
+  @PostMapping("{inId}/relation/{outId}")
+  @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
+  public OntologyRelationNodeItem newRelation(@PathVariable String inId, @PathVariable String outId,
+      @RequestParam String name) {
+
+    final var inOntology = ontologyService.getOntology(inId);
+
+    final var outOntology = ontologyService.getOntology(outId);
+
+    return ontologyService.newRelation(inOntology, name, outOntology);
+  }
+
+  @Operation(summary = "修改关系")
+  @PutMapping("{inId}/relation/{outId}")
+  @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
+  public OntologyRelationNodeItem updateRelation(@PathVariable String inId, @PathVariable String outId,
+      @RequestParam String name, @RequestParam String newName) {
+
+    final var inOntology = ontologyService.getOntology(inId);
+
+    final var outOntology = ontologyService.getOntology(outId);
+
+    return ontologyService.updateRelation(inOntology, name, outOntology, newName);
+  }
+
+  @Operation(summary = "删除关系")
+  @DeleteMapping("{inId}/relation/{outId}")
+  @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
+  public void deleteRelation(@PathVariable String inId, @PathVariable String outId,
+      @RequestParam String name) {
+
+    final var inOntology = ontologyService.getOntology(inId);
+
+    final var outOntology = ontologyService.getOntology(outId);
+
+    ontologyService.deleteRelation(inOntology, name, outOntology);
   }
 }

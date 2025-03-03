@@ -5,6 +5,7 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.model.User;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.request.ResetPasswordRequest;
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakUserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "个人信息管理")
 @RestController
 @RequestMapping("profile")
 public class MyProfileController {

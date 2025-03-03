@@ -1,4 +1,4 @@
-package com.singhand.sr.graphservice.bizmodel.model.neo4j.dto;
+package com.singhand.sr.graphservice.bizmodel.model.neo4j.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Schema(description = "本体树节点")
-public class OntologyTreeDTO {
+public class OntologyTreeItem {
 
   @Schema(description = "节点ID")
   private String id;
@@ -19,7 +19,7 @@ public class OntologyTreeDTO {
   private String name;
 
   @Schema(description = "子节点列表")
-  private List<OntologyTreeDTO> childOntologies = new LinkedList<>();
+  private List<OntologyTreeItem> childOntologies = new LinkedList<>();
 
   @Schema(description = "创建时间")
   private LocalDateTime createdAt;

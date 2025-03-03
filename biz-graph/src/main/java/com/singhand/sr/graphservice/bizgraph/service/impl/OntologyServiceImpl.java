@@ -8,9 +8,12 @@ import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropert
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.dto.OntologyTreeDTO;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyRelationNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyRelationNodeRepository;
 import jakarta.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
@@ -31,12 +34,16 @@ public class OntologyServiceImpl implements OntologyService {
 
   private final OntologyPropertyNodeRepository ontologyPropertyNodeRepository;
 
+  private final OntologyRelationNodeRepository ontologyRelationNodeRepository;
+
   @Autowired
   public OntologyServiceImpl(OntologyNodeRepository ontologyNodeRepository,
-      OntologyPropertyNodeRepository ontologyPropertyNodeRepository) {
+      OntologyPropertyNodeRepository ontologyPropertyNodeRepository,
+      OntologyRelationNodeRepository ontologyRelationNodeRepository) {
 
     this.ontologyNodeRepository = ontologyNodeRepository;
     this.ontologyPropertyNodeRepository = ontologyPropertyNodeRepository;
+    this.ontologyRelationNodeRepository = ontologyRelationNodeRepository;
   }
 
   @Override
@@ -96,7 +103,7 @@ public class OntologyServiceImpl implements OntologyService {
   }
 
   @Override
-  public List<OntologyTreeDTO> getOntologyTree() {
+  public List<OntologyTreeItem> getOntologyTree() {
 
     final var ontologyNodes = ontologyNodeRepository.findAll();
 
@@ -126,8 +133,8 @@ public class OntologyServiceImpl implements OntologyService {
   public OntologyNode newProperty(@Nonnull OntologyNode ontology,
       @Nonnull NewOntologyPropertyRequest request) {
 
-    final var exists = ontologyNodeRepository.existsByIdAndPropertyName(ontology.getId(),
-        request.getName());
+    final var exists = ontologyPropertyNodeRepository
+        .existsByOntologyIdAndName(ontology.getId(), request.getName());
 
     if (exists) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在");
@@ -167,12 +174,13 @@ public class OntologyServiceImpl implements OntologyService {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在");
     }
 
-    if (propertyNode.getName().equals(request.getName())) {
+    if (StrUtil.equals(propertyNode.getName(), request.getName()) &&
+        StrUtil.equals(propertyNode.getDescription(), request.getDescription())) {
       return ontology;
     }
 
-    final var exists = ontologyNodeRepository.existsByIdAndPropertyName(ontology.getId(),
-        request.getName());
+    final var exists = ontologyPropertyNodeRepository
+        .existsByOntologyIdAndName(ontology.getId(), request.getName());
 
     if (exists) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在");
@@ -186,6 +194,80 @@ public class OntologyServiceImpl implements OntologyService {
     return ontologyNodeRepository.save(ontology);
   }
 
+  @Override
+  public OntologyRelationNodeItem newRelation(@Nonnull OntologyNode inOntology, @Nonnull String name,
+      @Nonnull OntologyNode outOntology) {
+
+    final var exists = ontologyRelationNodeRepository
+        .existsRelationBetweenNodes(inOntology.getId(), outOntology.getName(), name);
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "关系已存在");
+    }
+
+    final var relationNode = new OntologyRelationNode();
+    relationNode.setName(name);
+    relationNode.setTargetOntologyNode(outOntology);
+
+    final var managedRelation = ontologyRelationNodeRepository.save(relationNode);
+
+    inOntology.getRelations().add(managedRelation);
+
+    final var managedInOntology = ontologyNodeRepository.save(inOntology);
+
+    return OntologyRelationNodeItem.builder()
+        .id(managedRelation.getId())
+        .name(managedRelation.getName())
+        .inOntology(managedInOntology)
+        .outOntology(outOntology)
+        .createdAt(managedRelation.getCreatedAt())
+        .updatedAt(managedRelation.getUpdatedAt())
+        .build();
+  }
+
+  @Override
+  public void deleteRelation(@Nonnull OntologyNode inOntology, @Nonnull String name,
+      @Nonnull OntologyNode outOntology) {
+
+    final var relationNode = ontologyRelationNodeRepository
+        .findRelationBetweenNodes(inOntology.getId(), outOntology.getId(), name)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    inOntology.getRelations().remove(relationNode);
+
+    ontologyNodeRepository.save(inOntology);
+
+    ontologyRelationNodeRepository.delete(relationNode);
+  }
+
+  @Override
+  public OntologyRelationNodeItem updateRelation(@Nonnull OntologyNode inOntology, @Nonnull String name,
+      @Nonnull OntologyNode outOntology, @Nonnull String newName) {
+
+    final var relationNode = ontologyRelationNodeRepository
+        .findRelationBetweenNodes(inOntology.getId(), outOntology.getId(), name)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    final var exists = ontologyRelationNodeRepository
+        .existsRelationBetweenNodes(inOntology.getId(), outOntology.getId(), newName);
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "关系已存在");
+    }
+
+    relationNode.setName(newName);
+    relationNode.setTargetOntologyNode(outOntology);
+    final var managedRelation = ontologyRelationNodeRepository.save(relationNode);
+
+    return OntologyRelationNodeItem.builder()
+        .id(managedRelation.getId())
+        .name(managedRelation.getName())
+        .inOntology(inOntology)
+        .outOntology(outOntology)
+        .createdAt(managedRelation.getCreatedAt())
+        .updatedAt(managedRelation.getUpdatedAt())
+        .build();
+  }
+
   private void detachProperty(@Nonnull OntologyNode ontologyNode,
       @Nonnull List<OntologyPropertyNode> properties) {
 
@@ -195,7 +277,7 @@ public class OntologyServiceImpl implements OntologyService {
     ontologyPropertyNodeRepository.deleteAll(properties);
   }
 
-  private List<OntologyTreeDTO> buildTree(@Nonnull List<OntologyNode> allNodes) {
+  private List<OntologyTreeItem> buildTree(@Nonnull List<OntologyNode> allNodes) {
 
     final var rootNodes = allNodes.stream()
         .filter(node -> node.getParent() == null)
@@ -206,9 +288,9 @@ public class OntologyServiceImpl implements OntologyService {
         .collect(Collectors.toList());
   }
 
-  private @Nonnull OntologyTreeDTO convertToTreeDTO(@Nonnull OntologyNode node) {
+  private @Nonnull OntologyTreeItem convertToTreeDTO(@Nonnull OntologyNode node) {
 
-    final var dto = new OntologyTreeDTO();
+    final var dto = new OntologyTreeItem();
     dto.setId(node.getId());
     dto.setName(node.getName());
     dto.setCreatedAt(node.getCreatedAt());

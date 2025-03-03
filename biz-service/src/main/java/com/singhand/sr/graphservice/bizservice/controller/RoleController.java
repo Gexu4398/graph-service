@@ -10,6 +10,7 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.validator.NotSuperAdminRole
 import com.singhand.sr.graphservice.bizservice.aspect.annotation.bizlogger.BizLogger;
 import com.singhand.sr.graphservice.bizservice.aspect.annotation.resolver.Resolve;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Comparator;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "角色管理")
 @RestController
 @RequestMapping("role")
 @Slf4j

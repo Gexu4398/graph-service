@@ -22,9 +22,9 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Node("RelationNode")
+@Node("OntologyRelationNode")
 @Schema(description = "本体关系节点")
-public class RelationNode {
+public class OntologyRelationNode {
 
   @Id
   @GeneratedValue(UUIDStringGenerator.class)
@@ -56,7 +56,7 @@ public class RelationNode {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RelationNode v = (RelationNode) o;
+    OntologyRelationNode v = (OntologyRelationNode) o;
     return id != null && Objects.equals(id, v.id);
   }
 
