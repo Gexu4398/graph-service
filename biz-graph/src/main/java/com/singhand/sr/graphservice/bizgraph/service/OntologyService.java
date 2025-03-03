@@ -5,10 +5,11 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyPropertyItem;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
 import java.util.List;
 import java.util.Set;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -33,10 +34,13 @@ public interface OntologyService {
   OntologyNode updateProperty(OntologyNode ontology, OntologyPropertyNode propertyNode,
       UpdateOntologyPropertyRequest request);
 
-  OntologyRelationNodeItem newRelation(OntologyNode inOntology, String name, OntologyNode outOntology);
+  OntologyRelationNodeItem newRelation(OntologyNode inOntology, String name,
+      OntologyNode outOntology);
 
   void deleteRelation(OntologyNode inOntology, String name, OntologyNode outOntology);
 
-  OntologyRelationNodeItem updateRelation(OntologyNode inOntology, String name, OntologyNode outOntology,
-      String newName);
+  OntologyRelationNodeItem updateRelation(OntologyNode inOntology, String name,
+      OntologyNode outOntology, String newName);
+
+  Set<OntologyPropertyItem> getProperties(OntologyNode ontologyNode);
 }

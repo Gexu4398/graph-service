@@ -6,9 +6,9 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyPropertyItem;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -141,11 +141,11 @@ public class OntologyController {
   @Operation(summary = "查询本体属性")
   @GetMapping("{id}/property")
   @SneakyThrows
-  public Set<OntologyPropertyNode> getProperties(@PathVariable String id) {
+  public Set<OntologyPropertyItem> getProperties(@PathVariable String id) {
 
     final var ontologyNode = ontologyService.getOntology(id);
 
-    return ontologyNode.getProperties();
+    return ontologyService.getProperties(ontologyNode);
   }
 
   @Operation(summary = "新增本体属性")
@@ -223,7 +223,8 @@ public class OntologyController {
   @PutMapping("{inId}/relation/{outId}")
   @SneakyThrows
   @Transactional("bizNeo4jTransactionManager")
-  public OntologyRelationNodeItem updateRelation(@PathVariable String inId, @PathVariable String outId,
+  public OntologyRelationNodeItem updateRelation(@PathVariable String inId,
+      @PathVariable String outId,
       @RequestParam String name, @RequestParam String newName) {
 
     final var inOntology = ontologyService.getOntology(inId);

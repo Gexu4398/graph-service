@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
@@ -9,6 +10,7 @@ import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyRelationNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyPropertyItem;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
@@ -133,10 +135,9 @@ public class OntologyServiceImpl implements OntologyService {
   public OntologyNode newProperty(@Nonnull OntologyNode ontology,
       @Nonnull NewOntologyPropertyRequest request) {
 
-    final var exists = ontologyPropertyNodeRepository
-        .existsByOntologyIdAndName(ontology.getId(), request.getName());
-
-    if (exists) {
+    final var properties = getProperties(ontology);
+    final var anyMatch = properties.stream().anyMatch(it -> it.getName().equals(request.getName()));
+    if (anyMatch) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在");
     }
 
@@ -162,6 +163,8 @@ public class OntologyServiceImpl implements OntologyService {
     }
 
     detachProperty(ontology, properties);
+
+    ontologyPropertyNodeRepository.deleteAll(properties);
 
     ontologyNodeRepository.save(ontology);
   }
@@ -269,13 +272,47 @@ public class OntologyServiceImpl implements OntologyService {
         .build();
   }
 
+  @Override
+  public Set<OntologyPropertyItem> getProperties(@Nonnull OntologyNode ontologyNode) {
+
+    final var properties = new HashSet<OntologyPropertyItem>();
+
+    if (CollUtil.isNotEmpty(ontologyNode.getParent().getProperties())) {
+      final var propertyItems = ontologyNode.getParent().getProperties().stream()
+          .map(it -> BeanUtil.copyProperties(it, OntologyPropertyItem.class))
+          .collect(Collectors.toSet());
+      properties.addAll(propertyItems);
+    }
+
+    addParents(ontologyNode, properties);
+
+    return properties;
+  }
+
+  private void addParents(@Nonnull OntologyNode ontologyNode,
+      @Nonnull Set<OntologyPropertyItem> properties) {
+
+    if (null != ontologyNode.getParent()) {
+      if (CollUtil.isNotEmpty(ontologyNode.getParent().getProperties())) {
+        final var propertyItems = ontologyNode.getParent().getProperties().stream()
+            .map(it -> {
+              final var propertyItem = BeanUtil
+                  .copyProperties(it, OntologyPropertyItem.class);
+              propertyItem.setParent(true);
+              return propertyItem;
+            }).collect(Collectors.toSet());
+        properties.addAll(propertyItems);
+      }
+      addParents(ontologyNode.getParent(), properties);
+    }
+  }
+
   private void detachProperty(@Nonnull OntologyNode ontologyNode,
       @Nonnull List<OntologyPropertyNode> properties) {
 
     if (CollUtil.isNotEmpty(ontologyNode.getProperties())) {
       properties.forEach(ontologyNode.getProperties()::remove);
     }
-    ontologyPropertyNodeRepository.deleteAll(properties);
   }
 
   private List<OntologyTreeItem> buildTree(@Nonnull List<OntologyNode> allNodes) {
