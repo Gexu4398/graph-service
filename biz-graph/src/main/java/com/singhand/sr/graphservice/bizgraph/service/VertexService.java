@@ -1,7 +1,7 @@
 package com.singhand.sr.graphservice.bizgraph.service;
 
-import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
-import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;

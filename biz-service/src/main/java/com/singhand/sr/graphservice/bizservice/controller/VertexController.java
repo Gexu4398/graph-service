@@ -2,8 +2,8 @@ package com.singhand.sr.graphservice.bizservice.controller;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
-import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
-import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.PropertyValueRepository;

@@ -1,16 +1,20 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
 import cn.hutool.core.util.StrUtil;
-import com.singhand.sr.graphservice.bizgraph.model.NewOntologyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.dto.OntologyTreeDTO;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -39,15 +43,19 @@ public class OntologyController {
 
   private final OntologyNodeRepository ontologyNodeRepository;
 
+  private final OntologyPropertyNodeRepository ontologyPropertyNodeRepository;
+
   @Autowired
   public OntologyController(OntologyService ontologyService,
-      OntologyNodeRepository ontologyNodeRepository) {
+      OntologyNodeRepository ontologyNodeRepository,
+      OntologyPropertyNodeRepository ontologyPropertyNodeRepository) {
 
     this.ontologyService = ontologyService;
     this.ontologyNodeRepository = ontologyNodeRepository;
+    this.ontologyPropertyNodeRepository = ontologyPropertyNodeRepository;
   }
 
-  @Operation(summary = "获取本体")
+  @Operation(summary = "获取本体详情（不包含关系）")
   @GetMapping("{id}")
   @SneakyThrows
   public OntologyNode getOntology(@PathVariable String id) {
@@ -125,5 +133,42 @@ public class OntologyController {
     final var ontologyNode = ontologyService.getOntology(id);
 
     ontologyService.deleteOntology(ontologyNode);
+  }
+
+  @Operation(summary = "新增本体属性")
+  @PostMapping("{id}/property")
+  @SneakyThrows
+  @Transactional("bizNeo4jTransactionManager")
+  public OntologyNode newProperty(@PathVariable String id,
+      @Valid @RequestBody NewOntologyPropertyRequest request) {
+
+    final var ontology = ontologyService.getOntology(id);
+
+    return ontologyService.newProperty(ontology, request);
+  }
+
+  @Operation(summary = "修改本体属性")
+  @PutMapping("{id}/property/{propertyId}")
+  @SneakyThrows
+  public OntologyNode updateProperty(@PathVariable String id, @PathVariable String propertyId,
+      @Valid @RequestBody UpdateOntologyPropertyRequest request) {
+
+    final var ontology = ontologyService.getOntology(id);
+
+    final var propertyNode = ontologyPropertyNodeRepository.findById(propertyId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+
+    return ontologyService.updateProperty(ontology, propertyNode, request);
+  }
+
+  @Operation(summary = "删除本体属性")
+  @DeleteMapping("{id}/property")
+  @SneakyThrows
+  public void deleteProperties(@PathVariable String id,
+      @RequestParam(name = "propertyId") Set<String> propertyIds) {
+
+    final var ontology = ontologyService.getOntology(id);
+
+    ontologyService.deleteProperties(ontology, propertyIds);
   }
 }

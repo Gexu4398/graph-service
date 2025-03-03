@@ -2,8 +2,8 @@ package com.singhand.sr.graphservice.bizgraph.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.singhand.sr.graphservice.bizgraph.model.NewPropertyRequest;
-import com.singhand.sr.graphservice.bizgraph.model.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.PropertyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.PropertyValueNode;

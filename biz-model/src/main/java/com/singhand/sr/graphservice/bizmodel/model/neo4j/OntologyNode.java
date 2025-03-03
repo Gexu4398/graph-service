@@ -3,7 +3,9 @@ package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -37,6 +39,12 @@ public class OntologyNode {
 
   @Schema(description = "关系名称")
   private String name;
+
+  @Relationship(type = "HAS_PROPERTY", direction = Direction.OUTGOING)
+  @Builder.Default
+  @Schema(description = "属性")
+  @Exclude
+  private Set<OntologyPropertyNode> properties = new HashSet<>();
 
   @Relationship(type = "HAS_RELATION", direction = Direction.OUTGOING)
   @Builder.Default

@@ -1,4 +1,4 @@
-package com.singhand.sr.graphservice.bizgraph.model;
+package com.singhand.sr.graphservice.bizgraph.model.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

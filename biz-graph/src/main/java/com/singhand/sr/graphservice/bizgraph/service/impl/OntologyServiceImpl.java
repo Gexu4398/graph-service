@@ -2,17 +2,21 @@ package com.singhand.sr.graphservice.bizgraph.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.singhand.sr.graphservice.bizgraph.model.NewOntologyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.dto.OntologyTreeDTO;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
 import jakarta.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.neo4j.cypherdsl.core.Cypher;
-import org.neo4j.cypherdsl.core.Property;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +29,14 @@ public class OntologyServiceImpl implements OntologyService {
 
   private final OntologyNodeRepository ontologyNodeRepository;
 
+  private final OntologyPropertyNodeRepository ontologyPropertyNodeRepository;
+
   @Autowired
-  public OntologyServiceImpl(OntologyNodeRepository ontologyNodeRepository) {
+  public OntologyServiceImpl(OntologyNodeRepository ontologyNodeRepository,
+      OntologyPropertyNodeRepository ontologyPropertyNodeRepository) {
 
     this.ontologyNodeRepository = ontologyNodeRepository;
+    this.ontologyPropertyNodeRepository = ontologyPropertyNodeRepository;
   }
 
   @Override
@@ -112,6 +120,79 @@ public class OntologyServiceImpl implements OntologyService {
     }
 
     return ontologyNodeRepository.findAll(condition, pageable);
+  }
+
+  @Override
+  public OntologyNode newProperty(@Nonnull OntologyNode ontology,
+      @Nonnull NewOntologyPropertyRequest request) {
+
+    final var exists = ontologyNodeRepository.existsByIdAndPropertyName(ontology.getId(),
+        request.getName());
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在");
+    }
+
+    final var propertyNode = new OntologyPropertyNode();
+    propertyNode.setName(request.getName());
+    propertyNode.setType(request.getType());
+    propertyNode.setMultiple(request.isMultiple());
+    propertyNode.setDescription(request.getDescription());
+
+    final var managedPropertyNode = ontologyPropertyNodeRepository.save(propertyNode);
+
+    ontology.getProperties().add(managedPropertyNode);
+    return ontologyNodeRepository.save(ontology);
+  }
+
+  @Override
+  public void deleteProperties(@Nonnull OntologyNode ontology, @Nonnull Set<String> propertyIds) {
+
+    final var properties = ontologyPropertyNodeRepository.findAllById(propertyIds);
+
+    if (!CollUtil.containsAll(ontology.getProperties(), properties)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在");
+    }
+
+    detachProperty(ontology, properties);
+
+    ontologyNodeRepository.save(ontology);
+  }
+
+  @Override
+  public OntologyNode updateProperty(@Nonnull OntologyNode ontology,
+      @Nonnull OntologyPropertyNode propertyNode, UpdateOntologyPropertyRequest request) {
+
+    if (!ontology.getProperties().contains(propertyNode)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在");
+    }
+
+    if (propertyNode.getName().equals(request.getName())) {
+      return ontology;
+    }
+
+    final var exists = ontologyNodeRepository.existsByIdAndPropertyName(ontology.getId(),
+        request.getName());
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在");
+    }
+
+    propertyNode.setName(request.getName());
+    propertyNode.setDescription(request.getDescription());
+
+    ontologyPropertyNodeRepository.save(propertyNode);
+
+    return ontologyNodeRepository.save(ontology);
+  }
+
+  private void detachProperty(@Nonnull OntologyNode ontologyNode,
+      @Nonnull List<OntologyPropertyNode> properties) {
+
+    if (CollUtil.isNotEmpty(ontologyNode.getProperties())) {
+      properties.forEach(ontologyNode.getProperties()::remove);
+    }
+    ontologyPropertyNodeRepository.deleteAll(properties);
   }
 
   private List<OntologyTreeDTO> buildTree(@Nonnull List<OntologyNode> allNodes) {
