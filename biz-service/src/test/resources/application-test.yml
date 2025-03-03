@@ -1,0 +1,24 @@
+app:
+  datasource:
+    biz:
+      url: jdbc:h2:mem:tp
+      jdbcUrl: jdbc:h2:mem:tp
+      username: sa
+      password:
+      driver-class-name: org.h2.Driver
+      dialect: org.hibernate.dialect.H2Dialect
+      liquibase:
+        change-log: db/changelog/changelog-master.xml
+    keycloak:
+      url: jdbc:h2:mem:keycloak
+      jdbcUrl: jdbc:h2:mem:keycloak
+      username: sa
+      password:
+      driver-class-name: org.h2.Driver
+      dialect: org.hibernate.dialect.H2Dialect
+
+logging:
+  level:
+    org.springframework.orm.jpa: debug
+    org.springframework.transaction: debug
+    root: warn
