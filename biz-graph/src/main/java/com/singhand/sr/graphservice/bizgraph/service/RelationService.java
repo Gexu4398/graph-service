@@ -12,7 +12,7 @@ public interface RelationService {
 
   Page<RelationNode> getRelations(String keyword, Pageable pageable);
 
-  RelationNode updateRelation(RelationNode relation, String newName);
+  RelationNode updateRelation(RelationNode relation,String oldName, String newName);
 
   void deleteRelation(RelationNode relation);
 }

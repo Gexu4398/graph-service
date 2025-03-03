@@ -87,7 +87,7 @@ public class RelationController {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "关系模型已存在");
     }
 
-    return relationService.updateRelation(relation, newName);
+    return relationService.updateRelation(relation, relation.getName(), newName);
   }
 
   @Operation(summary = "删除关系模型")

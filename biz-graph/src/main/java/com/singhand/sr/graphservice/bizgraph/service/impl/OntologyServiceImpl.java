@@ -9,8 +9,8 @@ import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyPropertyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyRelationNode;
-import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyRelationNodeItem;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.response.OntologyTreeItem;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyPropertyNodeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyRelationNodeRepository;
@@ -195,7 +195,8 @@ public class OntologyServiceImpl implements OntologyService {
   }
 
   @Override
-  public OntologyRelationNodeItem newRelation(@Nonnull OntologyNode inOntology, @Nonnull String name,
+  public OntologyRelationNodeItem newRelation(@Nonnull OntologyNode inOntology,
+      @Nonnull String name,
       @Nonnull OntologyNode outOntology) {
 
     final var exists = ontologyRelationNodeRepository
@@ -240,8 +241,8 @@ public class OntologyServiceImpl implements OntologyService {
   }
 
   @Override
-  public OntologyRelationNodeItem updateRelation(@Nonnull OntologyNode inOntology, @Nonnull String name,
-      @Nonnull OntologyNode outOntology, @Nonnull String newName) {
+  public OntologyRelationNodeItem updateRelation(@Nonnull OntologyNode inOntology,
+      @Nonnull String name, @Nonnull OntologyNode outOntology, @Nonnull String newName) {
 
     final var relationNode = ontologyRelationNodeRepository
         .findRelationBetweenNodes(inOntology.getId(), outOntology.getId(), name)
