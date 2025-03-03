@@ -1,4 +1,8 @@
 app:
+  neo4j:
+    uri: bolt://localhost:7687
+    username: neo4j
+    password: neo4jexample
   datasource:
     biz:
       url: jdbc:h2:mem:tp

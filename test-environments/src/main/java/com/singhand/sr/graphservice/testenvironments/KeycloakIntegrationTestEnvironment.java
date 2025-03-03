@@ -50,11 +50,6 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
       .withLogConsumer(new Slf4jLogConsumer(log))
       .dependsOn(postgres);
 
-  public final static GenericContainer<?> neo4j = new GenericContainer<>(
-      DockerImageName.parse("neo4j:5.26.2"))
-      .withEnv("NEO4J_AUTH", "none")
-      .withExposedPorts(7474, 7687);
-
   @Autowired
   private KeycloakService keycloakService;
 

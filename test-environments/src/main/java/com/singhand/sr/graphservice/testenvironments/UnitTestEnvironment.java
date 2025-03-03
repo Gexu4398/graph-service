@@ -13,6 +13,9 @@ import org.mockito.Mockito;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.utility.DockerImageName;
 
 public class UnitTestEnvironment extends TestEnvironment {
 
@@ -25,11 +28,23 @@ public class UnitTestEnvironment extends TestEnvironment {
   @MockitoBean
   private MinioClient minioClient;
 
+  public final static GenericContainer<?> neo4j = new GenericContainer<>(
+      DockerImageName.parse("neo4j:5.26.2"))
+      .withEnv("NEO4J_AUTH", "neo4j/neo4jexample")
+      .withExposedPorts(7474, 7687);
+
   @DynamicPropertySource
   @SneakyThrows
   static void bindProperties(DynamicPropertyRegistry registry) {
+
+    final var network = Network.newNetwork();
+
+    neo4j.withNetwork(network).withNetworkAliases("neo4j").start();
+
     // 单元测试不依赖于外部环境，所以此处禁用 Zookeeper
     registry.add("spring.cloud.zookeeper.enabled", () -> false);
+    final var neo4jHost = String.format("bolt://%s:%s", neo4j.getHost(), neo4j.getMappedPort(7687));
+    registry.add("app.neo4j.uri", () -> neo4jHost);
   }
 
   @BeforeAll
