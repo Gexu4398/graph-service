@@ -87,7 +87,7 @@ public class VertexServiceImpl implements VertexService {
       Map<String, String> properties,
       Pageable pageable) {
 
-    final var vertex = Cypher.node("VertexNode").named("VertexNode");
+    final var vertex = Cypher.node("VertexNode").named("vertexNode");
     final var name = vertex.property("name");
     final var type = vertex.property("type");
 

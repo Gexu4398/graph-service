@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -50,6 +53,16 @@ public class OntologyController {
   public OntologyNode getOntology(@PathVariable String id) {
 
     return ontologyService.getOntology(id);
+  }
+
+  @Operation(summary = "查询本体")
+  @GetMapping
+  @SneakyThrows
+  public Page<OntologyNode> getOntologies(
+      @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
+      Pageable pageable) {
+
+    return ontologyService.getOntologies(keyword, pageable);
   }
 
   @Operation(summary = "获取本体树")
