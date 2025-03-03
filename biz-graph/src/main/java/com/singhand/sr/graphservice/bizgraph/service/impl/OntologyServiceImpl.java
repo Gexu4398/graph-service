@@ -182,10 +182,10 @@ public class OntologyServiceImpl implements OntologyService {
       return ontology;
     }
 
-    final var exists = ontologyPropertyNodeRepository
-        .existsByOntologyIdAndName(ontology.getId(), request.getName());
+    final var anyMatch = getProperties(ontology).stream()
+        .anyMatch(it -> it.getName().equals(request.getName()));
 
-    if (exists) {
+    if (anyMatch) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在");
     }
 
@@ -199,8 +199,7 @@ public class OntologyServiceImpl implements OntologyService {
 
   @Override
   public OntologyRelationNodeItem newRelation(@Nonnull OntologyNode inOntology,
-      @Nonnull String name,
-      @Nonnull OntologyNode outOntology) {
+      @Nonnull String name, @Nonnull OntologyNode outOntology) {
 
     final var exists = ontologyRelationNodeRepository
         .existsRelationBetweenNodes(inOntology.getId(), outOntology.getName(), name);
