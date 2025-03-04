@@ -1,6 +1,5 @@
 package com.singhand.sr.graphservice.bizmodel.datasource;
 
-import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.BaseRepositoryImpl;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.Map;
@@ -19,6 +18,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableJpaRepositories(
@@ -57,11 +57,12 @@ public class Biz {
     final var liquibase = new SpringLiquibase();
     liquibase.setDataSource(dataSource);
     liquibase.setChangeLog(properties.getChangeLog());
-    liquibase.setContexts(StrUtil.join(",", properties.getContexts()));
+    liquibase.setContexts(StringUtils.collectionToCommaDelimitedString(properties.getContexts()));
     liquibase.setDefaultSchema(properties.getDefaultSchema());
     liquibase.setDropFirst(properties.isDropFirst());
     liquibase.setShouldRun(properties.isEnabled());
-    liquibase.setLabelFilter(StrUtil.join(",", properties.getLabelFilter()));
+    liquibase.setLabelFilter(
+        StringUtils.collectionToCommaDelimitedString(properties.getLabelFilter()));
     liquibase.setChangeLogParameters(properties.getParameters());
     liquibase.setRollbackFile(properties.getRollbackFile());
     return liquibase;
