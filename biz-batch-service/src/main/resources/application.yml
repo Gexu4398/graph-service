@@ -33,10 +33,6 @@ spring:
       initialize-schema: always
   elasticsearch:
     uris: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
-  neo4j:
-    uri: bolt://${NRO4J_HOST:localhost}:7687
-    username: neo4j
-    password: neo4jexample
   kafka:
     listener:
       ack-mode: manual_immediate
@@ -58,6 +54,10 @@ minio:
 
 app:
   ddl-auto: validate
+  neo4j:
+    uri: bolt://${NRO4J_HOST:localhost}:7687
+    username: neo4j
+    password: neo4jexample
   datasource:
     biz:
       url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/graph
