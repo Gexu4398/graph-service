@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -49,20 +50,20 @@ public class Ontology {
   @Column(nullable = false)
   private String name;
 
-  @Builder.Default
+  @Default
   @MapKey(name = "key")
   @OneToMany(mappedBy = "ontology", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude
   private Map<String, OntologyProperty> properties = new HashMap<>();
 
-  @Builder.Default
+  @Default
   @OneToMany(mappedBy = "inOntology", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude
   private Set<RelationInstance> activeRelations = new HashSet<>();
 
-  @Builder.Default
+  @Default
   @OneToMany(mappedBy = "outOntology", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude

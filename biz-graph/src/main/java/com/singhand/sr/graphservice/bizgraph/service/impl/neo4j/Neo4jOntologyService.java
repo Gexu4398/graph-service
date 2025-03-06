@@ -1,0 +1,65 @@
+package com.singhand.sr.graphservice.bizgraph.service.impl.neo4j;
+
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
+import jakarta.annotation.Nonnull;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+@Slf4j
+public class Neo4jOntologyService {
+
+  private final OntologyNodeRepository ontologyNodeRepository;
+
+  @Autowired
+  public Neo4jOntologyService(OntologyNodeRepository ontologyNodeRepository) {
+
+    this.ontologyNodeRepository = ontologyNodeRepository;
+  }
+
+  public Optional<OntologyNode> getOntology(Long id) {
+
+    return ontologyNodeRepository.findById(id);
+  }
+
+  public OntologyNode newOntology(@Nonnull Ontology ontology, Long parentId) {
+
+    final var ontologyNode = new OntologyNode();
+    ontologyNode.setId(ontology.getID());
+    ontologyNode.setName(ontology.getName());
+
+    final var managedOntologyNode = ontologyNodeRepository.save(ontologyNode);
+
+    if (null != parentId) {
+      final var parent = ontologyNodeRepository.findById(parentId)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "父级本体不存在"));
+      parent.getChildren().add(managedOntologyNode);
+      ontologyNodeRepository.save(parent);
+    }
+
+    return managedOntologyNode;
+  }
+
+  public List<OntologyNode> getSubtreeNodesByIds(Set<Long> ids) {
+
+    return ontologyNodeRepository.findSubtreeNodesByIds(ids);
+  }
+
+  public List<OntologyNode> getAllSubtreeNodes(Long id) {
+
+    return ontologyNodeRepository.findAllSubtreeNodes(id);
+  }
+
+  public OntologyNode getSubtree(Long id) {
+
+    return ontologyNodeRepository.findSubtree(id);
+  }
+}

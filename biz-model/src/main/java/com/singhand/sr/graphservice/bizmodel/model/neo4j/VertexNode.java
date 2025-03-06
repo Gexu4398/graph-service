@@ -1,0 +1,45 @@
+package com.singhand.sr.graphservice.bizmodel.model.neo4j;
+
+import jakarta.validation.constraints.NotBlank;
+import java.util.HashSet;
+import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.ToString.Exclude;
+import org.springframework.data.annotation.Version;
+import org.springframework.data.neo4j.core.schema.Id;
+import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Relationship;
+
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Node("Vertex")
+public class VertexNode {
+
+  @Id
+  @NotBlank
+  private String id;
+
+  @NotBlank
+  private String name;
+
+  @NotBlank
+  private String type;
+
+  @Version
+  private Long version;
+
+  @Relationship(type = "CONNECTED_TO", direction = Relationship.Direction.OUTGOING)
+  @Default
+  @Exclude
+  private Set<EdgeRelation> edges = new HashSet<>();
+}
