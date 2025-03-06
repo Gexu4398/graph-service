@@ -5,7 +5,7 @@
                     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
                    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
-  <changeSet id="1740039828388-1" author="12716">
+  <changeSet id="1740039828388-1" author="gexu">
     <createSequence sequenceName="bizlog_seq" cacheSize="1" dataType="bigint"
                     maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
     <createTable tableName="bizlog">
@@ -35,4 +35,317 @@
       </column>
     </createTable>
   </changeSet>
+
+  <changeSet id="1741228772099-1" author="gexu">
+    <createTable tableName="vertex">
+      <column name="id" type="VARCHAR(255)">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_vertex"/>
+      </column>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="type" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="1741228727242-1" author="gexu">
+    <createSequence sequenceName="edge_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="edge">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_edge"/>
+      </column>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="scope" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="invertex_id" type="VARCHAR(255)"/>
+      <column name="outvertex_id" type="VARCHAR(255)"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="invertex_id" baseTableName="edge"
+                             constraintName="FK_EDGE_ON_INVERTEX" referencedColumnNames="id"
+                             referencedTableName="vertex"/>
+    <addForeignKeyConstraint baseColumnNames="outvertex_id" baseTableName="edge"
+                             constraintName="FK_EDGE_ON_OUTVERTEX" referencedColumnNames="id"
+                             referencedTableName="vertex"/>
+  </changeSet>
+
+  <changeSet id="1741228747683-1" author="gexu">
+    <createSequence sequenceName="property_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="property">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_property"/>
+      </column>
+      <column name="key_" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="edge_id" type="BIGINT"/>
+      <column name="vertex_id" type="VARCHAR(255)"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="edge_id" baseTableName="property"
+                             constraintName="FK_PROPERTY_ON_EDGE" referencedColumnNames="id"
+                             referencedTableName="edge"/>
+    <addForeignKeyConstraint baseColumnNames="vertex_id" baseTableName="property"
+                             constraintName="FK_PROPERTY_ON_VERTEX" referencedColumnNames="id"
+                             referencedTableName="vertex"/>
+  </changeSet>
+
+  <changeSet id="1741228762436-1" author="gexu">
+    <createSequence sequenceName="propertyvalue_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="propertyvalue">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_propertyvalue"/>
+      </column>
+      <column name="value_" type="text"/>
+      <column name="md5" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="property_id" type="BIGINT"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="property_id" baseTableName="propertyvalue"
+                             constraintName="FK_PROPERTYVALUE_ON_PROPERTY"
+                             referencedColumnNames="id" referencedTableName="property"/>
+  </changeSet>
+
+  <changeSet id="1741228738015-1" author="gexu">
+    <createSequence sequenceName="feature_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="feature">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_feature"/>
+      </column>
+      <column name="key_" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="value_" type="VARCHAR(255)"/>
+      <column name="propertyvalue_id" type="BIGINT"/>
+      <column name="edge_id" type="BIGINT"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="edge_id" baseTableName="feature"
+                             constraintName="FK_FEATURE_ON_EDGE" referencedColumnNames="id"
+                             referencedTableName="edge"/>
+    <addForeignKeyConstraint baseColumnNames="propertyvalue_id" baseTableName="feature"
+                             constraintName="FK_FEATURE_ON_PROPERTYVALUE" referencedColumnNames="id"
+                             referencedTableName="propertyvalue"/>
+  </changeSet>
+
+  <changeSet id="1741231143107-1" author="gexu">
+    <createSequence sequenceName="ontology_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="ontology">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ontology"/>
+      </column>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="1741231237932-1" author="gexu">
+    <createSequence sequenceName="relationmodel_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="relationmodel">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_relationmodel"/>
+      </column>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="1741231296715-1" author="gexu">
+    <createSequence sequenceName="relationinstance_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="relationinstance">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_relationinstance"/>
+      </column>
+      <column name="relationmodel_id" type="BIGINT"/>
+      <column name="inontology_id" type="BIGINT"/>
+      <column name="outontology_id" type="BIGINT"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="inontology_id" baseTableName="relationinstance"
+                             constraintName="FK_RELATIONINSTANCE_ON_INONTOLOGY"
+                             referencedColumnNames="id" referencedTableName="ontology"/>
+    <addForeignKeyConstraint baseColumnNames="outontology_id" baseTableName="relationinstance"
+                             constraintName="FK_RELATIONINSTANCE_ON_OUTONTOLOGY"
+                             referencedColumnNames="id" referencedTableName="ontology"/>
+    <addForeignKeyConstraint baseColumnNames="relationmodel_id" baseTableName="relationinstance"
+                             constraintName="FK_RELATIONINSTANCE_ON_RELATIONMODEL"
+                             referencedColumnNames="id" referencedTableName="relationmodel"/>
+  </changeSet>
+
+  <changeSet id="1741231186626-1" author="gexu">
+    <createSequence sequenceName="ontologyproperty_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="ontologyproperty">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ontologyproperty"/>
+      </column>
+      <column name="key_" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="value_" type="VARCHAR(255)"/>
+      <column name="ontology_id" type="BIGINT"/>
+      <column name="relationmodel_id" type="BIGINT"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="ontology_id" baseTableName="ontologyproperty"
+                             constraintName="FK_ONTOLOGYPROPERTY_ON_ONTOLOGY"
+                             referencedColumnNames="id" referencedTableName="ontology"/>
+    <addForeignKeyConstraint baseColumnNames="relationmodel_id" baseTableName="ontologyproperty"
+                             constraintName="FK_ONTOLOGYPROPERTY_ON_RELATIONMODEL"
+                             referencedColumnNames="id" referencedTableName="relationmodel"/>
+  </changeSet>
+
+  <changeSet id="1741241403866-1" author="gexu">
+    <createSequence sequenceName="datasourcecontent_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="datasourcecontent">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_datasourcecontent"/>
+      </column>
+      <column name="text" type="text"/>
+      <column name="html" type="text"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="1741233238913-1" author="gexu">
+    <createSequence sequenceName="datasource_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="datasource">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_datasource"/>
+      </column>
+      <column name="title" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="sourcetype" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="contenttype" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="description" type="text"/>
+      <column name="creator" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="datasourcecontent_id" type="bigint"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="datasourcecontent_id" baseTableName="datasource"
+                             constraintName="FK_DATASOURCE_ON_DATASOURCECONTENT"
+                             referencedColumnNames="id" referencedTableName="datasourcecontent"/>
+  </changeSet>
+
+  <changeSet id="1741233297043-1" author="gexu">
+    <createTable tableName="vertex_datasource">
+      <column name="datasources_id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_vertex_datasource"/>
+      </column>
+      <column name="vertices_id" type="VARCHAR(255)">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_vertex_datasource"/>
+      </column>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="datasources_id" baseTableName="vertex_datasource"
+                             constraintName="fk_verdat_on_datasource" referencedColumnNames="id"
+                             referencedTableName="datasource"/>
+    <addForeignKeyConstraint baseColumnNames="vertices_id" baseTableName="vertex_datasource"
+                             constraintName="fk_verdat_on_vertex" referencedColumnNames="id"
+                             referencedTableName="vertex"/>
+  </changeSet>
+
+  <changeSet id="1741242113696-1" author="gexu">
+    <createTable tableName="vertex_tags">
+      <column name="vertex_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tags" type="VARCHAR(255)"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="vertex_id" baseTableName="vertex_tags"
+                             constraintName="fk_vertex_tags_on_vertex" referencedColumnNames="id"
+                             referencedTableName="vertex"/>
+  </changeSet>
+
+  <changeSet id="1741229026854-1" author="gexu">
+    <createIndex tableName="vertex" indexName="idx_vertex_name">
+      <column name="name"/>
+    </createIndex>
+    <createIndex tableName="vertex" indexName="idx_vertex_type">
+      <column name="type"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741229425752-1" author="gexu">
+    <addUniqueConstraint tableName="property" constraintName="uk3145q2vp3vo7wcw37aedrdu5u"
+                         columnNames="vertex_id, key_"/>
+    <addUniqueConstraint tableName="property" constraintName="uk4jb2f2av2wjihqlohltbul3rv"
+                         columnNames="edge_id, key_"/>
+  </changeSet>
+
+  <changeSet id="1741229600578-1" author="gexu">
+    <addUniqueConstraint tableName="feature" constraintName="ukqy59lb9oynduk45xxf4xml4or"
+                         columnNames="key_, propertyvalue_id, edge_id"/>
+  </changeSet>
+
+  <changeSet id="1741229729275-1" author="gexu">
+    <addUniqueConstraint tableName="edge" constraintName="ukeve339er96gbvhhetfuqy95t9"
+                         columnNames="name, scope, invertex_id, outvertex_id"/>
+  </changeSet>
+
+  <changeSet id="1741229816196-1" author="gexu">
+    <createIndex tableName="edge" indexName="idxad6ppgsw9dmo666258qcgppt">
+      <column name="invertex_id"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741229843440-1" author="gexu">
+    <createIndex tableName="edge" indexName="idxnq0duqeeckce2jhds82q5b52v">
+      <column name="outvertex_id"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741229892890-1" author="gexu">
+    <createIndex tableName="bizlog" indexName="idx_bizlog_targetType_targetId">
+      <column name="targettype"/>
+      <column name="targetid"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741233340759-1" author="gexu">
+    <createIndex tableName="datasource" indexName="idx_datasource_sourceType">
+      <column name="sourcetype"/>
+    </createIndex>
+    <createIndex tableName="datasource" indexName="idx_datasource_contentType">
+      <column name="contenttype"/>
+    </createIndex>
+    <createIndex tableName="datasource" indexName="idx_datasource_createdAt">
+      <column name="createdat"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>

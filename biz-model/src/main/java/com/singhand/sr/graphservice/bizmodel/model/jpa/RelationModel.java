@@ -1,26 +1,32 @@
 package com.singhand.sr.graphservice.bizmodel.model.jpa;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
-import jakarta.persistence.Transient;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.ToString.Exclude;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -32,37 +38,29 @@ import org.hibernate.annotations.UpdateTimestamp;
 @ToString
 @Entity
 @Builder
-@Table(
-    indexes = @Index(name = "idx_bizlog_targetType_targetId", columnList = "targetType, targetId")
-)
-public class BizLog {
+public class RelationModel {
 
   @Id
-  @SequenceGenerator(name = "bizlog_seq", sequenceName = "bizlog_seq", allocationSize = 1)
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bizlog_seq")
+  @SequenceGenerator(name = "relationmodel_seq", sequenceName = "relationmodel_seq", allocationSize = 1)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "relationmodel_seq")
   @JsonProperty("id")
   private Long ID;
 
   @Column(nullable = false)
-  private String module;
+  private String name;
 
-  @Column(name = "type_", nullable = false)
-  private String type;
+  @Builder.Default
+  @MapKey(name = "key")
+  @OneToMany(mappedBy = "relationModel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Exclude
+  private Map<String, OntologyProperty> properties = new HashMap<>();
 
-  @Embedded
-  private BizLogTarget target;
-
-  @Column(columnDefinition = "text")
-  private String content;
-
-  @Column(nullable = false)
-  private String ip;
-
-  @Column(nullable = false)
-  private String username;
-
-  @Column
-  private String userRole;
+  @Builder.Default
+  @OneToMany(mappedBy = "relationModel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Exclude
+  private Set<RelationInstance> passiveRelations = new HashSet<>();
 
   @Column
   @Temporal(TemporalType.TIMESTAMP)
@@ -74,9 +72,6 @@ public class BizLog {
   @UpdateTimestamp
   private Calendar updatedAt;
 
-  @Transient
-  private boolean favorite;
-
   @Override
   public boolean equals(Object o) {
 
@@ -86,8 +81,8 @@ public class BizLog {
     if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
       return false;
     }
-    BizLog v = (BizLog) o;
-    return ID != null && Objects.equals(ID, v.ID);
+    RelationModel vertex = (RelationModel) o;
+    return ID != null && Objects.equals(ID, vertex.ID);
   }
 
   @Override

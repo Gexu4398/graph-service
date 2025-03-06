@@ -1,18 +1,19 @@
 package com.singhand.sr.graphservice.bizmodel.model.jpa;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
-import jakarta.persistence.Transient;
 import java.util.Calendar;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
@@ -32,37 +33,32 @@ import org.hibernate.annotations.UpdateTimestamp;
 @ToString
 @Entity
 @Builder
-@Table(
-    indexes = @Index(name = "idx_bizlog_targetType_targetId", columnList = "targetType, targetId")
-)
-public class BizLog {
+@Schema
+@Table(indexes = {
+    @Index(columnList = "ontology_ID, key_", unique = true),
+    @Index(columnList = "relationmodel_ID, key_", unique = true)
+})
+public class OntologyProperty {
 
   @Id
-  @SequenceGenerator(name = "bizlog_seq", sequenceName = "bizlog_seq", allocationSize = 1)
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bizlog_seq")
+  @SequenceGenerator(name = "ontologyproperty_seq", sequenceName = "ontologyproperty_seq", allocationSize = 1)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ontologyproperty_seq")
   @JsonProperty("id")
   private Long ID;
 
-  @Column(nullable = false)
-  private String module;
+  @Column(name = "key_", nullable = false)
+  private String key;
 
-  @Column(name = "type_", nullable = false)
-  private String type;
+  @Column(name = "value_")
+  private String value;
 
-  @Embedded
-  private BizLogTarget target;
+  @ManyToOne
+  @JsonIgnore
+  private Ontology ontology;
 
-  @Column(columnDefinition = "text")
-  private String content;
-
-  @Column(nullable = false)
-  private String ip;
-
-  @Column(nullable = false)
-  private String username;
-
-  @Column
-  private String userRole;
+  @ManyToOne
+  @JsonIgnore
+  private RelationModel relationModel;
 
   @Column
   @Temporal(TemporalType.TIMESTAMP)
@@ -74,9 +70,6 @@ public class BizLog {
   @UpdateTimestamp
   private Calendar updatedAt;
 
-  @Transient
-  private boolean favorite;
-
   @Override
   public boolean equals(Object o) {
 
@@ -86,7 +79,7 @@ public class BizLog {
     if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
       return false;
     }
-    BizLog v = (BizLog) o;
+    OntologyProperty v = (OntologyProperty) o;
     return ID != null && Objects.equals(ID, v.ID);
   }
 

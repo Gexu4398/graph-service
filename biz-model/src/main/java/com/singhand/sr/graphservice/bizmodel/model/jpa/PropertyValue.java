@@ -33,6 +33,7 @@ import lombok.ToString.Exclude;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -50,6 +51,7 @@ public class PropertyValue {
   private Long ID;
 
   @Column(name = "value_", columnDefinition = "text")
+  @FullTextField(name = "value_", analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
   private String value;
 
   @Column(nullable = false)

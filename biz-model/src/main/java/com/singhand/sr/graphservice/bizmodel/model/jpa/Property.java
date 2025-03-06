@@ -26,6 +26,9 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Exclude;
 import org.hibernate.Hibernate;
+import org.hibernate.search.engine.backend.types.ObjectStructure;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -47,11 +50,13 @@ public class Property {
   private Long ID;
 
   @Column(name = "key_", nullable = false)
+  @KeywordField(name = "key_keyword")
   private String key;
 
   @Builder.Default
   @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @Exclude
+  @IndexedEmbedded(structure = ObjectStructure.NESTED, includePaths = {"value_"})
   private Set<PropertyValue> values = new HashSet<>();
 
   @ManyToOne
