@@ -19,6 +19,13 @@ spring:
   threads:
     virtual:
       enabled: true
+  ai:
+    openai:
+      api-key: 7257b5ab-1cd1-424e-902d-79d08bc11442
+      base-url: http://10.1.141.33:8000
+      chat:
+        options:
+          model: SCHAT
   cloud:
     zookeeper:
       connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}
