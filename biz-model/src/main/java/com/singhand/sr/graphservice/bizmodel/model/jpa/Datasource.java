@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
@@ -26,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -35,7 +38,6 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.search.engine.backend.types.Highlightable;
-import org.hibernate.search.engine.backend.types.Norms;
 import org.hibernate.search.engine.backend.types.ObjectStructure;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
@@ -85,7 +87,10 @@ public class Datasource {
   @Column(columnDefinition = "text")
   private String description;
 
-  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  @Column(columnDefinition = "text")
+  private String url;
+
+  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   @Exclude
   @JsonIgnore
   @IndexedEmbedded(structure = ObjectStructure.NESTED, includePaths = {"text"})
@@ -94,11 +99,17 @@ public class Datasource {
   @Column(nullable = false)
   private String creator;
 
-  @Builder.Default
+  @Default
   @ManyToMany(mappedBy = "datasources", fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude
   private Set<Vertex> vertices = new HashSet<>();
+
+  @Default
+  @OneToMany(mappedBy = "datasource", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Exclude
+  private Set<Evidence> evidences = new HashSet<>();
 
   @Column
   @Temporal(TemporalType.TIMESTAMP)
@@ -135,5 +146,19 @@ public class Datasource {
   public int hashCode() {
 
     return getClass().hashCode();
+  }
+
+  public void addContent(@Nonnull DatasourceContent datasourceContent) {
+
+    datasourceContent.setDatasource(this);
+    setDatasourceContent(datasourceContent);
+  }
+
+  public void detachContent() {
+
+    if (null != getDatasourceContent()) {
+      getDatasourceContent().setDatasource(null);
+      setDatasourceContent(null);
+    }
   }
 }

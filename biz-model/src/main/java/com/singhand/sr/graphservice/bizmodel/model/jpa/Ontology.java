@@ -10,8 +10,12 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import java.util.Calendar;
@@ -37,6 +41,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 @ToString
 @Entity
 @Builder
+@Table(
+    indexes = {
+        @Index(name = "idx_ontology_name", columnList = "name"),
+    }
+)
 public class Ontology {
 
   @Id
@@ -47,6 +56,18 @@ public class Ontology {
 
   @Column(nullable = false)
   private String name;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parent_id")
+  @JsonIgnore
+  @Exclude
+  private Ontology parent;
+
+  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
+  @Exclude
+  @Default
+  private Set<Ontology> children = new HashSet<>();
 
   @Default
   @OneToMany(mappedBy = "ontology", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -99,5 +120,11 @@ public class Ontology {
 
     property.setOntology(this);
     getProperties().add(property);
+  }
+
+  public void addChild(@Nonnull Ontology ontology) {
+
+    ontology.setParent(this);
+    getChildren().add(ontology);
   }
 }

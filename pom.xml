@@ -71,6 +71,13 @@
     <commons-text.version>1.12.0</commons-text.version>
     <testcontainers-neo4j.version>1.20.5</testcontainers-neo4j.version>
     <spring-ai.version>1.0.0-M6</spring-ai.version>
+    <apache.poi-version>5.4.0</apache.poi-version>
+    <docx4j-version>11.5.2</docx4j-version>
+    <pdfbox-version>3.0.4</pdfbox-version>
+    <pdf2dom-version>3.0.0</pdf2dom-version>
+    <jai-imageio-jpeg2000.version>1.4.0</jai-imageio-jpeg2000.version>
+    <jbig2-imageio.version>3.0.4</jbig2-imageio.version>
+    <jsoup-version>1.19.1</jsoup-version>
     <maven.build.timestamp.format>yyyMMddHHmmss</maven.build.timestamp.format>
   </properties>
 
@@ -223,6 +230,11 @@
         <version>${commons-io.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>fontbox</artifactId>
+        <version>${pdfbox-version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>neo4j</artifactId>
         <version>${testcontainers-neo4j.version}</version>
@@ -238,6 +250,82 @@
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         <version>${spring-ai.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>${apache.poi-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-scratchpad</artifactId>
+        <version>${apache.poi-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.docx4j</groupId>
+        <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+        <version>${docx4j-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.docx4j</groupId>
+        <artifactId>docx4j-JAXB-MOXy</artifactId>
+        <version>${docx4j-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>jakarta.mail</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.docx4j</groupId>
+        <artifactId>docx4j-export-fo</artifactId>
+        <version>${docx4j-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>xmlgraphics-commons</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>pdfbox</artifactId>
+        <version>${pdfbox-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.se-be</groupId>
+        <artifactId>pdf2dom</artifactId>
+        <version>${pdf2dom-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jai-imageio</groupId>
+        <artifactId>jai-imageio-jpeg2000</artifactId>
+        <version>${jai-imageio-jpeg2000.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>jbig2-imageio</artifactId>
+        <version>${jbig2-imageio.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jsoup</groupId>
+        <artifactId>jsoup</artifactId>
+        <version>${jsoup-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

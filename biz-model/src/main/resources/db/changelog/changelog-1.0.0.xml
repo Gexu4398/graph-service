@@ -153,9 +153,13 @@
       <column name="name" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
+      <column name="parent_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
+    <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="ontology"
+                             constraintName="FK_ONTOLOGY_ON_PARENT" referencedColumnNames="id"
+                             referencedTableName="ontology"/>
   </changeSet>
 
   <changeSet id="1741231237932-1" author="gexu">
@@ -249,6 +253,7 @@
         <constraints nullable="false"/>
       </column>
       <column name="description" type="text"/>
+      <column name="url" type="text"/>
       <column name="creator" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
@@ -289,6 +294,47 @@
                              constraintName="fk_vertex_tags_on_vertex" referencedColumnNames="id"
                              referencedTableName="vertex"/>
   </changeSet>
+
+  <changeSet id="1741342529918-1" author="gexu">
+    <createSequence sequenceName="picture_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="picture">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_picture"/>
+      </column>
+      <column name="url" type="text">
+        <constraints nullable="false"/>
+      </column>
+      <column name="information" type="text"/>
+      <column name="creator" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="1741344281301-1" author="gexu">
+    <createSequence sequenceName="evidence_seq" cacheSize="1" dataType="bigint"
+                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
+    <createTable tableName="evidence">
+      <column name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="pk_evidence"/>
+      </column>
+      <column name="content" type="text"/>
+      <column name="datasource_id" type="BIGINT"/>
+      <column name="picture_id" type="BIGINT"/>
+      <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+    <addForeignKeyConstraint baseColumnNames="datasource_id" baseTableName="evidence"
+                             constraintName="FK_EVIDENCE_ON_DATASOURCE" referencedColumnNames="id"
+                             referencedTableName="datasource"/>
+    <addForeignKeyConstraint baseColumnNames="picture_id" baseTableName="evidence"
+                             constraintName="FK_EVIDENCE_ON_PICTURE" referencedColumnNames="id"
+                             referencedTableName="picture"/>
+  </changeSet>
+
 
   <changeSet id="1741229026854-1" author="gexu">
     <createIndex tableName="vertex" indexName="idx_vertex_name">
@@ -358,6 +404,18 @@
     <createIndex tableName="ontologyproperty" indexName="idx_relationmodel_id_name">
       <column name="relationmodel_id"/>
       <column name="name"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741340043615-1" author="singhand">
+    <createIndex tableName="ontology" indexName="idx_ontology_name">
+      <column name="name"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741342615000-1" author="singhand">
+    <createIndex tableName="picture" indexName="idx7aky5i15idmqb5sj0kptdq8e9">
+      <column name="url"/>
     </createIndex>
   </changeSet>
 

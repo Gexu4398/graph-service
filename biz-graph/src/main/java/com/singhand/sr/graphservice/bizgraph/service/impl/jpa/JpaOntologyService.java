@@ -51,15 +51,13 @@ public class JpaOntologyService implements OntologyService {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "本体已存在");
     }
 
-    if (null != parentId) {
-      final var existsParent = ontologyRepository.existsById(parentId);
-      if (!existsParent) {
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "父本体不存在");
-      }
-    }
-
     final var ontology = new Ontology();
     ontology.setName(name);
+    if (null != parentId) {
+      final var parent = ontologyRepository.findById(parentId)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "父本体不存在"));
+      parent.addChild(ontology);
+    }
 
     final var managedOntology = ontologyRepository.save(ontology);
     neo4jOntologyService.newOntology(managedOntology, parentId);

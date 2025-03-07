@@ -16,7 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @WithMockUser(username = "admin")
@@ -27,6 +30,10 @@ public class OntologyControllerTest extends BaseTestEnvironment {
 
   @Autowired
   private OntologyNodeRepository ontologyNodeRepository;
+
+  @Autowired
+  @Qualifier("bizTransactionManager")
+  private PlatformTransactionManager bizTransactionManager;
 
   @Test
   @SneakyThrows
@@ -109,5 +116,10 @@ public class OntologyControllerTest extends BaseTestEnvironment {
             .param("id", String.valueOf(ontology.getID())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()", equalTo(1)));
+
+    new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
+      final var managedOntology = ontologyRepository.findById(ontology.getID()).orElseThrow();
+      Assertions.assertEquals(1, managedOntology.getChildren().size());
+    });
   }
 }
