@@ -1,9 +1,10 @@
-package com.singhand.sd.gdtpservice.bizservice.config;
+package com.singhand.sr.graphservice.bizservice.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import jakarta.annotation.Nonnull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -30,7 +31,7 @@ public class RedisConfig {
     return template;
   }
 
-  private ObjectMapper createObjectMapper() {
+  private @Nonnull ObjectMapper createObjectMapper() {
 
     final var objectMapper = new ObjectMapper();
     objectMapper.setVisibility(PropertyAccessor.ALL, Visibility.ANY);
