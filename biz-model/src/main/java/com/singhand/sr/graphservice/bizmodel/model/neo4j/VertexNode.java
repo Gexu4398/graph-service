@@ -14,6 +14,7 @@ import lombok.ToString.Exclude;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Property;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 @Getter
@@ -30,9 +31,11 @@ public class VertexNode {
   private String id;
 
   @NotBlank
+  @Property
   private String name;
 
   @NotBlank
+  @Property
   private String type;
 
   @Version

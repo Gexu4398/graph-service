@@ -23,8 +23,26 @@ public interface OntologyNodeRepository extends BaseNodeRepository<OntologyNode,
   List<OntologyNode> findSubtreeNodesByIds(Collection<Long> ids);
 
   @Query("""
-          MATCH (parent:Ontology {id: $id})-[r:CHILD_OF*]->(child:Ontology)
-          RETURN parent, collect(child) AS children
+      MATCH (root:Ontology)
+      WHERE root.id = $id
+      CALL apoc.path.subgraphAll(root, {
+           relationshipFilter: 'CHILD_OF>',
+           bfs: true
+      })
+      YIELD nodes, relationships
+      RETURN root, nodes, relationships
       """)
-  OntologyNode findSubtree(Long id);
+  List<OntologyNode> findSubtree(Long id);
+
+  @Query("""
+      MATCH (root:Ontology)
+      WHERE NOT EXISTS(()-[:CHILD_OF]->(root))
+      CALL apoc.path.subgraphAll(root, {
+           relationshipFilter: 'CHILD_OF>',
+           bfs: true
+      })
+      YIELD nodes, relationships
+      RETURN root, nodes, relationships
+      """)
+  List<OntologyNode> findAllSubtreeNodes();
 }

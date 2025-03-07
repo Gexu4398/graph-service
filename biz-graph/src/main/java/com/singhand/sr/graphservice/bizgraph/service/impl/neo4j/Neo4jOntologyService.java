@@ -58,8 +58,13 @@ public class Neo4jOntologyService {
     return ontologyNodeRepository.findAllSubtreeNodes(id);
   }
 
-  public OntologyNode getSubtree(Long id) {
+  public List<OntologyNode> getSubtree(Long id) {
 
     return ontologyNodeRepository.findSubtree(id);
+  }
+
+  public List<OntologyNode> buildOntologyTree() {
+
+    return ontologyNodeRepository.findAllSubtreeNodes();
   }
 }

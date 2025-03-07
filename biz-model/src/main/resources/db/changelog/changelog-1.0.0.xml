@@ -204,10 +204,9 @@
       <column name="id" type="BIGINT">
         <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ontologyproperty"/>
       </column>
-      <column name="key_" type="VARCHAR(255)">
+      <column name="name" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
-      <column name="value_" type="VARCHAR(255)"/>
       <column name="ontology_id" type="BIGINT"/>
       <column name="relationmodel_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
@@ -345,6 +344,20 @@
     </createIndex>
     <createIndex tableName="datasource" indexName="idx_datasource_createdAt">
       <column name="createdat"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741326967866-1" author="singhand">
+    <createIndex tableName="ontologyproperty" indexName="idx_ontology_id_name">
+      <column name="ontology_id"/>
+      <column name="name"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="1741326995408-1" author="singhand">
+    <createIndex tableName="ontologyproperty" indexName="idx_relationmodel_id_name">
+      <column name="relationmodel_id"/>
+      <column name="name"/>
     </createIndex>
   </changeSet>
 

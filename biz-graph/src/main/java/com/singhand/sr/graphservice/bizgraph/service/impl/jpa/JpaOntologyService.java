@@ -3,13 +3,17 @@ package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,11 +26,15 @@ public class JpaOntologyService implements OntologyService {
 
   private final Neo4jOntologyService neo4jOntologyService;
 
+  private final OntologyPropertyRepository ontologyPropertyRepository;
+
   public JpaOntologyService(OntologyRepository ontologyRepository,
-      Neo4jOntologyService neo4jOntologyService) {
+      Neo4jOntologyService neo4jOntologyService,
+      OntologyPropertyRepository ontologyPropertyRepository) {
 
     this.ontologyRepository = ontologyRepository;
     this.neo4jOntologyService = neo4jOntologyService;
+    this.ontologyPropertyRepository = ontologyPropertyRepository;
   }
 
   @Override
@@ -75,13 +83,43 @@ public class JpaOntologyService implements OntologyService {
         .collect(Collectors.toSet());
   }
 
+  @Override
+  public List<OntologyNode> getTree(Long id) {
+
+    if (null == id) {
+      return neo4jOntologyService.buildOntologyTree();
+    }
+
+    return neo4jOntologyService.getSubtree(id);
+  }
+
+  @Override
+  public void newOntologyProperty(Ontology ontology, String key) {
+
+    final var exists = ontologyPropertyRepository.existsByOntologyAndName(ontology, key);
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "本体属性已存在");
+    }
+
+    final var property = new OntologyProperty();
+    property.setName(key);
+    ontology.addProperty(property);
+    ontologyPropertyRepository.save(property);
+  }
+
+  @Override
+  public Page<OntologyProperty> getProperties(Ontology ontology, Pageable pageable) {
+
+    return ontologyPropertyRepository.findByOntology(ontology, pageable);
+  }
+
   /**
    * 获取指定ID的Ontology子树
    *
    * @param id Ontology节点的唯一标识符，类型为Long
    * @return 返回以该ID节点为根的子树结构，封装为OntologyNode对象
    */
-  public OntologyNode getSubtree(Long id) {
+  public List<OntologyNode> getSubtree(Long id) {
 
     return neo4jOntologyService.getSubtree(id);
   }

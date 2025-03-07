@@ -50,11 +50,10 @@ public class RelationModel {
   private String name;
 
   @Builder.Default
-  @MapKey(name = "key")
   @OneToMany(mappedBy = "relationModel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude
-  private Map<String, OntologyProperty> properties = new HashMap<>();
+  private Set<OntologyProperty> properties = new HashSet<>();
 
   @Builder.Default
   @OneToMany(mappedBy = "relationModel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

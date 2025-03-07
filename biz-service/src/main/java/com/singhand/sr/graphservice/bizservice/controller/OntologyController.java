@@ -2,10 +2,15 @@ package com.singhand.sr.graphservice.bizservice.controller;
 
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -47,5 +52,36 @@ public class OntologyController {
       @RequestParam(required = false, defaultValue = "") Long parentId) {
 
     return ontologyService.newOntology(name, parentId);
+  }
+
+  @Operation(summary = "获取本体属性")
+  @GetMapping("{id}/property")
+  @SneakyThrows
+  public Page<OntologyProperty> getProperties(@PathVariable Long id, Pageable pageable) {
+
+    final var ontology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    return ontologyService.getProperties(ontology, pageable);
+  }
+
+  @Operation(summary = "新增本体属性")
+  @PostMapping("{id}/property")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void newProperty(@PathVariable Long id, @RequestParam String propertyName) {
+
+    final var ontology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyService.newOntologyProperty(ontology, propertyName);
+  }
+
+  @Operation(summary = "获取本体树")
+  @GetMapping(path = "tree")
+  @SneakyThrows
+  public List<OntologyNode> getTree(@RequestParam(required = false, defaultValue = "") Long id) {
+
+    return ontologyService.getTree(id);
   }
 }

@@ -34,10 +34,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Entity
 @Builder
 @Schema
-@Table(indexes = {
-    @Index(columnList = "ontology_ID, key_", unique = true),
-    @Index(columnList = "relationmodel_ID, key_", unique = true)
-})
+@Table(
+    indexes = {
+        @Index(name = "idx_ontology_id_name", columnList = "ontology_ID, name"),
+        @Index(name = "idx_relationmodel_id_name", columnList = "relationmodel_ID, name")
+    })
 public class OntologyProperty {
 
   @Id
@@ -46,11 +47,8 @@ public class OntologyProperty {
   @JsonProperty("id")
   private Long ID;
 
-  @Column(name = "key_", nullable = false)
-  private String key;
-
-  @Column(name = "value_")
-  private String value;
+  @Column(nullable = false)
+  private String name;
 
   @ManyToOne
   @JsonIgnore

@@ -33,6 +33,10 @@ spring:
       initialize-schema: always
   elasticsearch:
     uris: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   kafka:
     listener:
       ack-mode: manual_immediate

@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.bizmodel.model.jpa;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,15 +10,12 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.MapKey;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -51,11 +49,10 @@ public class Ontology {
   private String name;
 
   @Default
-  @MapKey(name = "key")
   @OneToMany(mappedBy = "ontology", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude
-  private Map<String, OntologyProperty> properties = new HashMap<>();
+  private Set<OntologyProperty> properties = new HashSet<>();
 
   @Default
   @OneToMany(mappedBy = "inOntology", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -96,5 +93,11 @@ public class Ontology {
   public int hashCode() {
 
     return getClass().hashCode();
+  }
+
+  public void addProperty(@Nonnull OntologyProperty property) {
+
+    property.setOntology(this);
+    getProperties().add(property);
   }
 }

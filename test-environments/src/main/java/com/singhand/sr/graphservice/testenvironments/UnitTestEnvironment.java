@@ -7,12 +7,14 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakService;
 import io.minio.MinioClient;
 import java.util.Optional;
 import java.util.Set;
+import jakarta.annotation.Nonnull;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.Mockito;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.Network;
@@ -32,11 +34,14 @@ public class UnitTestEnvironment extends TestEnvironment {
   public final static Neo4jContainer<?> neo4j = new Neo4jContainer<>(
       DockerImageName.parse("neo4j:5.26.2"))
       .withEnv("NEO4J_AUTH", "neo4j/neo4jexample")
+      .withEnv("NEO4J_dbms_security_procedures_unrestricted", "apoc.*")
+      .withEnv("NEO4J_PLUGINS", "[\"apoc\"]")
+      .withClasspathResourceMapping("./init-neo4j/plugins", "/plugins", BindMode.READ_ONLY)
       .withExposedPorts(7474, 7687);
 
   @DynamicPropertySource
   @SneakyThrows
-  static void bindProperties(DynamicPropertyRegistry registry) {
+  static void bindProperties(@Nonnull DynamicPropertyRegistry registry) {
 
     final var network = Network.newNetwork();
 
