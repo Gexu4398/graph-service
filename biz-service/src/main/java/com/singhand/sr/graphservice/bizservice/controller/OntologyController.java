@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
+import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
@@ -134,15 +135,16 @@ public class OntologyController {
   }
 
   @Operation(summary = "删除本体属性")
-  @DeleteMapping("{id}/property/{propertyName}")
+  @DeleteMapping("{id}/property")
   @SneakyThrows
   @Transactional("bizTransactionManager")
-  public void deleteProperty(@PathVariable Long id, @PathVariable String propertyName) {
+  public void deleteProperties(@PathVariable Long id,
+      @Valid @RequestBody DeletePropertyRequest request) {
 
     final var ontology = ontologyService.getOntology(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
-    ontologyService.deleteOntologyProperty(ontology, propertyName);
+    ontologyService.deleteOntologyProperties(ontology, request);
   }
 
   @Operation(summary = "获取本体树")

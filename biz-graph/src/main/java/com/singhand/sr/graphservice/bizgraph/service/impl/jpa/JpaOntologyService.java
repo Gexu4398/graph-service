@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 
+import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
@@ -172,7 +173,10 @@ public class JpaOntologyService implements OntologyService {
   }
 
   @Override
-  public void deleteOntologyProperty(Ontology ontology, String propertyName) {
+  public void deleteOntologyProperty(Long id, String propertyName) {
+
+    final var ontology = getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
     final var ontologyProperty = ontologyPropertyRepository
         .findByOntologyAndName(ontology, propertyName)
@@ -183,6 +187,15 @@ public class JpaOntologyService implements OntologyService {
     ontologyPropertyRepository.delete(ontologyProperty);
 
     ontologyRepository.save(ontology);
+  }
+
+  @Override
+  public void deleteOntologyProperties(@Nonnull Ontology ontology,
+      @Nonnull DeletePropertyRequest request) {
+
+    final var properties = ontologyPropertyRepository.findAllById(request.getPropertyIds());
+
+    properties.forEach(it -> deleteOntologyProperty(ontology.getID(), it.getName()));
   }
 
   /**
