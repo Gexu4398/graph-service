@@ -16,6 +16,7 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PictureRepository;
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -97,15 +98,9 @@ public class ImportDatasourceTasklet implements Tasklet {
     final var object = StrUtil.subAfter(StrUtil.isNotBlank(url) ? url : datasource.getUrl(), bucket,
         true);
 
-    String tempFilename;
-    if (StrUtil.endWithIgnoreCase(object, ".datasource")) {
-      final var fileName = StrUtil.subBefore(object, ".datasource", true);
-      tempFilename = Path.of(System.getProperty("java.io.tmpdir"),
-          UUID.randomUUID() + "." + FileNameUtil.extName(fileName)).toString();
-    } else {
-      tempFilename = Path.of(System.getProperty("java.io.tmpdir"),
-          UUID.randomUUID() + "." + FileNameUtil.extName(object)).toString();
-    }
+    final var tempFilename = Path.of(System.getProperty("java.io.tmpdir"),
+        UUID.randomUUID() + "." + FileNameUtil.extName(object)).toString();
+
     log.info("正在导入数据源.......... 文件名={}", object);
 
     minioClient.downloadObject(DownloadObjectArgs.builder()
@@ -160,7 +155,8 @@ public class ImportDatasourceTasklet implements Tasklet {
   }
 
   @SneakyThrows
-  private Set<String> savePictures(Datasource datasource, DatasourceContent datasourceContent) {
+  private Set<String> savePictures(@Nonnull Datasource datasource,
+      @Nonnull DatasourceContent datasourceContent) {
 
     final var document = Jsoup.parse(datasourceContent.getHtml());
 
@@ -180,7 +176,7 @@ public class ImportDatasourceTasklet implements Tasklet {
         .collect(Collectors.toSet());
   }
 
-  private Evidence newEvidence(Datasource datasource) {
+  private Evidence newEvidence(@Nonnull Datasource datasource) {
 
     final var evidence = new Evidence();
     evidence.setContent(datasource.getTitle());
