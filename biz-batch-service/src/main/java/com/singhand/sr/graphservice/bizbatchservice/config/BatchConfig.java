@@ -84,11 +84,11 @@ public class BatchConfig {
     log.info("使用 ThreadPoolTaskExecutor");
     log.info("corePoolSize: {}", taskExecutorProperties.getCorePoolSize());
     log.info("maxPoolSize: {}", taskExecutorProperties.getMaxPoolSize());
-    log.info("queueCapacity: {}", taskExecutorProperties.getSetQueueCapacity());
+    log.info("queueCapacity: {}", taskExecutorProperties.getQueueCapacity());
     final var executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(taskExecutorProperties.getCorePoolSize());
     executor.setMaxPoolSize(taskExecutorProperties.getMaxPoolSize());
-    executor.setQueueCapacity(taskExecutorProperties.getSetQueueCapacity());
+    executor.setQueueCapacity(taskExecutorProperties.getQueueCapacity());
     executor.setThreadNamePrefix("ThreadPoolTaskExecutor-");
     return executor;
   }

@@ -15,5 +15,5 @@ public class TaskExecutorProperties {
 
   private int maxPoolSize = 10;
 
-  private int setQueueCapacity = 100;
+  private int queueCapacity = 100;
 }
