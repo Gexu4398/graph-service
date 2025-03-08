@@ -60,6 +60,7 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
     final var network = Network.newNetwork();
 
     postgres.withNetwork(network).withNetworkAliases("postgres").start();
+    final var graphJdbcUrl = postgres.getJdbcUrl().replace("test", "graph");
     final var keycloakJdbcUrl = postgres.getJdbcUrl().replace("test", "keycloak");
     keycloak.withNetwork(network).withNetworkAliases("keycloak").start();
     registry.add("keycloak.auth-server-url", () -> String.format("http://%s:%d/auth",
@@ -67,6 +68,17 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
     registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
         () -> String.format("http://%s:%s/auth/realms/console-app/protocol/openid-connect/certs",
             keycloak.getHost(), keycloak.getMappedPort(8080)));
+
+    // 业务数据源配置
+    registry.add("app.datasource.biz.url", () -> graphJdbcUrl);
+    registry.add("app.datasource.biz.jdbcUrl", () -> graphJdbcUrl);
+    registry.add("app.datasource.biz.username", () -> "root");
+    registry.add("app.datasource.biz.password", () -> "example");
+    registry.add("app.datasource.biz.driver-class-name", () -> "org.postgresql.Driver");
+    registry.add("app.datasource.biz.dialect",
+        () -> "org.hibernate.dialect.PostgreSQLDialect");
+
+    // Keycloak 数据源配置
     registry.add("app.datasource.keycloak.url", () -> keycloakJdbcUrl);
     registry.add("app.datasource.keycloak.jdbcUrl", () -> keycloakJdbcUrl);
     registry.add("app.datasource.keycloak.username", () -> "root");

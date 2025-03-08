@@ -1,22 +1,28 @@
 package com.singhand.sr.graphservice.bizservice.unit.controller;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizservice.BaseTestEnvironment;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntology;
+import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -72,19 +78,89 @@ public class OntologyControllerTest extends BaseTestEnvironment {
 
   @Test
   @SneakyThrows
+  void testUpdateOntology() {
+
+    final var name = faker.name().name();
+    final var name_2 = faker.name().name();
+
+    mockMvc.perform(post("/ontology")
+            .param("name", name))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name", equalTo(name)));
+
+    mockMvc.perform(post("/ontology")
+            .param("name", name_2))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name", equalTo(name_2)));
+
+    final var ontology = ontologyRepository.findByName(name).orElseThrow();
+
+    final var name_3 = faker.name().name();
+
+    mockMvc.perform(put("/ontology/" + ontology.getID())
+            .param("name", name_2))
+        .andExpect(status().isConflict());
+
+    mockMvc.perform(put("/ontology/" + ontology.getID())
+            .param("name", name))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name", equalTo(name)));
+
+    mockMvc.perform(put("/ontology/" + ontology.getID())
+            .param("name", name_3))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name", equalTo(name_3)));
+  }
+
+  @Test
+  @SneakyThrows
+  void testDeleteOntology() {
+
+    final var properties = Set.of(faker.lorem().sentence(), faker.lorem().sentence());
+
+    final var ontology = dataHelper.newOntology("test_ontology_01", null, properties);
+
+    final var ontology_2 = dataHelper
+        .newOntology("test_ontology_02", "test_ontology_01", properties);
+
+    final var ontology_3 = dataHelper
+        .newOntology("test_ontology_03", "test_ontology_02", properties);
+
+    final var ontology_4 = dataHelper
+        .newOntology("test_ontology_04", "test_ontology_03", properties);
+
+    mockMvc.perform(delete("/ontology/" + ontology.getID()))
+        .andExpect(status().isOk());
+
+    final var managedOntology = ontologyRepository.findById(ontology.getID()).orElse(null);
+    final var managedOntology_2 = ontologyRepository.findById(ontology_2.getID()).orElse(null);
+    final var managedOntology_3 = ontologyRepository.findById(ontology_3.getID()).orElse(null);
+    final var managedOntology_4 = ontologyRepository.findById(ontology_4.getID()).orElse(null);
+    Assertions.assertNull(managedOntology);
+    Assertions.assertNull(managedOntology_2);
+    Assertions.assertNull(managedOntology_3);
+    Assertions.assertNull(managedOntology_4);
+  }
+
+  @Test
+  @SneakyThrows
   @MockOntology(name = "test_ontology_01")
   void testNewOntologyProperty() {
 
     final var ontology = ontologyRepository.findByName("test_ontology_01").orElseThrow();
 
-    final var character = faker.lorem().sentence();
+    final var propertyRequest = new NewOntologyPropertyRequest();
+    propertyRequest.setName(faker.lorem().sentence());
+    propertyRequest.setType("STRING");
 
     mockMvc.perform(post("/ontology/" + ontology.getID() + "/property")
-            .param("propertyName", character))
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(JSONUtil.toJsonStr(propertyRequest)))
         .andExpect(status().isOk());
 
     mockMvc.perform(post("/ontology/" + ontology.getID() + "/property")
-            .param("propertyName", character))
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(JSONUtil.toJsonStr(propertyRequest)))
         .andExpect(status().isConflict());
 
     mockMvc.perform(get("/ontology/" + ontology.getID() + "/property")
@@ -92,7 +168,7 @@ public class OntologyControllerTest extends BaseTestEnvironment {
             .param("size", "10"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()", equalTo(1)))
-        .andExpect(jsonPath("$.content[0].name", equalTo(character)));
+        .andExpect(jsonPath("$.content[0].name", equalTo(propertyRequest.getName())));
   }
 
   @Test

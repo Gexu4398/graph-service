@@ -46,7 +46,7 @@ public class Picture {
   @JsonProperty("id")
   private Long ID;
 
-  @Column(nullable = false, columnDefinition = "text")
+  @Column(nullable = false, length = 2000)
   private String url;
 
   @Column(columnDefinition = "text")

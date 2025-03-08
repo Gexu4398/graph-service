@@ -3,7 +3,10 @@ package com.singhand.sr.graphservice.testenvironments;
 import com.github.javafaker.Faker;
 import com.singhand.sr.graphservice.testenvironments.helper.DataHelper;
 import com.singhand.sr.graphservice.testenvironments.listener.MyTestExecutionListener;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Locale;
 import javax.sql.DataSource;
 import lombok.Cleanup;
@@ -12,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -58,23 +63,74 @@ abstract class TestEnvironment {
   @Qualifier("bizDataSource")
   private DataSource bizDataSource;
 
+  @Autowired
+  private Driver neo4jDriver;
+
   // 此处不能用 BeforeEach，否则会清空 CustomTestExecutionListener 创建的数据
   @AfterEach
   @SneakyThrows
   void afterEach() {
 
     bizEntityManager.clear();
+    // 获取数据库连接
     @Cleanup final var conn = bizDataSource.getConnection();
-    // 禁用约束
-    conn.createStatement().execute("SET REFERENTIAL_INTEGRITY = FALSE");
-    // 罗列表对象
-    final var tables = conn.createStatement().executeQuery("show tables");
-    // 删除表数据
-    while (tables.next()) {
-      final var tableName = String.format("%s.%s", tables.getString(2), tables.getString(1));
-      conn.createStatement().execute("truncate table " + tableName);
+    final var metaData = conn.getMetaData();
+    // 获取数据库类型
+    final var dbProductName = metaData.getDatabaseProductName().toLowerCase();
+
+    if (dbProductName.contains("h2")) {
+      clearH2Database(conn);
+    } else if (dbProductName.contains("postgresql")) {
+      clearPostgresDatabase(conn);
+    } else {
+      throw new UnsupportedOperationException("未知数据库连接，无法清理数据: " + dbProductName);
     }
-    // 启用约束
+
+    // 清空 Neo4j 数据
+    try (Session session = neo4jDriver.session()) {
+      session.run("MATCH (n) DETACH DELETE n");
+    }
+  }
+
+  /**
+   * 清空 H2 数据库（适用于 H2 内存数据库）
+   */
+  private void clearH2Database(@Nonnull Connection conn) throws SQLException {
+    // 禁用外键约束
+    conn.createStatement().execute("SET REFERENTIAL_INTEGRITY = FALSE");
+
+    // 获取数据库中的所有表
+    final var tables = conn.createStatement().executeQuery("SHOW TABLES");
+
+    // 遍历所有表并执行 TRUNCATE
+    while (tables.next()) {
+      final var tableName = tables.getString(1);
+      conn.createStatement().execute("TRUNCATE TABLE " + tableName);
+    }
+
+    // 重新启用外键约束
     conn.createStatement().execute("SET REFERENTIAL_INTEGRITY = TRUE");
+  }
+
+  /**
+   * 清空 PostgreSQL 数据库
+   */
+  private void clearPostgresDatabase(@Nonnull Connection conn) throws SQLException {
+    // 禁用外键约束
+    conn.createStatement().execute("SET session_replication_role = 'replica'");
+
+    // 获取所有用户表
+    final var tables = conn.createStatement().executeQuery(
+        "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+    );
+
+    // 遍历所有表并执行 TRUNCATE
+    while (tables.next()) {
+      final var tableName = tables.getString(1);
+      conn.createStatement().execute("TRUNCATE TABLE " + tableName + " CASCADE");
+    }
+
+    // 重新启用外键约束
+    conn.createStatement().execute("SET session_replication_role = 'origin'");
   }
 }

@@ -26,12 +26,12 @@ spring:
       chat:
         options:
           model: SCHAT
-    vectorstore:
-      elasticsearch:
-        initialize-schema: true
-        index-name: custom-index
-        dimensions: 1536
-        similarity: cosine
+#    vectorstore:
+#      elasticsearch:
+#        initialize-schema: true
+#        index-name: custom-index
+#        dimensions: 1536
+#        similarity: cosine
   cloud:
     zookeeper:
       connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}

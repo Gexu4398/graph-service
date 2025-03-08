@@ -1,13 +1,14 @@
 package com.singhand.sr.graphservice.bizgraph.service;
 
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface OntologyService {
 
@@ -19,7 +20,11 @@ public interface OntologyService {
 
   List<OntologyNode> getTree(Long id);
 
-  void newOntologyProperty(Ontology ontology, String key);
+  void newOntologyProperty(Ontology ontology, NewOntologyPropertyRequest request);
 
   Page<OntologyProperty> getProperties(Ontology ontology, Pageable pageable);
+
+  Ontology updateOntology(Ontology ontology, String name);
+
+  void deleteOntology(Long id);
 }

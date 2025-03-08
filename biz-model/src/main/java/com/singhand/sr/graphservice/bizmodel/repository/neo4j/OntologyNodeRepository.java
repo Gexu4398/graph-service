@@ -45,4 +45,11 @@ public interface OntologyNodeRepository extends BaseNodeRepository<OntologyNode,
       RETURN root, nodes, relationships
       """)
   List<OntologyNode> findAllSubtreeNodes();
+
+  @Query("""
+      MATCH (o:Ontology)-[:CHILD_OF*]->(child)
+      WHERE id(o) = $id
+      DETACH DELETE child, o
+      """)
+  void deleteOntologyAndChildren(Long id);
 }

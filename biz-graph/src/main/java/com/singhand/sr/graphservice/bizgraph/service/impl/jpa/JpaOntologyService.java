@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
@@ -7,6 +8,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -92,15 +94,17 @@ public class JpaOntologyService implements OntologyService {
   }
 
   @Override
-  public void newOntologyProperty(Ontology ontology, String key) {
+  public void newOntologyProperty(Ontology ontology, NewOntologyPropertyRequest request) {
 
-    final var exists = ontologyPropertyRepository.existsByOntologyAndName(ontology, key);
+    final var exists = ontologyPropertyRepository
+        .existsByOntologyAndName(ontology, request.getName());
     if (exists) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "本体属性已存在");
     }
 
     final var property = new OntologyProperty();
-    property.setName(key);
+    property.setName(request.getName());
+    property.setType(request.getType());
     ontology.addProperty(property);
     ontologyPropertyRepository.save(property);
   }
@@ -109,6 +113,39 @@ public class JpaOntologyService implements OntologyService {
   public Page<OntologyProperty> getProperties(Ontology ontology, Pageable pageable) {
 
     return ontologyPropertyRepository.findByOntology(ontology, pageable);
+  }
+
+  @Override
+  public Ontology updateOntology(Ontology ontology, String name) {
+
+    final var exists = ontologyRepository.existsByName(name);
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "本体已存在");
+    }
+
+    ontology.setName(name);
+
+    final var managedOntology = ontologyRepository.save(ontology);
+
+    neo4jOntologyService.updateOntology(managedOntology);
+
+    return managedOntology;
+  }
+
+  @Override
+  public void deleteOntology(Long id) {
+
+    getOntology(id).ifPresent(it -> {
+      new HashSet<>(it.getChildren()).forEach(child -> deleteOntology(child.getID()));
+
+      it.detachRelations();
+      it.detachChildren();
+
+      ontologyRepository.delete(it);
+
+      neo4jOntologyService.deleteOntology(id);
+    });
   }
 
   /**

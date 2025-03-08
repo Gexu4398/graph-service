@@ -211,6 +211,9 @@
       <column name="name" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
+      <column name="type" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
       <column name="ontology_id" type="BIGINT"/>
       <column name="relationmodel_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
@@ -253,7 +256,7 @@
         <constraints nullable="false"/>
       </column>
       <column name="description" type="text"/>
-      <column name="url" type="text"/>
+      <column name="url" type="VARCHAR(2000)"/>
       <column name="creator" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
@@ -302,7 +305,7 @@
       <column name="id" type="BIGINT">
         <constraints nullable="false" primaryKey="true" primaryKeyName="pk_picture"/>
       </column>
-      <column name="url" type="text">
+      <column name="url" type="VARCHAR(2000)">
         <constraints nullable="false"/>
       </column>
       <column name="information" type="text"/>

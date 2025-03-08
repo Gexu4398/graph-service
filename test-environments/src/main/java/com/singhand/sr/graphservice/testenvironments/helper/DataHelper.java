@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.testenvironments.helper;
 
 import cn.hutool.core.util.StrUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Group;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Role;
@@ -14,6 +15,9 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakRoleService
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakUserService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +26,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @Component
 @Validated
@@ -113,8 +113,32 @@ public class DataHelper {
     return ontologyService.newOntology(name, null);
   }
 
-  public void newOntologyProperty(Ontology ontology, String key) {
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public Ontology newOntology(String name, String parent, Set<String> properties) {
 
-    ontologyService.newOntologyProperty(ontology, key);
+    if (StrUtil.isNotBlank(parent)) {
+      final var parentOntology = ontologyRepository.findByName(parent)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+      return ontologyService.newOntology(name, parentOntology.getID());
+    }
+    final var ontology = ontologyService.newOntology(name, null);
+
+    properties.forEach(it -> {
+      final var request = new NewOntologyPropertyRequest();
+      request.setName(it);
+      request.setType("STRING");
+      ontologyService.newOntologyProperty(ontology, request);
+    });
+
+    return ontologyRepository.findById(ontology.getID()).orElseThrow();
+  }
+
+  public void newOntologyProperty(Ontology ontology, String name, String type) {
+
+    final var request = new NewOntologyPropertyRequest();
+    request.setName(name);
+    request.setType(type);
+    ontologyService.newOntologyProperty(ontology, request);
   }
 }

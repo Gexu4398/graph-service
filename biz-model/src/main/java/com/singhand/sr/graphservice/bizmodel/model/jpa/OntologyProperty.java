@@ -50,6 +50,9 @@ public class OntologyProperty {
   @Column(nullable = false)
   private String name;
 
+  @Column(nullable = false)
+  private String type;
+
   @ManyToOne
   @JsonIgnore
   private Ontology ontology;

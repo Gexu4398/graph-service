@@ -87,7 +87,7 @@ public class Datasource {
   @Column(columnDefinition = "text")
   private String description;
 
-  @Column(columnDefinition = "text")
+  @Column(length = 2000)
   private String url;
 
   @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

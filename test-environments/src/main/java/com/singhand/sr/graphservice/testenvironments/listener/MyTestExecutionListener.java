@@ -56,7 +56,7 @@ public class MyTestExecutionListener implements TestExecutionListener, Ordered {
       final var ontology = dataHelper.newOntology(mockOntology.name(), null);
 
       for (final var property : mockOntology.properties()) {
-        dataHelper.newOntologyProperty(ontology, property.key());
+        dataHelper.newOntologyProperty(ontology, property.name(), property.type());
       }
     });
   }

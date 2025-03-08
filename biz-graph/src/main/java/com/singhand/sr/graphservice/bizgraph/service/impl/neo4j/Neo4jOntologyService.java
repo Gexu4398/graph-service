@@ -39,7 +39,7 @@ public class Neo4jOntologyService {
     final var managedOntologyNode = ontologyNodeRepository.save(ontologyNode);
 
     if (null != parentId) {
-      final var parent = ontologyNodeRepository.findById(parentId)
+      final var parent = getOntology(parentId)
           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "父级本体不存在"));
       parent.getChildren().add(managedOntologyNode);
       ontologyNodeRepository.save(parent);
@@ -66,5 +66,21 @@ public class Neo4jOntologyService {
   public List<OntologyNode> buildOntologyTree() {
 
     return ontologyNodeRepository.findAllSubtreeNodes();
+  }
+
+  public void updateOntology(@Nonnull Ontology ontology) {
+
+    final var ontologyNode = getOntology(ontology.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyNode.setName(ontology.getName());
+
+    ontologyNodeRepository.save(ontologyNode);
+  }
+
+  public void deleteOntology(Long id) {
+
+    ontologyNodeRepository.findById(id)
+        .ifPresent(it -> ontologyNodeRepository.deleteOntologyAndChildren(it.getId()));
   }
 }

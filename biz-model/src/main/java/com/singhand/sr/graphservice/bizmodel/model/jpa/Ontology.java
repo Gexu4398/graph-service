@@ -127,4 +127,29 @@ public class Ontology {
     ontology.setParent(this);
     getChildren().add(ontology);
   }
+
+  public void detachRelations() {
+
+    getActiveRelations().forEach(relation -> {
+      relation.getOutOntology().getPassiveRelations().remove(relation);
+      relation.setInOntology(null);
+      relation.setOutOntology(null);
+    });
+    getActiveRelations().clear();
+
+    getPassiveRelations().forEach(relation -> {
+      relation.getInOntology().getActiveRelations().remove(relation);
+      relation.setInOntology(null);
+      relation.setOutOntology(null);
+    });
+    getPassiveRelations().clear();
+  }
+
+  public void detachChildren() {
+
+    if (null != getChildren()) {
+      getChildren().forEach(child -> child.setParent(null));
+      getChildren().clear();
+    }
+  }
 }
