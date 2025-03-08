@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 
+import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
@@ -7,6 +8,7 @@ import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology_;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,6 +49,22 @@ public class JpaOntologyService implements OntologyService {
   public Optional<Ontology> getOntology(Long id) {
 
     return ontologyRepository.findById(id);
+  }
+
+  @Override
+  public Page<Ontology> getOntologies(String keyword, Pageable pageable) {
+
+    return ontologyRepository.findAll(Specification.where(nameLike(keyword)), pageable);
+  }
+
+  private @Nonnull Specification<Ontology> nameLike(String keyword) {
+
+    return (root, query, criteriaBuilder) -> {
+      if (StrUtil.isBlank(keyword)) {
+        return criteriaBuilder.and();
+      }
+      return criteriaBuilder.like(root.get(Ontology_.NAME), "%" + keyword.trim() + "%");
+    };
   }
 
   @Override

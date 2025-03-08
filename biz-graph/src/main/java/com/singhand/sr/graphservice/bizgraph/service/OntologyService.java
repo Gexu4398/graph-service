@@ -16,6 +16,8 @@ public interface OntologyService {
 
   Optional<Ontology> getOntology(Long id);
 
+  Page<Ontology> getOntologies(String keyword, Pageable pageable);
+
   Ontology newOntology(String name, Long parentId);
 
   Set<String> getAllSubOntologies(Set<String> names);

@@ -56,6 +56,15 @@ public class OntologyController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
   }
 
+  @Operation(summary = "查询本体")
+  @GetMapping
+  public Page<Ontology> getOntologies(
+      @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
+      Pageable pageable) {
+
+    return ontologyService.getOntologies(keyword, pageable);
+  }
+
   @Operation(summary = "新增本体")
   @PostMapping
   @SneakyThrows
