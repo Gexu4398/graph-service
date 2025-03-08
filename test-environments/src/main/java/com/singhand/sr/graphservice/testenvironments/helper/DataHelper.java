@@ -14,8 +14,11 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.repository.UserEntityReposi
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakGroupService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakRoleService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakUserService;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import java.util.List;
 import java.util.Optional;
@@ -50,11 +53,14 @@ public class DataHelper {
 
   private final RelationModelService relationModelService;
 
+  private final DatasourceRepository datasourceRepository;
+
   @Autowired
   public DataHelper(KeycloakUserService keycloakUserService,
       KeycloakGroupService keycloakGroupService, KeycloakRoleService keycloakRoleService,
       UserEntityRepository userEntityRepository, OntologyService ontologyService,
-      OntologyRepository ontologyRepository, RelationModelService relationModelService) {
+      OntologyRepository ontologyRepository, RelationModelService relationModelService,
+      DatasourceRepository datasourceRepository) {
 
     this.keycloakUserService = keycloakUserService;
     this.keycloakGroupService = keycloakGroupService;
@@ -63,6 +69,7 @@ public class DataHelper {
     this.ontologyService = ontologyService;
     this.ontologyRepository = ontologyRepository;
     this.relationModelService = relationModelService;
+    this.datasourceRepository = datasourceRepository;
   }
 
   public Optional<UserEntity> getUser(String username) {
@@ -154,5 +161,24 @@ public class DataHelper {
   public RelationModel newRelationModel(String name) {
 
     return relationModelService.newRelationModel(name);
+  }
+
+  public Datasource newDatasource(String name, String sourceType, String contentType, String text,
+      String html, String url) {
+
+    final var datasource = new Datasource();
+    datasource.setTitle(NAME_PREFIX + name);
+    datasource.setUrl(url);
+    datasource.setContentType(contentType);
+    datasource.setSourceType(sourceType);
+    datasource.setCreator("admin");
+
+    final var datasourceContent = new DatasourceContent();
+    datasourceContent.setText(text);
+    datasourceContent.setHtml(html);
+
+    datasource.addContent(datasourceContent);
+
+    return datasourceRepository.save(datasource);
   }
 }

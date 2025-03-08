@@ -57,6 +57,10 @@ minio:
   bucket-notification-topic: minio_bucket_notification
 
 app:
+  hibernate:
+    search:
+      backend:
+        hosts: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
   ddl-auto: validate
   neo4j:
     uri: bolt://${NRO4J_HOST:localhost}:7687

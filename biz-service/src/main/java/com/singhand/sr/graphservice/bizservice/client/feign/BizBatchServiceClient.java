@@ -5,6 +5,7 @@ import java.util.Collection;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(value = "biz-batch-service", path = "/api/v1")
@@ -20,4 +21,8 @@ public interface BizBatchServiceClient {
   @GetMapping("/batch-job/latest")
   Collection<OperationResponse> getJobs(@RequestParam String username,
       @RequestParam String jobName);
+
+  @PostMapping("/batch-job/datasource/{id}/user/{username}/uuid/{uuid}:import")
+  OperationResponse launchImportDatasourceJob(@PathVariable Long id, @PathVariable String username,
+      @PathVariable String uuid);
 }

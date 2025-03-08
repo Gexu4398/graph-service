@@ -12,9 +12,11 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,13 +44,16 @@ public class BatchJobController {
 
   private final JobLauncher jobLauncher;
 
+  private final Job importDatasourceJob;
+
   @Autowired
   public BatchJobController(JobExplorer jobExplorer, JobRepository jobRepository,
-      JobLauncher jobLauncher) {
+      JobLauncher jobLauncher, Job importDatasourceJob) {
 
     this.jobExplorer = jobExplorer;
     this.jobRepository = jobRepository;
     this.jobLauncher = jobLauncher;
+    this.importDatasourceJob = importDatasourceJob;
   }
 
   @GetMapping("{id}")
@@ -95,6 +101,22 @@ public class BatchJobController {
         .filter(Objects::nonNull)
         .map(this::jobExecution2OperationResponse)
         .toList();
+  }
+
+  @Operation(summary = "数据源导入")
+  @PostMapping("datasource/{id}/user/{username}/uuid/{uuid}:import")
+  @SneakyThrows
+  public OperationResponse importDatasource(@PathVariable Long id, @PathVariable String username,
+      @PathVariable String uuid) {
+
+    final var jobExecution = jobLauncher.run(importDatasourceJob, new JobParametersBuilder()
+        .addLong("id", id, false)
+        .addString("username", username, false)
+        .addString("group_id", uuid, false)
+        .addString("instance_id", UUID.randomUUID().toString(), true)
+        .toJobParameters());
+
+    return jobExecution2OperationResponse(jobExecution);
   }
 
   private @Nonnull OperationResponse jobExecution2OperationResponse(
