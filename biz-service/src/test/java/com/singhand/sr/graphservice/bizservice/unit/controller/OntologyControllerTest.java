@@ -10,11 +10,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizservice.BaseTestEnvironment;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntology;
+import com.singhand.sr.graphservice.testenvironments.mock.MockOntologyProperty;
+import java.util.HashSet;
 import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -169,6 +173,69 @@ public class OntologyControllerTest extends BaseTestEnvironment {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()", equalTo(1)))
         .andExpect(jsonPath("$.content[0].name", equalTo(propertyRequest.getName())));
+  }
+
+  @Test
+  @SneakyThrows
+  @MockOntology(name = "test_ontology_01", properties = {
+      @MockOntologyProperty(name = "test_property_01", type = "STRING")
+  })
+  void testUpdateOntologyProperty() {
+
+    final var ontology = ontologyRepository.findByName("test_ontology_01").orElseThrow();
+
+    final var propertyRequest = new UpdateOntologyPropertyRequest();
+    propertyRequest.setOldName("test_property_01");
+    propertyRequest.setNewName(faker.lorem().sentence());
+    propertyRequest.setType(faker.lorem().sentence());
+
+    mockMvc.perform(put("/ontology/" + ontology.getID() + "/property")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(JSONUtil.toJsonStr(propertyRequest)))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(get("/ontology/" + ontology.getID() + "/property")
+            .param("page", "0")
+            .param("size", "10"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()", equalTo(1)))
+        .andExpect(jsonPath("$.content[0].name", equalTo(propertyRequest.getNewName())))
+        .andExpect(jsonPath("$.content[0].type", equalTo(propertyRequest.getType())));
+  }
+
+  @Test
+  @SneakyThrows
+  @MockOntology(name = "test_ontology_01", properties = {
+      @MockOntologyProperty(name = "test_property_01", type = "STRING"),
+      @MockOntologyProperty(name = "test_property_02", type = "STRING"),
+      @MockOntologyProperty(name = "test_property_03", type = "STRING"),
+      @MockOntologyProperty(name = "test_property_04", type = "STRING")
+  })
+  void testDeleteOntologyProperty() {
+
+    final var ids = new HashSet<Long>();
+
+    final var ontology = ontologyRepository.findByName("test_ontology_01").orElseThrow();
+
+    new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
+      final var managedOntology = ontologyRepository.findById(ontology.getID()).orElseThrow();
+      Assertions.assertEquals(4, managedOntology.getProperties().size());
+      managedOntology.getProperties().forEach(it -> ids.add(it.getID()));
+    });
+
+    final var propertyRequest = new DeletePropertyRequest();
+    propertyRequest.setPropertyIds(ids);
+
+    mockMvc.perform(delete("/ontology/" + ontology.getID() + "/property")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(JSONUtil.toJsonStr(propertyRequest)))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(get("/ontology/" + ontology.getID() + "/property")
+            .param("page", "0")
+            .param("size", "10"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()", equalTo(0)));
   }
 
   @Test
