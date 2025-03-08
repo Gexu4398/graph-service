@@ -57,7 +57,7 @@ public class JpaOntologyService implements OntologyService {
     return ontologyRepository.findAll(Specification.where(nameLike(keyword)), pageable);
   }
 
-  private @Nonnull Specification<Ontology> nameLike(String keyword) {
+  private static @Nonnull Specification<Ontology> nameLike(String keyword) {
 
     return (root, query, criteriaBuilder) -> {
       if (StrUtil.isBlank(keyword)) {
@@ -116,7 +116,8 @@ public class JpaOntologyService implements OntologyService {
   }
 
   @Override
-  public void newOntologyProperty(Ontology ontology, NewOntologyPropertyRequest request) {
+  public void newOntologyProperty(@Nonnull Ontology ontology,
+      @Nonnull NewOntologyPropertyRequest request) {
 
     final var exists = ontologyPropertyRepository
         .existsByOntologyAndName(ontology, request.getName());

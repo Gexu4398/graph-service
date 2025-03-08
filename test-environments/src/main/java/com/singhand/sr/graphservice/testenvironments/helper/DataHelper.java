@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.testenvironments.helper;
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
+import com.singhand.sr.graphservice.bizgraph.service.RelationModelService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Group;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Role;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.User;
@@ -14,6 +15,7 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakGroupServic
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakRoleService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakUserService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import java.util.List;
 import java.util.Optional;
@@ -46,11 +48,13 @@ public class DataHelper {
 
   private final OntologyRepository ontologyRepository;
 
+  private final RelationModelService relationModelService;
+
   @Autowired
   public DataHelper(KeycloakUserService keycloakUserService,
       KeycloakGroupService keycloakGroupService, KeycloakRoleService keycloakRoleService,
       UserEntityRepository userEntityRepository, OntologyService ontologyService,
-      OntologyRepository ontologyRepository) {
+      OntologyRepository ontologyRepository, RelationModelService relationModelService) {
 
     this.keycloakUserService = keycloakUserService;
     this.keycloakGroupService = keycloakGroupService;
@@ -58,6 +62,7 @@ public class DataHelper {
     this.userEntityRepository = userEntityRepository;
     this.ontologyService = ontologyService;
     this.ontologyRepository = ontologyRepository;
+    this.relationModelService = relationModelService;
   }
 
   public Optional<UserEntity> getUser(String username) {
@@ -134,11 +139,20 @@ public class DataHelper {
     return ontologyRepository.findById(ontology.getID()).orElseThrow();
   }
 
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
   public void newOntologyProperty(Ontology ontology, String name, String type) {
 
     final var request = new NewOntologyPropertyRequest();
     request.setName(name);
     request.setType(type);
     ontologyService.newOntologyProperty(ontology, request);
+  }
+
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public RelationModel newRelationModel(String name) {
+
+    return relationModelService.newRelationModel(name);
   }
 }

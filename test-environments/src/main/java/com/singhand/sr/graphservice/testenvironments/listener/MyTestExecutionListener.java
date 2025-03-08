@@ -1,7 +1,9 @@
 package com.singhand.sr.graphservice.testenvironments.listener;
 
 import com.singhand.sr.graphservice.testenvironments.helper.DataHelper;
+import com.singhand.sr.graphservice.testenvironments.mock.MockOntologies;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntology;
+import com.singhand.sr.graphservice.testenvironments.mock.MockRelationModel;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +47,26 @@ public class MyTestExecutionListener implements TestExecutionListener, Ordered {
     for (final var annotation : annotations) {
       if (annotation instanceof MockOntology mockOntology) {
         newOntology(mockOntology);
+      } else if (annotation instanceof MockOntologies mockOntologies) {
+        newOntologies(mockOntologies);
+      } else if (annotation instanceof MockRelationModel mockRelationModel) {
+        newRelationModel(mockRelationModel);
       }
     }
+  }
+
+  void newOntologies(MockOntologies mockOntologies) {
+
+    for (final var mockOntology : mockOntologies.value()) {
+      newOntology(mockOntology);
+    }
+  }
+
+  void newRelationModel(MockRelationModel mockRelationModel) {
+
+    new TransactionTemplate(bizTransactionManager)
+        .executeWithoutResult(transactionStatus ->
+            dataHelper.newRelationModel(mockRelationModel.name()));
   }
 
   void newOntology(MockOntology mockOntology) {
