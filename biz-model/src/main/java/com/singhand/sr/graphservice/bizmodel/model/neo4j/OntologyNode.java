@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -34,5 +35,6 @@ public class OntologyNode {
   private Long version;
 
   @Relationship(type = "CHILD_OF", direction = Direction.OUTGOING)
+  @Default
   private Set<OntologyNode> children = new HashSet<>();
 }
