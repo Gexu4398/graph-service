@@ -96,6 +96,7 @@ abstract class TestEnvironment {
    * 清空 H2 数据库（适用于 H2 内存数据库）
    */
   private void clearH2Database(@Nonnull Connection conn) throws SQLException {
+
     // 禁用外键约束
     conn.createStatement().execute("SET REFERENTIAL_INTEGRITY = FALSE");
 
@@ -116,6 +117,7 @@ abstract class TestEnvironment {
    * 清空 PostgreSQL 数据库
    */
   private void clearPostgresDatabase(@Nonnull Connection conn) throws SQLException {
+
     // 禁用外键约束
     conn.createStatement().execute("SET session_replication_role = 'replica'");
 

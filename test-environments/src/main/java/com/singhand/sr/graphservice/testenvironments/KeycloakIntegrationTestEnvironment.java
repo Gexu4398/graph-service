@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.testenvironments;
 
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakService;
+import jakarta.annotation.Nonnull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -55,7 +56,7 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
 
   @DynamicPropertySource
   @SneakyThrows
-  static void bindProperties(DynamicPropertyRegistry registry) {
+  static void bindProperties(@Nonnull DynamicPropertyRegistry registry) {
 
     final var network = Network.newNetwork();
 
