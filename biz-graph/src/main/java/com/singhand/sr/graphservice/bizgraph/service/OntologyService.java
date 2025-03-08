@@ -5,6 +5,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRe
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationInstance;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import java.util.List;
 import java.util.Optional;
@@ -37,4 +38,6 @@ public interface OntologyService {
   void deleteOntologyProperty(Long id, String propertyName);
 
   void deleteOntologyProperties(Ontology ontology, DeletePropertyRequest request);
+
+  RelationInstance newRelation(String name, Ontology inOntology, Ontology outOntology);
 }

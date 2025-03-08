@@ -40,8 +40,8 @@ public class RelationInstance {
   @JsonProperty("id")
   private Long ID;
 
-  @ManyToOne(cascade = CascadeType.DETACH)
-  private RelationModel relationModel;
+  @Column(nullable = false)
+  private String name;
 
   @ManyToOne(cascade = CascadeType.DETACH)
   private Ontology inOntology;

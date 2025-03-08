@@ -13,7 +13,9 @@ import cn.hutool.json.JSONUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationInstance;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
 import com.singhand.sr.graphservice.bizservice.BaseTestEnvironment;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntology;
@@ -40,6 +42,9 @@ public class OntologyControllerTest extends BaseTestEnvironment {
 
   @Autowired
   private OntologyNodeRepository ontologyNodeRepository;
+
+  @Autowired
+  private RelationInstanceRepository relationInstanceRepository;
 
   @Autowired
   @Qualifier("bizTransactionManager")
@@ -263,6 +268,30 @@ public class OntologyControllerTest extends BaseTestEnvironment {
     new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
       final var managedOntology = ontologyRepository.findById(ontology.getID()).orElseThrow();
       Assertions.assertEquals(1, managedOntology.getChildren().size());
+    });
+  }
+
+  @Test
+  @SneakyThrows
+  void testNewRelation() {
+
+    final var ontology = dataHelper.newOntology("test_ontology_01", null);
+    final var ontology_2 = dataHelper.newOntology("test_ontology_02", null);
+    final var relationModel = dataHelper.newRelationModel("test_relation_model_01");
+
+    mockMvc.perform(post("/ontology/" + ontology.getID() + "/relation/" + ontology_2.getID())
+            .param("name", relationModel.getName()))
+        .andExpect(status().isOk());
+
+    new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
+      final var in = ontologyRepository.findById(ontology.getID()).orElseThrow();
+      final var out = ontologyRepository.findById(ontology_2.getID()).orElseThrow();
+      final var relationInstance = relationInstanceRepository
+          .findByNameAndInOntologyAndOutOntology(relationModel.getName(), in, out)
+          .orElse(null);
+      Assertions.assertNotNull(in.getActiveRelations());
+      Assertions.assertNotNull(out.getPassiveRelations());
+      Assertions.assertNotNull(relationInstance);
     });
   }
 }

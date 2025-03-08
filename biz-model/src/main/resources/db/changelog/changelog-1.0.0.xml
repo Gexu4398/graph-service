@@ -184,7 +184,9 @@
       <column name="id" type="BIGINT">
         <constraints nullable="false" primaryKey="true" primaryKeyName="pk_relationinstance"/>
       </column>
-      <column name="relationmodel_id" type="BIGINT"/>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
       <column name="inontology_id" type="BIGINT"/>
       <column name="outontology_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
@@ -196,9 +198,6 @@
     <addForeignKeyConstraint baseColumnNames="outontology_id" baseTableName="relationinstance"
                              constraintName="FK_RELATIONINSTANCE_ON_OUTONTOLOGY"
                              referencedColumnNames="id" referencedTableName="ontology"/>
-    <addForeignKeyConstraint baseColumnNames="relationmodel_id" baseTableName="relationinstance"
-                             constraintName="FK_RELATIONINSTANCE_ON_RELATIONMODEL"
-                             referencedColumnNames="id" referencedTableName="relationmodel"/>
   </changeSet>
 
   <changeSet id="1741231186626-1" author="gexu">

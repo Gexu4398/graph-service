@@ -6,8 +6,10 @@ import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropert
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationInstance;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -40,12 +42,15 @@ public class OntologyController {
 
   private final OntologyRepository ontologyRepository;
 
+  private final RelationModelRepository relationModelRepository;
+
   @Autowired
   public OntologyController(OntologyService ontologyService,
-      OntologyRepository ontologyRepository) {
+      OntologyRepository ontologyRepository, RelationModelRepository relationModelRepository) {
 
     this.ontologyService = ontologyService;
     this.ontologyRepository = ontologyRepository;
+    this.relationModelRepository = relationModelRepository;
   }
 
   @Operation(summary = "获取本体详情")
@@ -162,5 +167,24 @@ public class OntologyController {
   public List<OntologyNode> getTree(@RequestParam(required = false, defaultValue = "") Long id) {
 
     return ontologyService.getTree(id);
+  }
+
+  @Operation(summary = "新增本体关系")
+  @PostMapping("{id}/relation/{outId}")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public RelationInstance newRelation(@PathVariable Long id, @PathVariable Long outId,
+      @RequestParam String name) {
+
+    final var inOntology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    final var outOntology = ontologyService.getOntology(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    final var relationModel = relationModelRepository.findByName(name)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    return ontologyService.newRelation(relationModel.getName(), inOntology, outOntology);
   }
 }

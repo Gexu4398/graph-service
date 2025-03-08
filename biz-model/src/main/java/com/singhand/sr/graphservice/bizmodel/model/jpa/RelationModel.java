@@ -55,12 +55,6 @@ public class RelationModel {
   @Exclude
   private Set<OntologyProperty> properties = new HashSet<>();
 
-  @Builder.Default
-  @OneToMany(mappedBy = "relationModel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-  @JsonIgnore
-  @Exclude
-  private Set<RelationInstance> passiveRelations = new HashSet<>();
-
   @Column
   @Temporal(TemporalType.TIMESTAMP)
   @CreationTimestamp

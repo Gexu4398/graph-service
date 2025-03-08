@@ -9,9 +9,11 @@ import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologySer
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology_;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationInstance;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
 import jakarta.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
@@ -36,13 +38,17 @@ public class JpaOntologyService implements OntologyService {
 
   private final OntologyPropertyRepository ontologyPropertyRepository;
 
+  private final RelationInstanceRepository relationInstanceRepository;
+
   public JpaOntologyService(OntologyRepository ontologyRepository,
       Neo4jOntologyService neo4jOntologyService,
-      OntologyPropertyRepository ontologyPropertyRepository) {
+      OntologyPropertyRepository ontologyPropertyRepository,
+      RelationInstanceRepository relationInstanceRepository) {
 
     this.ontologyRepository = ontologyRepository;
     this.neo4jOntologyService = neo4jOntologyService;
     this.ontologyPropertyRepository = ontologyPropertyRepository;
+    this.relationInstanceRepository = relationInstanceRepository;
   }
 
   @Override
@@ -216,6 +222,32 @@ public class JpaOntologyService implements OntologyService {
     final var properties = ontologyPropertyRepository.findAllById(request.getPropertyIds());
 
     properties.forEach(it -> deleteOntologyProperty(ontology.getID(), it.getName()));
+  }
+
+  @Override
+  public RelationInstance newRelation(@Nonnull String name, @Nonnull Ontology inOntology,
+      @Nonnull Ontology outOntology) {
+
+    assert !inOntology.equals(outOntology);
+
+    final var exists = relationInstanceRepository
+        .existsByNameAndInOntologyAndOutOntology(name, inOntology, outOntology);
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "关系已存在");
+    }
+
+    final var relationInstance = new RelationInstance();
+    relationInstance.setName(name);
+    relationInstance.setInOntology(inOntology);
+    relationInstance.setOutOntology(outOntology);
+
+    final var managedRelationInstance = relationInstanceRepository.save(relationInstance);
+
+    inOntology.getActiveRelations().add(managedRelationInstance);
+    outOntology.getPassiveRelations().add(managedRelationInstance);
+
+    return managedRelationInstance;
   }
 
   /**
