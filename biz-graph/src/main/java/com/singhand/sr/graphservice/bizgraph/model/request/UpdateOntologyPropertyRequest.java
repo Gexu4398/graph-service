@@ -4,10 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class NewOntologyPropertyRequest {
+public class UpdateOntologyPropertyRequest {
 
   @NotBlank(message = "属性名称不能为空")
-  private String name;
+  private String oldName;
+
+  @NotBlank(message = "新属性名称不能为空")
+  private String newName;
 
   @NotBlank
   @NotBlank(message = "属性类型不能为空")

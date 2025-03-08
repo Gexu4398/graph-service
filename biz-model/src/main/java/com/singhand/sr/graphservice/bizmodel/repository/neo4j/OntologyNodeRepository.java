@@ -10,12 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface OntologyNodeRepository extends BaseNodeRepository<OntologyNode, Long> {
 
   @Query("""
-          MATCH (parent:Ontology {id: $id})-[r:CHILD_OF*0..]->(node:Ontology)
-          RETURN collect(DISTINCT node) AS allNodes
-      """)
-  List<OntologyNode> findAllSubtreeNodes(Long id);
-
-  @Query("""
           UNWIND $ids AS currentId
           MATCH (parent:Ontology {id: currentId})-[r:CHILD_OF*0..]->(node:Ontology)
           RETURN collect(DISTINCT node) AS allNodes

@@ -30,7 +30,7 @@ public class Neo4jOntologyService {
     return ontologyNodeRepository.findById(id);
   }
 
-  public OntologyNode newOntology(@Nonnull Ontology ontology, Long parentId) {
+  public void newOntology(@Nonnull Ontology ontology, Long parentId) {
 
     final var ontologyNode = new OntologyNode();
     ontologyNode.setId(ontology.getID());
@@ -44,18 +44,11 @@ public class Neo4jOntologyService {
       parent.getChildren().add(managedOntologyNode);
       ontologyNodeRepository.save(parent);
     }
-
-    return managedOntologyNode;
   }
 
   public List<OntologyNode> getSubtreeNodesByIds(Set<Long> ids) {
 
     return ontologyNodeRepository.findSubtreeNodesByIds(ids);
-  }
-
-  public List<OntologyNode> getAllSubtreeNodes(Long id) {
-
-    return ontologyNodeRepository.findAllSubtreeNodes(id);
   }
 
   public List<OntologyNode> getSubtree(Long id) {

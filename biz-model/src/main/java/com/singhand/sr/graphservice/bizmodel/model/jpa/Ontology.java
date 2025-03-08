@@ -152,4 +152,12 @@ public class Ontology {
       getChildren().clear();
     }
   }
+
+  public void removeProperty(OntologyProperty ontologyProperty) {
+
+    if (null != getProperties()) {
+      getProperties().remove(ontologyProperty);
+    }
+    ontologyProperty.setOntology(null);
+  }
 }

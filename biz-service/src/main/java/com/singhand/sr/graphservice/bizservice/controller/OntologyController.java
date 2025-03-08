@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
@@ -8,6 +9,7 @@ import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,12 +111,38 @@ public class OntologyController {
   @PostMapping("{id}/property")
   @SneakyThrows
   @Transactional("bizTransactionManager")
-  public void newProperty(@PathVariable Long id, @RequestBody NewOntologyPropertyRequest request) {
+  public void newProperty(@PathVariable Long id,
+      @Valid @RequestBody NewOntologyPropertyRequest request) {
 
     final var ontology = ontologyService.getOntology(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
     ontologyService.newOntologyProperty(ontology, request);
+  }
+
+  @Operation(summary = "修改本体属性")
+  @PutMapping("{id}/property")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void updateProperty(@PathVariable Long id,
+      @Valid @RequestBody UpdateOntologyPropertyRequest request) {
+
+    final var ontology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyService.updateOntologyProperty(ontology, request);
+  }
+
+  @Operation(summary = "删除本体属性")
+  @DeleteMapping("{id}/property/{propertyName}")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void deleteProperty(@PathVariable Long id, @PathVariable String propertyName) {
+
+    final var ontology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyService.deleteOntologyProperty(ontology, propertyName);
   }
 
   @Operation(summary = "获取本体树")

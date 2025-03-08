@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface VertexService {
 
-  Vertex newVertex(@Valid NewVertexRequest request);
+  Vertex newVertex(NewVertexRequest request);
 
   Optional<Vertex> getVertex(String id);
 

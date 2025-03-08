@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologyService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
@@ -8,6 +9,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import jakarta.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -148,26 +150,39 @@ public class JpaOntologyService implements OntologyService {
     });
   }
 
-  /**
-   * 获取指定ID的Ontology子树
-   *
-   * @param id Ontology节点的唯一标识符，类型为Long
-   * @return 返回以该ID节点为根的子树结构，封装为OntologyNode对象
-   */
-  public List<OntologyNode> getSubtree(Long id) {
+  @Override
+  public void updateOntologyProperty(@Nonnull Ontology ontology,
+      @Nonnull UpdateOntologyPropertyRequest request) {
 
-    return neo4jOntologyService.getSubtree(id);
+    final var ontologyProperty = ontologyPropertyRepository
+        .findByOntologyAndName(ontology, request.getOldName())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
+
+    final var exists = ontologyPropertyRepository
+        .existsByOntologyAndName(ontology, request.getNewName());
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "本体属性已存在");
+    }
+
+    ontologyProperty.setName(request.getNewName());
+    ontologyProperty.setType(request.getType());
+
+    ontologyPropertyRepository.save(ontologyProperty);
   }
 
-  /**
-   * 获取指定节点的所有子节点
-   *
-   * @param id 节点的唯一标识符
-   * @return 包含所有子节点的列表
-   */
-  public List<OntologyNode> getAllSubtreeNodes(Long id) {
+  @Override
+  public void deleteOntologyProperty(Ontology ontology, String propertyName) {
 
-    return neo4jOntologyService.getAllSubtreeNodes(id);
+    final var ontologyProperty = ontologyPropertyRepository
+        .findByOntologyAndName(ontology, propertyName)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
+
+    ontology.removeProperty(ontologyProperty);
+
+    ontologyPropertyRepository.delete(ontologyProperty);
+
+    ontologyRepository.save(ontology);
   }
 
   /**

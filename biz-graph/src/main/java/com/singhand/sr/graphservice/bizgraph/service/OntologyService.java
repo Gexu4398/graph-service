@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizgraph.service;
 
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
@@ -27,4 +28,8 @@ public interface OntologyService {
   Ontology updateOntology(Ontology ontology, String name);
 
   void deleteOntology(Long id);
+
+  void updateOntologyProperty(Ontology ontology, UpdateOntologyPropertyRequest request);
+
+  void deleteOntologyProperty(Ontology ontology, String propertyName);
 }
