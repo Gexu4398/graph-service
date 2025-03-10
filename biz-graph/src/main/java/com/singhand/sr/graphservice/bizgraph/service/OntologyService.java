@@ -47,4 +47,6 @@ public interface OntologyService {
   void deleteRelation(String name, Ontology inOntology, Ontology outOntology);
 
   Page<RelationInstance> getRelations(Ontology ontology, Pageable pageable);
+
+  Optional<OntologyProperty> getProperty(Ontology ontology, String key);
 }

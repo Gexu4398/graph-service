@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizservice.controller;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
@@ -154,6 +155,12 @@ public class VertexController {
     final var vertex = vertexService.getVertex(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
 
+    final var ontology = ontologyRepository.findByName(vertex.getType())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在！"));
+
+    ontologyService.getProperty(ontology, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在！"));
+
     if (propertyRepository.findByVertexAndKey(vertex, key).isPresent()) {
       final var property = propertyRepository.findByVertexAndKey(vertex, key).get();
       final var valueMd5 = MD5.create().digestHex(newPropertyRequest.getValue());
@@ -184,9 +191,15 @@ public class VertexController {
     final var vertex = vertexService.getVertex(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
 
+    final var ontology = ontologyRepository.findByName(vertex.getType())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在！"));
+
     final var username = JwtHelper.getUsername();
 
     requests.forEach(request -> {
+      ontologyService.getProperty(ontology, request.getKey())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在！"));
+
       if (propertyRepository.findByVertexAndKey(vertex, request.getKey()).isPresent()) {
         final var property = propertyRepository
             .findByVertexAndKey(vertex, request.getKey())
@@ -223,5 +236,30 @@ public class VertexController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
 
     vertexService.deleteProperty(vertex, key, value, mode);
+  }
+
+  @Operation(summary = "插入关系")
+  @PostMapping("{id}/edge/{outId}")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void newEdge(@PathVariable String id, @PathVariable String outId,
+      @Valid @RequestBody List<NewEdgeRequest> requests) {
+
+    if (id.equals(outId)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自身建立关系！");
+    }
+
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    final var username = JwtHelper.getUsername();
+
+    requests.forEach(request -> {
+      request.setCreator(username);
+//      vertexService.newEdge(inVertex, outVertex, request);
+    });
   }
 }

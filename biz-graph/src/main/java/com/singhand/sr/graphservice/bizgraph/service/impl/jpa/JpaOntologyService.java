@@ -145,6 +145,12 @@ public class JpaOntologyService implements OntologyService {
   }
 
   @Override
+  public Optional<OntologyProperty> getProperty(Ontology ontology, String key) {
+
+    return ontologyPropertyRepository.findByOntologyAndName(ontology, key);
+  }
+
+  @Override
   public Ontology updateOntology(Ontology ontology, String name) {
 
     final var exists = ontologyRepository.existsByName(name);
