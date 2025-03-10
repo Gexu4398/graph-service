@@ -22,6 +22,10 @@ app:
     search:
       backend:
         hosts: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+  neo4j:
+    uri: bolt://${NRO4J_HOST:localhost}:7687
+    username: neo4j
+    password: neo4jexample
   datasource:
     biz:
       url: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/tp
