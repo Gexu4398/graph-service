@@ -41,7 +41,8 @@ public interface OntologyService {
 
   RelationInstance newRelation(String name, Ontology inOntology, Ontology outOntology);
 
-  RelationInstance updateRelation(String oldName, String newName, Ontology inOntology, Ontology outOntology);
+  RelationInstance updateRelation(String oldName, String newName, Ontology inOntology,
+      Ontology outOntology);
 
   void deleteRelation(String name, Ontology inOntology, Ontology outOntology);
 

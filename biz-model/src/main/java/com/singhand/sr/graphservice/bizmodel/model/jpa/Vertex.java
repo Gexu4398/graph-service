@@ -165,4 +165,12 @@ public class Vertex {
     property.setVertex(this);
     getProperties().put(property.getKey(), property);
   }
+
+  public void detachDataSources() {
+
+    if (null != getDatasources()) {
+      getDatasources().forEach(datasource -> datasource.getVertices().remove(this));
+      getDatasources().clear();
+    }
+  }
 }

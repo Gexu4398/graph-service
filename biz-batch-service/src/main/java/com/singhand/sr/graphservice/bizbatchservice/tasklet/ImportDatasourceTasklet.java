@@ -176,7 +176,7 @@ public class ImportDatasourceTasklet implements Tasklet {
         .collect(Collectors.toSet());
   }
 
-  private Evidence newEvidence(@Nonnull Datasource datasource) {
+  private @Nonnull Evidence newEvidence(@Nonnull Datasource datasource) {
 
     final var evidence = new Evidence();
     evidence.setContent(datasource.getTitle());

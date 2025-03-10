@@ -15,12 +15,15 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRe
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import com.singhand.sr.graphservice.bizservice.BaseTestEnvironment;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntology;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntologyProperty;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -48,6 +51,12 @@ public class OntologyControllerTest extends BaseTestEnvironment {
   @Autowired
   @Qualifier("bizTransactionManager")
   private PlatformTransactionManager bizTransactionManager;
+
+  @Autowired
+  private VertexRepository vertexRepository;
+
+  @Autowired
+  private VertexNodeRepository vertexNodeRepository;
 
   @Test
   @SneakyThrows
@@ -137,6 +146,22 @@ public class OntologyControllerTest extends BaseTestEnvironment {
     final var ontology_4 = dataHelper
         .newOntology("test_ontology_04", "test_ontology_03", properties);
 
+    dataHelper.newVertex(faker.name().name(), ontology.getName());
+    dataHelper.newVertex(faker.name().name(), ontology_2.getName());
+    dataHelper.newVertex(faker.name().name(), ontology_3.getName());
+    dataHelper.newVertex(faker.name().name(), ontology_4.getName());
+
+    final var types = Set.of(ontology.getName(),
+        ontology_2.getName(),
+        ontology_3.getName(),
+        ontology_4.getName());
+
+    final var vertices = vertexRepository.findByTypeIn(types);
+    final var vertexNodes = vertexNodeRepository.findByTypeIn(types);
+
+    Assertions.assertEquals(4, vertices.size());
+    Assertions.assertEquals(4, vertexNodes.size());
+
     mockMvc.perform(delete("/ontology/" + ontology.getID()))
         .andExpect(status().isOk());
 
@@ -148,6 +173,14 @@ public class OntologyControllerTest extends BaseTestEnvironment {
     Assertions.assertNull(managedOntology_2);
     Assertions.assertNull(managedOntology_3);
     Assertions.assertNull(managedOntology_4);
+
+    TimeUnit.SECONDS.sleep(1);
+
+    final var vertices_2 = vertexRepository.findByTypeIn(types);
+    final var vertexNodes_2 = vertexNodeRepository.findByTypeIn(types);
+
+    Assertions.assertEquals(0, vertices_2.size());
+    Assertions.assertEquals(0, vertexNodes_2.size());
   }
 
   @Test

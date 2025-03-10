@@ -166,7 +166,8 @@ public class JpaOntologyService implements OntologyService {
   public void deleteOntology(Long id) {
 
     getOntology(id).ifPresent(it -> {
-      new HashSet<>(it.getChildren()).forEach(child -> deleteOntology(child.getID()));
+      final var children = new HashSet<>(it.getChildren());
+      children.forEach(child -> deleteOntology(child.getID()));
 
       it.detachRelations();
       it.detachChildren();

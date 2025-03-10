@@ -14,16 +14,24 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.criteria.JoinType;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @Slf4j
@@ -33,12 +41,16 @@ public class JpaVertexService implements VertexService {
 
   private final Neo4jVertexService neo4jVertexService;
 
+  private final PlatformTransactionManager bizTransactionManager;
+
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
-      Neo4jVertexService neo4jVertexService) {
+      Neo4jVertexService neo4jVertexService,
+      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager) {
 
     this.vertexRepository = vertexRepository;
     this.neo4jVertexService = neo4jVertexService;
+    this.bizTransactionManager = bizTransactionManager;
   }
 
   @Override
@@ -71,6 +83,82 @@ public class JpaVertexService implements VertexService {
     final var managedvertex = vertexRepository.save(vertex);
     neo4jVertexService.newVertex(managedvertex);
     return managedvertex;
+  }
+
+  @Override
+  public void deleteVertex(String vertexId) {
+
+    getVertex(vertexId).ifPresent(vertex -> {
+      vertex.detachDataSources();
+      vertex.detachEdges();
+
+      vertexRepository.delete(vertex);
+    });
+
+    neo4jVertexService.deleteVertex(vertexId);
+  }
+
+  @Override
+  public void deleteVertices(@Nonnull List<String> vertexIds) {
+
+    vertexIds.forEach(this::deleteVertex);
+  }
+
+  @Override
+  public void batchDeleteVertex(Set<String> types) {
+
+    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+      executor.submit(() -> {
+        try {
+          deleteVerticesByTypes(types);
+        } catch (Exception e) {
+          log.error("异步删除顶点任务出现异常", e);
+        }
+      });
+    }
+  }
+
+  @Override
+  public void batchUpdateVertex(String oldName, String newName) {
+
+  }
+
+  private void deleteVerticesByTypes(Set<String> types) {
+
+    int pageSize = 500;
+    int pageNumber = 0;
+    Page<Vertex> page;
+
+    do {
+      try {
+        page = vertexRepository.findAll(
+            Specification.where(typesIn(types)),
+            PageRequest.of(pageNumber, pageSize)
+        );
+      } catch (Exception e) {
+        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        break;
+      }
+
+      final var vertexIds = page.getContent().stream()
+          .map(Vertex::getID)
+          .collect(Collectors.toList());
+
+      if (CollUtil.isNotEmpty(vertexIds)) {
+        try {
+          final var transaction = new TransactionTemplate(bizTransactionManager);
+          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+          transaction.execute(status -> {
+            deleteVertices(vertexIds);
+            return true;
+          });
+        } catch (Exception e) {
+          log.error("删除顶点ID为 {} 时出现异常", vertexIds, e);
+        }
+      }
+
+      pageNumber++;
+    } while (page.hasNext());
   }
 
   private @Nonnull Specification<Vertex> addKeyValueSpecifications(

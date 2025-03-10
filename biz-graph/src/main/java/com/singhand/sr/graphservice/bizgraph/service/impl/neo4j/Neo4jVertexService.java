@@ -4,6 +4,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import jakarta.annotation.Nonnull;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,11 @@ public class Neo4jVertexService {
     this.vertexNodeRepository = vertexNodeRepository;
   }
 
+  public Optional<VertexNode> getVertex(String vertexId) {
+
+    return vertexNodeRepository.findById(vertexId);
+  }
+
   public VertexNode newVertex(@Nonnull Vertex vertex) {
 
     final var vertexNode = new VertexNode();
@@ -28,5 +34,10 @@ public class Neo4jVertexService {
     vertexNode.setType(vertex.getType());
 
     return vertexNodeRepository.save(vertexNode);
+  }
+
+  public void deleteVertex(String vertexId) {
+
+    getVertex(vertexId).ifPresent(vertexNodeRepository::delete);
   }
 }

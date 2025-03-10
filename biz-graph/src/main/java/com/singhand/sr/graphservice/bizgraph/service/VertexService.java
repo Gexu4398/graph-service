@@ -2,7 +2,7 @@ package com.singhand.sr.graphservice.bizgraph.service;
 
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
-import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -17,4 +17,12 @@ public interface VertexService {
 
   Page<Vertex> getVertices(String keyword, Set<String> types, Map<String, String> keyValues,
       Pageable pageable);
+
+  void deleteVertex(String id);
+
+  void deleteVertices(List<String> vertexIds);
+
+  void batchDeleteVertex(Set<String> types);
+
+  void batchUpdateVertex(String oldName, String newName);
 }

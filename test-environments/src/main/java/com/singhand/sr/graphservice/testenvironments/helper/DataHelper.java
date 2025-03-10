@@ -2,8 +2,10 @@ package com.singhand.sr.graphservice.testenvironments.helper;
 
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.RelationModelService;
+import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Group;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Role;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.User;
@@ -55,12 +57,14 @@ public class DataHelper {
 
   private final DatasourceRepository datasourceRepository;
 
+  private final VertexService vertexService;
+
   @Autowired
   public DataHelper(KeycloakUserService keycloakUserService,
       KeycloakGroupService keycloakGroupService, KeycloakRoleService keycloakRoleService,
       UserEntityRepository userEntityRepository, OntologyService ontologyService,
       OntologyRepository ontologyRepository, RelationModelService relationModelService,
-      DatasourceRepository datasourceRepository) {
+      DatasourceRepository datasourceRepository, VertexService vertexService) {
 
     this.keycloakUserService = keycloakUserService;
     this.keycloakGroupService = keycloakGroupService;
@@ -70,6 +74,7 @@ public class DataHelper {
     this.ontologyRepository = ontologyRepository;
     this.relationModelService = relationModelService;
     this.datasourceRepository = datasourceRepository;
+    this.vertexService = vertexService;
   }
 
   public Optional<UserEntity> getUser(String username) {
@@ -180,5 +185,16 @@ public class DataHelper {
     datasource.addContent(datasourceContent);
 
     return datasourceRepository.save(datasource);
+  }
+
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void newVertex(String name, String type) {
+
+    final var request = new NewVertexRequest();
+    request.setName(name);
+    request.setType(type);
+
+    vertexService.newVertex(request);
   }
 }
