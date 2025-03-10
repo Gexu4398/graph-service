@@ -222,7 +222,7 @@ public class OntologyController {
         inOntology, outOntology);
   }
 
-  @Operation(summary = "修改本体关系")
+  @Operation(summary = "删除本体关系")
   @DeleteMapping("{id}/relation/{outId}")
   @SneakyThrows
   @Transactional("bizTransactionManager")

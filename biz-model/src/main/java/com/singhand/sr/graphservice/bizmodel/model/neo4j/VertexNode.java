@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
 import jakarta.validation.constraints.NotBlank;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,4 +46,23 @@ public class VertexNode {
   @Default
   @Exclude
   private Set<EdgeRelation> edges = new HashSet<>();
+
+  @Override
+  public boolean equals(Object o) {
+
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    VertexNode v = (VertexNode) o;
+    return id != null && Objects.equals(id, v.id);
+  }
+
+  @Override
+  public int hashCode() {
+
+    return getClass().hashCode();
+  }
 }

@@ -313,6 +313,11 @@ public class OntologyControllerTest extends BaseTestEnvironment {
       Assertions.assertNotNull(out.getPassiveRelations());
       Assertions.assertNotNull(relationInstance);
     });
+
+    final var exists = ontologyNodeRepository
+        .existsRelation(ontology.getID(), ontology_2.getID(), relationModel.getName());
+
+    Assertions.assertTrue(exists);
   }
 
   @Test
@@ -348,6 +353,15 @@ public class OntologyControllerTest extends BaseTestEnvironment {
       Assertions.assertNull(relationInstance);
       Assertions.assertNotNull(relationInstance_2);
     });
+
+    final var exists = ontologyNodeRepository
+        .existsRelation(ontology.getID(), ontology_2.getID(), relationModel.getName());
+
+    final var exists_2 = ontologyNodeRepository
+        .existsRelation(ontology.getID(), ontology_2.getID(), relationModel_2.getName());
+
+    Assertions.assertFalse(exists);
+    Assertions.assertTrue(exists_2);
   }
 
   @Test
@@ -376,5 +390,10 @@ public class OntologyControllerTest extends BaseTestEnvironment {
 
       Assertions.assertNull(relationInstance);
     });
+
+    final var exists = ontologyNodeRepository
+        .existsRelation(ontology.getID(), ontology_2.getID(), relationModel.getName());
+
+    Assertions.assertFalse(exists);
   }
 }

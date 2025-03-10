@@ -46,4 +46,18 @@ public interface OntologyNodeRepository extends BaseNodeRepository<OntologyNode,
       DETACH DELETE child, o
       """)
   void deleteOntologyAndChildren(Long id);
+
+  @Query("""
+      MATCH (a:Ontology)-[r:CONNECTED_TO {name: $name}]->(b:Ontology)
+      WHERE a.id = $inId AND b.id = $outId
+      RETURN COUNT(r) > 0
+      """)
+  boolean existsRelation(Long inId, Long outId, String name);
+
+  @Query("""
+      MATCH (a:Ontology)-[r:CONNECTED_TO {name: $name}]->(b:Ontology)
+      WHERE a.id = $inId AND b.id = $outId
+      DELETE r
+      """)
+  void deleteRelation(Long inId, Long outId, String name);
 }

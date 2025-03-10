@@ -247,6 +247,8 @@ public class JpaOntologyService implements OntologyService {
     inOntology.getActiveRelations().add(managedRelationInstance);
     outOntology.getPassiveRelations().add(managedRelationInstance);
 
+    neo4jOntologyService.newRelation(name, inOntology, outOntology);
+
     return managedRelationInstance;
   }
 
@@ -267,6 +269,8 @@ public class JpaOntologyService implements OntologyService {
 
     relationInstance.setName(newName);
 
+    neo4jOntologyService.updateRelation(oldName, newName, inOntology, outOntology);
+
     return relationInstanceRepository.save(relationInstance);
   }
 
@@ -280,6 +284,8 @@ public class JpaOntologyService implements OntologyService {
     relationInstance.detachOntologies();
 
     relationInstanceRepository.delete(relationInstance);
+
+    neo4jOntologyService.deleteRelation(name, inOntology, outOntology);
   }
 
   @Override
