@@ -17,11 +17,10 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -86,18 +85,19 @@ public class VertexController {
       @RequestParam(defaultValue = "true") boolean recursive,
       Pageable pageable) {
 
-    var filteredTypes = types;
-    if (recursive) {
-      filteredTypes = CollUtil.isEmpty(filteredTypes) ?
-          filteredTypes : ontologyService.getAllSubOntologies(types);
+    final var filteredTypes = new HashSet<>(types);
+    if (recursive && CollUtil.isNotEmpty(filteredTypes)) {
+      filteredTypes.addAll(ontologyService.getAllSubOntologies(filteredTypes));
     }
 
-    final var page = vertexService.getVertices(keyword, filteredTypes,
-        keyValues.stream().map(it -> {
-          final var strings = StrUtil.split(it, ':', 2);
-          return Map.entry(strings.get(0), strings.get(1));
-        }).collect(Collectors.toMap(Entry::getKey, Entry::getValue)),
-        pageable);
+    final var properties = new HashMap<String, String>();
+    keyValues.forEach(it -> {
+      final var strings = StrUtil.split(it, ':', 2);
+      properties.put(strings.get(0), strings.get(1));
+    });
+
+    final var page = vertexService
+        .getVertices(keyword, filteredTypes, properties, pageable);
 
     final var content = page.getContent().stream().map(GetVerticesResponseItem::new).toList();
 
