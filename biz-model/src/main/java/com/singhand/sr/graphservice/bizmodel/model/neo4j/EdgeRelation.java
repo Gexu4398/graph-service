@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
 import jakarta.validation.constraints.NotBlank;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,4 +33,23 @@ public class EdgeRelation {
   @TargetNode
   @Exclude
   private VertexNode vertexNode;
+
+  @Override
+  public boolean equals(Object o) {
+
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    EdgeRelation v = (EdgeRelation) o;
+    return id != null && Objects.equals(id, v.id);
+  }
+
+  @Override
+  public int hashCode() {
+
+    return getClass().hashCode();
+  }
 }
