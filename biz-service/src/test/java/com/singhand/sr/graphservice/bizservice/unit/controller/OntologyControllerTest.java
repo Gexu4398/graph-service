@@ -159,8 +159,8 @@ public class OntologyControllerTest extends BaseTestEnvironment {
             .param("name", name_2))
         .andExpect(status().isOk());
 
-    // 等待500毫秒，让虚拟线程执行完成，时间可自行调整
-    TimeUnit.MILLISECONDS.sleep(500);
+    // 等待1秒，让虚拟线程执行完成，时间可自行调整
+    TimeUnit.SECONDS.sleep(1);
 
     final var vertices_2 = vertexRepository.findByTypeIn(types);
     final var vertexNodes_2 = vertexNodeRepository.findByTypeIn(types);
@@ -249,8 +249,8 @@ public class OntologyControllerTest extends BaseTestEnvironment {
     Assertions.assertNull(managedOntology_3);
     Assertions.assertNull(managedOntology_4);
 
-    // 等待500毫秒，让虚拟线程执行完成，时间可自行调整
-    TimeUnit.MILLISECONDS.sleep(500);
+    // 等待1秒，让虚拟线程执行完成，时间可自行调整
+    TimeUnit.SECONDS.sleep(1);
 
     final var vertices_2 = vertexRepository.findByTypeIn(types);
     final var vertexNodes_2 = vertexNodeRepository.findByTypeIn(types);

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -22,7 +23,7 @@ public interface VertexService {
 
   void deleteVertices(List<String> vertexIds);
 
-  void batchDeleteVertex(Set<String> types);
+  CompletableFuture<Void> batchDeleteVertex(Set<String> types);
 
-  void batchUpdateVertex(String oldType, String newType);
+  CompletableFuture<Void> batchUpdateVertex(String oldType, String newType);
 }

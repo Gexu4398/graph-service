@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +46,8 @@ public class JpaVertexService implements VertexService {
   private final Neo4jVertexService neo4jVertexService;
 
   private final PlatformTransactionManager bizTransactionManager;
+
+  private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
@@ -120,31 +125,27 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public void batchDeleteVertex(Set<String> types) {
+  public CompletableFuture<Void> batchDeleteVertex(Set<String> types) {
 
-    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-      executor.submit(() -> {
-        try {
-          deleteVerticesByTypes(types);
-        } catch (Exception e) {
-          log.error("异步删除顶点任务出现异常", e);
-        }
-      });
-    }
+    return CompletableFuture.runAsync(() ->
+            deleteVerticesByTypes(types), VIRTUAL_EXECUTOR)
+        .exceptionally(ex -> {
+          log.error("异步删除顶点任务出现异常", ex);
+          throw ex instanceof CompletionException ?
+              (CompletionException) ex : new CompletionException(ex);
+        });
   }
 
   @Override
-  public void batchUpdateVertex(String oldType, String newType) {
+  public CompletableFuture<Void> batchUpdateVertex(String oldType, String newType) {
 
-    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-      executor.submit(() -> {
-        try {
-          updateVerticesByType(oldType, newType);
-        } catch (Exception e) {
-          log.error("异步修改顶点任务出现异常", e);
-        }
-      });
-    }
+    return CompletableFuture.runAsync(() ->
+            updateVerticesByType(oldType, newType), VIRTUAL_EXECUTOR)
+        .exceptionally(ex -> {
+          log.error("异步修改顶点任务出现异常", ex);
+          throw ex instanceof CompletionException ?
+              (CompletionException) ex : new CompletionException(ex);
+        });
   }
 
   private void updateVerticesByType(String oldType, String newType) {
