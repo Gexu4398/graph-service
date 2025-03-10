@@ -28,8 +28,8 @@ app:
     password: neo4jexample
   datasource:
     biz:
-      url: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/tp
-      jdbcUrl: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/tp
+      url: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/graph
+      jdbcUrl: jdbc:postgresql://${MYSQL_HOST:localhost}:${MYSQL_PORT:5432}/graph
       username: root
       password: ${MYSQL_ROOT_PASSWORD:example}
       driver-class-name: org.postgresql.Driver
