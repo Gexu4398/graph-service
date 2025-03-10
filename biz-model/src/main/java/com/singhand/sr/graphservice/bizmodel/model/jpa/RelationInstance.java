@@ -77,4 +77,12 @@ public class RelationInstance {
 
     return getClass().hashCode();
   }
+
+  public void detachOntologies() {
+
+    getInOntology().getActiveRelations().remove(this);
+    getOutOntology().getPassiveRelations().remove(this);
+    setInOntology(null);
+    setOutOntology(null);
+  }
 }

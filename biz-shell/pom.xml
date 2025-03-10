@@ -59,6 +59,11 @@
       <groupId>com.github.javafaker</groupId>
       <artifactId>javafaker</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.singhand.sr.graphservice</groupId>
+      <artifactId>biz-graph</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
 </project>

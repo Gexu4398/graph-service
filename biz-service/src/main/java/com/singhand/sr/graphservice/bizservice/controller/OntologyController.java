@@ -169,6 +169,17 @@ public class OntologyController {
     return ontologyService.getTree(id);
   }
 
+  @Operation(summary = "获取本体关系")
+  @GetMapping("{id}/relation")
+  @SneakyThrows
+  public Page<RelationInstance> getRelations(@PathVariable Long id, Pageable pageable) {
+
+    final var ontology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    return ontologyService.getRelations(ontology, pageable);
+  }
+
   @Operation(summary = "新增本体关系")
   @PostMapping("{id}/relation/{outId}")
   @SneakyThrows
@@ -186,5 +197,47 @@ public class OntologyController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
 
     return ontologyService.newRelation(relationModel.getName(), inOntology, outOntology);
+  }
+
+  @Operation(summary = "修改本体关系")
+  @PutMapping("{id}/relation/{outId}")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public RelationInstance updateRelation(@PathVariable Long id, @PathVariable Long outId,
+      @RequestParam String name, @RequestParam String newName) {
+
+    final var inOntology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    final var outOntology = ontologyService.getOntology(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    final var relationModel = relationModelRepository.findByName(name)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在"));
+
+    final var relationModel_2 = relationModelRepository.findByName(newName)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在"));
+
+    return ontologyService.updateRelation(relationModel.getName(), relationModel_2.getName(),
+        inOntology, outOntology);
+  }
+
+  @Operation(summary = "修改本体关系")
+  @DeleteMapping("{id}/relation/{outId}")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void deleteRelation(@PathVariable Long id, @PathVariable Long outId,
+      @RequestParam String name) {
+
+    final var inOntology = ontologyService.getOntology(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    final var outOntology = ontologyService.getOntology(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    final var relationModel = relationModelRepository.findByName(name)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在"));
+
+    ontologyService.deleteRelation(relationModel.getName(), inOntology, outOntology);
   }
 }

@@ -13,7 +13,6 @@ import cn.hutool.json.JSONUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationInstance;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.OntologyNodeRepository;
@@ -273,6 +272,27 @@ public class OntologyControllerTest extends BaseTestEnvironment {
 
   @Test
   @SneakyThrows
+  void testGetRelations() {
+
+    final var ontology = dataHelper.newOntology("test_ontology_01", null);
+    final var ontology_2 = dataHelper.newOntology("test_ontology_02", null);
+    final var relationModel = dataHelper.newRelationModel("test_relation_model_01");
+
+    mockMvc.perform(post("/ontology/" + ontology.getID() + "/relation/" + ontology_2.getID())
+            .param("name", relationModel.getName()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(get("/ontology/" + ontology.getID() + "/relation")
+            .param("name", relationModel.getName()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()", equalTo(1)))
+        .andExpect(jsonPath("$.content[0].name", equalTo(relationModel.getName())))
+        .andExpect(jsonPath("$.content[0].inOntology.name", equalTo(ontology.getName())))
+        .andExpect(jsonPath("$.content[0].outOntology.name", equalTo(ontology_2.getName())));
+  }
+
+  @Test
+  @SneakyThrows
   void testNewRelation() {
 
     final var ontology = dataHelper.newOntology("test_ontology_01", null);
@@ -292,6 +312,69 @@ public class OntologyControllerTest extends BaseTestEnvironment {
       Assertions.assertNotNull(in.getActiveRelations());
       Assertions.assertNotNull(out.getPassiveRelations());
       Assertions.assertNotNull(relationInstance);
+    });
+  }
+
+  @Test
+  @SneakyThrows
+  void testUpdateRelation() {
+
+    final var ontology = dataHelper.newOntology("test_ontology_01", null);
+    final var ontology_2 = dataHelper.newOntology("test_ontology_02", null);
+    final var relationModel = dataHelper.newRelationModel("test_relation_model_01");
+    final var relationModel_2 = dataHelper.newRelationModel("test_relation_model_02");
+
+    mockMvc.perform(post("/ontology/" + ontology.getID() + "/relation/" + ontology_2.getID())
+            .param("name", relationModel.getName()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(put("/ontology/" + ontology.getID() + "/relation/" + ontology_2.getID())
+            .param("name", relationModel.getName())
+            .param("newName", relationModel_2.getName()))
+        .andExpect(status().isOk());
+
+    new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
+      final var in = ontologyRepository.findById(ontology.getID()).orElseThrow();
+      final var out = ontologyRepository.findById(ontology_2.getID()).orElseThrow();
+
+      final var relationInstance = relationInstanceRepository
+          .findByNameAndInOntologyAndOutOntology(relationModel.getName(), in, out)
+          .orElse(null);
+
+      final var relationInstance_2 = relationInstanceRepository
+          .findByNameAndInOntologyAndOutOntology(relationModel_2.getName(), in, out)
+          .orElse(null);
+
+      Assertions.assertNull(relationInstance);
+      Assertions.assertNotNull(relationInstance_2);
+    });
+  }
+
+  @Test
+  @SneakyThrows
+  void testDeleteRelation() {
+
+    final var ontology = dataHelper.newOntology("test_ontology_01", null);
+    final var ontology_2 = dataHelper.newOntology("test_ontology_02", null);
+    final var relationModel = dataHelper.newRelationModel("test_relation_model_01");
+
+    mockMvc.perform(post("/ontology/" + ontology.getID() + "/relation/" + ontology_2.getID())
+            .param("name", relationModel.getName()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(delete("/ontology/" + ontology.getID() + "/relation/" + ontology_2.getID())
+            .param("name", relationModel.getName()))
+        .andExpect(status().isOk());
+
+    new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
+      final var in = ontologyRepository.findById(ontology.getID()).orElseThrow();
+      final var out = ontologyRepository.findById(ontology_2.getID()).orElseThrow();
+
+      final var relationInstance = relationInstanceRepository
+          .findByNameAndInOntologyAndOutOntology(relationModel.getName(), in, out)
+          .orElse(null);
+
+      Assertions.assertNull(relationInstance);
     });
   }
 }

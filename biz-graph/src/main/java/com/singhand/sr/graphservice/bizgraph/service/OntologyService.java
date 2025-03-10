@@ -40,4 +40,10 @@ public interface OntologyService {
   void deleteOntologyProperties(Ontology ontology, DeletePropertyRequest request);
 
   RelationInstance newRelation(String name, Ontology inOntology, Ontology outOntology);
+
+  RelationInstance updateRelation(String oldName, String newName, Ontology inOntology, Ontology outOntology);
+
+  void deleteRelation(String name, Ontology inOntology, Ontology outOntology);
+
+  Page<RelationInstance> getRelations(Ontology ontology, Pageable pageable);
 }

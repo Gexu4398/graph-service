@@ -250,6 +250,44 @@ public class JpaOntologyService implements OntologyService {
     return managedRelationInstance;
   }
 
+  @Override
+  public RelationInstance updateRelation(String oldName, String newName, Ontology inOntology,
+      Ontology outOntology) {
+
+    final var relationInstance = relationInstanceRepository
+        .findByNameAndInOntologyAndOutOntology(oldName, inOntology, outOntology)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    final var exists = relationInstanceRepository
+        .existsByNameAndInOntologyAndOutOntology(newName, inOntology, outOntology);
+
+    if (exists) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "关系已存在");
+    }
+
+    relationInstance.setName(newName);
+
+    return relationInstanceRepository.save(relationInstance);
+  }
+
+  @Override
+  public void deleteRelation(String name, Ontology inOntology, Ontology outOntology) {
+
+    final var relationInstance = relationInstanceRepository
+        .findByNameAndInOntologyAndOutOntology(name, inOntology, outOntology)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    relationInstance.detachOntologies();
+
+    relationInstanceRepository.delete(relationInstance);
+  }
+
+  @Override
+  public Page<RelationInstance> getRelations(Ontology ontology, Pageable pageable) {
+
+    return relationInstanceRepository.findByInOntology(ontology, pageable);
+  }
+
   /**
    * 根据给定的节点ID列表获取子树节点
    *
