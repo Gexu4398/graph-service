@@ -20,11 +20,14 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -62,7 +65,13 @@ public class PropertyValue {
   @JsonIgnore
   private Property property;
 
-  @Builder.Default
+  @Default
+  @OneToMany(mappedBy = "propertyValue", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Exclude
+  private Set<Evidence> evidences = new HashSet<>();
+
+  @Default
   @OneToMany(mappedBy = "propertyValue", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @MapKey(name = "key")
   @Exclude
@@ -125,5 +134,22 @@ public class PropertyValue {
 
     getFeatures().put(feature.getKey(), feature);
     feature.setPropertyValue(this);
+  }
+
+  public void addEvidence(Evidence evidence) {
+
+    getEvidences().add(evidence);
+    evidence.setPropertyValue(this);
+  }
+
+  public void clearEvidences() {
+
+    getEvidences().forEach(it -> {
+      it.detachEdge();
+      it.setPropertyValue(null);
+      it.detachPicture();
+      it.detachDatasource();
+    });
+    getEvidences().clear();
   }
 }

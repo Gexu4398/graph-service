@@ -41,6 +41,14 @@ public class Evidence {
   @Column(columnDefinition = "text")
   private String content;
 
+  @ManyToOne
+  @JsonIgnore
+  private PropertyValue propertyValue;
+
+  @ManyToOne
+  @JsonIgnore
+  private Edge edge;
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JsonProperty(access = Access.READ_ONLY)
   private Datasource datasource;
@@ -86,8 +94,35 @@ public class Evidence {
     }
   }
 
+  public void detachPropertyValue() {
+
+    if (getPropertyValue() != null) {
+      getPropertyValue().getEvidences().remove(this);
+      setPropertyValue(null);
+    }
+  }
+
+  public void detachEdge() {
+
+    if (getEdge() != null) {
+      getEdge().getEvidences().remove(this);
+      setEdge(null);
+    }
+  }
+
+  public void detachDatasource() {
+
+    if (getDatasource() != null) {
+      getDatasource().getEvidences().remove(this);
+      setDatasource(null);
+    }
+  }
+
   public void detachAll() {
 
+    detachDatasource();
+    detachPropertyValue();
+    detachEdge();
     detachPicture();
   }
 }

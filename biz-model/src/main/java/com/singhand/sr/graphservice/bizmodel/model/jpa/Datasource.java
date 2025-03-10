@@ -161,4 +161,10 @@ public class Datasource {
       setDatasourceContent(null);
     }
   }
+
+  public void addEvidence(@Nonnull Evidence evidence) {
+
+    evidence.setDatasource(this);
+    getEvidences().add(evidence);
+  }
 }

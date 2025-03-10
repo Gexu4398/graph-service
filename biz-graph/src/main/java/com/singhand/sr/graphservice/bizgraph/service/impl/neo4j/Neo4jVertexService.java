@@ -54,4 +54,12 @@ public class Neo4jVertexService {
       vertexNodeRepository.save(it);
     });
   }
+
+  public void updateVertex(String id, String name) {
+
+    getVertex(id).ifPresent(it -> {
+      it.setName(name);
+      vertexNodeRepository.save(it);
+    });
+  }
 }

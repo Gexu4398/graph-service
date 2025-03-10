@@ -71,11 +71,15 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="invertex_id" baseTableName="edge"
-                             constraintName="FK_EDGE_ON_INVERTEX" referencedColumnNames="id"
-                             referencedTableName="vertex"/>
+                             constraintName="FK_EDGE_ON_INVERTEX" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="vertex"
+                             validate="true"/>
     <addForeignKeyConstraint baseColumnNames="outvertex_id" baseTableName="edge"
-                             constraintName="FK_EDGE_ON_OUTVERTEX" referencedColumnNames="id"
-                             referencedTableName="vertex"/>
+                             constraintName="FK_EDGE_ON_OUTVERTEX" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="vertex"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741228747683-1" author="gexu">
@@ -92,11 +96,14 @@
       <column name="vertex_id" type="VARCHAR(255)"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="edge_id" baseTableName="property"
-                             constraintName="FK_PROPERTY_ON_EDGE" referencedColumnNames="id"
-                             referencedTableName="edge"/>
+                             constraintName="FK_PROPERTY_ON_EDGE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="edge" validate="true"/>
     <addForeignKeyConstraint baseColumnNames="vertex_id" baseTableName="property"
-                             constraintName="FK_PROPERTY_ON_VERTEX" referencedColumnNames="id"
-                             referencedTableName="vertex"/>
+                             constraintName="FK_PROPERTY_ON_VERTEX" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="vertex"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741228762436-1" author="gexu">
@@ -115,8 +122,10 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="property_id" baseTableName="propertyvalue"
-                             constraintName="FK_PROPERTYVALUE_ON_PROPERTY"
-                             referencedColumnNames="id" referencedTableName="property"/>
+                             constraintName="FK_PROPERTYVALUE_ON_PROPERTY" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="property"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741228738015-1" author="gexu">
@@ -136,11 +145,14 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="edge_id" baseTableName="feature"
-                             constraintName="FK_FEATURE_ON_EDGE" referencedColumnNames="id"
-                             referencedTableName="edge"/>
+                             constraintName="FK_FEATURE_ON_EDGE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="edge" validate="true"/>
     <addForeignKeyConstraint baseColumnNames="propertyvalue_id" baseTableName="feature"
-                             constraintName="FK_FEATURE_ON_PROPERTYVALUE" referencedColumnNames="id"
-                             referencedTableName="propertyvalue"/>
+                             constraintName="FK_FEATURE_ON_PROPERTYVALUE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="propertyvalue"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741231143107-1" author="gexu">
@@ -158,8 +170,10 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="ontology"
-                             constraintName="FK_ONTOLOGY_ON_PARENT" referencedColumnNames="id"
-                             referencedTableName="ontology"/>
+                             constraintName="FK_ONTOLOGY_ON_PARENT" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="ontology"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741231237932-1" author="gexu">
@@ -193,11 +207,15 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="inontology_id" baseTableName="relationinstance"
-                             constraintName="FK_RELATIONINSTANCE_ON_INONTOLOGY"
-                             referencedColumnNames="id" referencedTableName="ontology"/>
+                             constraintName="FK_RELATIONINSTANCE_ON_INONTOLOGY" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="ontology"
+                             validate="true"/>
     <addForeignKeyConstraint baseColumnNames="outontology_id" baseTableName="relationinstance"
-                             constraintName="FK_RELATIONINSTANCE_ON_OUTONTOLOGY"
-                             referencedColumnNames="id" referencedTableName="ontology"/>
+                             constraintName="FK_RELATIONINSTANCE_ON_OUTONTOLOGY" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="ontology"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741231186626-1" author="gexu">
@@ -219,11 +237,16 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="ontology_id" baseTableName="ontologyproperty"
-                             constraintName="FK_ONTOLOGYPROPERTY_ON_ONTOLOGY"
-                             referencedColumnNames="id" referencedTableName="ontology"/>
+                             constraintName="FK_ONTOLOGYPROPERTY_ON_ONTOLOGY" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="ontology"
+                             validate="true"/>
     <addForeignKeyConstraint baseColumnNames="relationmodel_id" baseTableName="ontologyproperty"
                              constraintName="FK_ONTOLOGYPROPERTY_ON_RELATIONMODEL"
-                             referencedColumnNames="id" referencedTableName="relationmodel"/>
+                             deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="relationmodel"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741241403866-1" author="gexu">
@@ -264,8 +287,10 @@
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="datasourcecontent_id" baseTableName="datasource"
-                             constraintName="FK_DATASOURCE_ON_DATASOURCECONTENT"
-                             referencedColumnNames="id" referencedTableName="datasourcecontent"/>
+                             constraintName="FK_DATASOURCE_ON_DATASOURCECONTENT" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="datasourcecontent"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741233297043-1" author="gexu">
@@ -278,11 +303,15 @@
       </column>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="datasources_id" baseTableName="vertex_datasource"
-                             constraintName="fk_verdat_on_datasource" referencedColumnNames="id"
-                             referencedTableName="datasource"/>
+                             constraintName="fk_verdat_on_datasource" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="datasource"
+                             validate="true"/>
     <addForeignKeyConstraint baseColumnNames="vertices_id" baseTableName="vertex_datasource"
-                             constraintName="fk_verdat_on_vertex" referencedColumnNames="id"
-                             referencedTableName="vertex"/>
+                             constraintName="fk_verdat_on_vertex" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="vertex"
+                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741242113696-1" author="gexu">
@@ -293,8 +322,9 @@
       <column name="tags" type="VARCHAR(255)"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="vertex_id" baseTableName="vertex_tags"
-                             constraintName="fk_vertex_tags_on_vertex" referencedColumnNames="id"
-                             referencedTableName="vertex"/>
+                             constraintName="fk_vertex_tags_on_vertex" deferrable="false"
+                             initiallyDeferred="false" referencedColumnNames="id"
+                             referencedTableName="vertex" validate="true"/>
   </changeSet>
 
   <changeSet id="1741342529918-1" author="gexu">
@@ -324,19 +354,33 @@
         <constraints nullable="false" primaryKey="true" primaryKeyName="pk_evidence"/>
       </column>
       <column name="content" type="text"/>
+      <column name="propertyvalue_id" type="BIGINT"/>
+      <column name="edge_id" type="BIGINT"/>
       <column name="datasource_id" type="BIGINT"/>
       <column name="picture_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
     <addForeignKeyConstraint baseColumnNames="datasource_id" baseTableName="evidence"
-                             constraintName="FK_EVIDENCE_ON_DATASOURCE" referencedColumnNames="id"
-                             referencedTableName="datasource"/>
+                             constraintName="FK_EVIDENCE_ON_DATASOURCE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="datasource"
+                             validate="true"/>
     <addForeignKeyConstraint baseColumnNames="picture_id" baseTableName="evidence"
-                             constraintName="FK_EVIDENCE_ON_PICTURE" referencedColumnNames="id"
-                             referencedTableName="picture"/>
+                             constraintName="FK_EVIDENCE_ON_PICTURE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="picture"
+                             validate="true"/>
+    <addForeignKeyConstraint baseColumnNames="propertyvalue_id" baseTableName="evidence"
+                             constraintName="FK_EVIDENCE_ON_PROPERTY_VALUE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="propertyvalue"
+                             validate="true"/>
+    <addForeignKeyConstraint baseColumnNames="edge_id" baseTableName="evidence"
+                             constraintName="FK_EVIDENCE_ON_EDGE" deferrable="false"
+                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                             referencedColumnNames="id" referencedTableName="edge" validate="true"/>
   </changeSet>
-
 
   <changeSet id="1741229026854-1" author="gexu">
     <createIndex tableName="vertex" indexName="idx_vertex_name">

@@ -23,10 +23,13 @@ import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -64,7 +67,7 @@ public class Edge {
   @Column(nullable = false)
   private String name;
 
-  @Builder.Default
+  @Default
   @Column(nullable = false)
   private String scope = "default";
 
@@ -74,14 +77,20 @@ public class Edge {
   @ManyToOne(cascade = CascadeType.DETACH)
   private Vertex outVertex;
 
-  @Builder.Default
+  @Default
   @MapKey(name = "key")
   @OneToMany(mappedBy = "edge", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JsonIgnore
   @Exclude
   private Map<String, Property> properties = new HashMap<>();
 
-  @Builder.Default
+  @Default
+  @OneToMany(mappedBy = "edge", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Exclude
+  private Set<Evidence> evidences = new HashSet<>();
+
+  @Default
   @OneToMany(mappedBy = "edge", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @MapKey(name = "key")
   @Exclude
