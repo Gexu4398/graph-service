@@ -24,5 +24,5 @@ public interface VertexService {
 
   void batchDeleteVertex(Set<String> types);
 
-  void batchUpdateVertex(String oldName, String newName);
+  void batchUpdateVertex(String oldType, String newType);
 }

@@ -131,7 +131,82 @@ public class OntologyControllerTest extends BaseTestEnvironment {
 
   @Test
   @SneakyThrows
+  void testUpdateOntology_With_Vertex() {
+
+    final var name = faker.name().name();
+    final var name_2 = faker.name().name();
+
+    mockMvc.perform(post("/ontology")
+            .param("name", name))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name", equalTo(name)));
+
+    final var ontology = ontologyRepository.findByName(name).orElseThrow();
+
+    dataHelper.newVertex(faker.name().name(), ontology.getName());
+    dataHelper.newVertex(faker.name().name(), ontology.getName());
+    dataHelper.newVertex(faker.name().name(), ontology.getName());
+    dataHelper.newVertex(faker.name().name(), ontology.getName());
+
+    final var types = Set.of(name);
+    final var vertices = vertexRepository.findByTypeIn(types);
+    final var vertexNodes = vertexNodeRepository.findByTypeIn(types);
+
+    Assertions.assertEquals(4, vertices.size());
+    Assertions.assertEquals(4, vertexNodes.size());
+
+    mockMvc.perform(put("/ontology/" + ontology.getID())
+            .param("name", name_2))
+        .andExpect(status().isOk());
+
+    // 等待500毫秒，让虚拟线程执行完成，时间可自行调整
+    TimeUnit.MILLISECONDS.sleep(500);
+
+    final var vertices_2 = vertexRepository.findByTypeIn(types);
+    final var vertexNodes_2 = vertexNodeRepository.findByTypeIn(types);
+    Assertions.assertEquals(0, vertices_2.size());
+    Assertions.assertEquals(0, vertexNodes_2.size());
+
+    final var types_2 = Set.of(name_2);
+    final var vertices_3 = vertexRepository.findByTypeIn(types_2);
+    final var vertexNodes_3 = vertexNodeRepository.findByTypeIn(types_2);
+    Assertions.assertEquals(4, vertices_3.size());
+    Assertions.assertEquals(4, vertexNodes_3.size());
+  }
+
+  @Test
+  @SneakyThrows
   void testDeleteOntology() {
+
+    final var properties = Set.of(faker.lorem().sentence(), faker.lorem().sentence());
+
+    final var ontology = dataHelper.newOntology("test_ontology_01", null, properties);
+
+    final var ontology_2 = dataHelper
+        .newOntology("test_ontology_02", "test_ontology_01", properties);
+
+    final var ontology_3 = dataHelper
+        .newOntology("test_ontology_03", "test_ontology_02", properties);
+
+    final var ontology_4 = dataHelper
+        .newOntology("test_ontology_04", "test_ontology_03", properties);
+
+    mockMvc.perform(delete("/ontology/" + ontology.getID()))
+        .andExpect(status().isOk());
+
+    final var managedOntology = ontologyRepository.findById(ontology.getID()).orElse(null);
+    final var managedOntology_2 = ontologyRepository.findById(ontology_2.getID()).orElse(null);
+    final var managedOntology_3 = ontologyRepository.findById(ontology_3.getID()).orElse(null);
+    final var managedOntology_4 = ontologyRepository.findById(ontology_4.getID()).orElse(null);
+    Assertions.assertNull(managedOntology);
+    Assertions.assertNull(managedOntology_2);
+    Assertions.assertNull(managedOntology_3);
+    Assertions.assertNull(managedOntology_4);
+  }
+
+  @Test
+  @SneakyThrows
+  void testDeleteOntology_With_Vertex() {
 
     final var properties = Set.of(faker.lorem().sentence(), faker.lorem().sentence());
 
@@ -174,7 +249,8 @@ public class OntologyControllerTest extends BaseTestEnvironment {
     Assertions.assertNull(managedOntology_3);
     Assertions.assertNull(managedOntology_4);
 
-    TimeUnit.SECONDS.sleep(1);
+    // 等待500毫秒，让虚拟线程执行完成，时间可自行调整
+    TimeUnit.MILLISECONDS.sleep(500);
 
     final var vertices_2 = vertexRepository.findByTypeIn(types);
     final var vertexNodes_2 = vertexNodeRepository.findByTypeIn(types);

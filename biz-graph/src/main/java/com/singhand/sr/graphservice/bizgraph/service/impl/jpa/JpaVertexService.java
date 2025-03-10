@@ -14,6 +14,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.criteria.JoinType;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,6 +86,20 @@ public class JpaVertexService implements VertexService {
     return managedvertex;
   }
 
+  private void updateVertices(List<String> vertexIds, String newType) {
+
+    final var vertices = vertexRepository.findAllById(vertexIds);
+
+    final var managedVertices = new HashSet<>(vertices);
+
+    managedVertices.forEach(it -> {
+      it.setType(newType);
+      vertexRepository.save(it);
+    });
+
+    neo4jVertexService.updateVertices(vertexIds, newType);
+  }
+
   @Override
   public void deleteVertex(String vertexId) {
 
@@ -119,8 +134,55 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public void batchUpdateVertex(String oldName, String newName) {
+  public void batchUpdateVertex(String oldType, String newType) {
 
+    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+      executor.submit(() -> {
+        try {
+          updateVerticesByType(oldType, newType);
+        } catch (Exception e) {
+          log.error("异步修改顶点任务出现异常", e);
+        }
+      });
+    }
+  }
+
+  private void updateVerticesByType(String oldType, String newType) {
+
+    int pageSize = 500;
+    int pageNumber = 0;
+    Page<Vertex> page;
+
+    do {
+      try {
+        page = vertexRepository.findAll(
+            Specification.where(typeIs(oldType)),
+            PageRequest.of(pageNumber, pageSize)
+        );
+      } catch (Exception e) {
+        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        break;
+      }
+
+      final var vertexIds = page.getContent().stream()
+          .map(Vertex::getID)
+          .collect(Collectors.toList());
+
+      if (CollUtil.isNotEmpty(vertexIds)) {
+        try {
+          final var transaction = new TransactionTemplate(bizTransactionManager);
+          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+          transaction.execute(status -> {
+            updateVertices(vertexIds, newType);
+            return true;
+          });
+        } catch (Exception e) {
+          log.error("删除顶点ID为 {} 时出现异常", vertexIds, e);
+        }
+      }
+
+      pageNumber++;
+    } while (page.hasNext());
   }
 
   private void deleteVerticesByTypes(Set<String> types) {
@@ -159,6 +221,16 @@ public class JpaVertexService implements VertexService {
 
       pageNumber++;
     } while (page.hasNext());
+  }
+
+  private @Nonnull Specification<Vertex> typeIs(String type) {
+
+    return (root, query, criteriaBuilder) -> {
+      if (StrUtil.isBlank(type)) {
+        return criteriaBuilder.and();
+      }
+      return criteriaBuilder.equal(root.get(Vertex_.TYPE), type);
+    };
   }
 
   private @Nonnull Specification<Vertex> addKeyValueSpecifications(
