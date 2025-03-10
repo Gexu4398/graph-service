@@ -188,8 +188,8 @@ public class VertexController {
 
     requests.forEach(request -> {
       if (propertyRepository.findByVertexAndKey(vertex, request.getKey()).isPresent()) {
-        final var property = propertyRepository.findByVertexAndKey(vertex,
-            request.getKey()).get();
+        final var property = propertyRepository
+            .findByVertexAndKey(vertex, request.getKey()).get();
         final var valueMd5 = MD5.create().digestHex(request.getNewValue());
         final var value = property.getValues()
             .stream()
