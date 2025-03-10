@@ -159,8 +159,8 @@ public class OntologyControllerTest extends BaseTestEnvironment {
             .param("name", name_2))
         .andExpect(status().isOk());
 
-    // 等待1秒，让虚拟线程执行完成，时间可自行调整
-    TimeUnit.SECONDS.sleep(1);
+    // 等待，让虚拟线程执行完成，时间可自行调整
+    TimeUnit.SECONDS.sleep(2);
 
     final var vertices_2 = vertexRepository.findByTypeIn(types);
     final var vertexNodes_2 = vertexNodeRepository.findByTypeIn(types);
