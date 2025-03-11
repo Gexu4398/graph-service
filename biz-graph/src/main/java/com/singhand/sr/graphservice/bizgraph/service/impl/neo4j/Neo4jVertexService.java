@@ -9,23 +9,32 @@ import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeReposito
 import jakarta.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Slf4j
+@Transactional(transactionManager = "bizNeo4jTransactionManager")
 public class Neo4jVertexService {
 
   private final VertexNodeRepository vertexNodeRepository;
 
+  private final Neo4jVectorStore vectorStore;
+
   @Autowired
-  public Neo4jVertexService(VertexNodeRepository vertexNodeRepository) {
+  public Neo4jVertexService(VertexNodeRepository vertexNodeRepository,
+      Neo4jVectorStore vectorStore) {
 
     this.vertexNodeRepository = vertexNodeRepository;
+    this.vectorStore = vectorStore;
   }
 
   public Optional<VertexNode> getVertex(String vertexId) {
@@ -40,23 +49,53 @@ public class Neo4jVertexService {
     vertexNode.setName(vertex.getName());
     vertexNode.setType(vertex.getType());
 
-    return vertexNodeRepository.save(vertexNode);
+    final var managedvertexNode = vertexNodeRepository.save(vertexNode);
+
+    addVertexToVectorStore(managedvertexNode);
+
+    return managedvertexNode;
+  }
+
+  public void addVertexToVectorStore(@Nonnull VertexNode vertexNode) {
+
+    final var document = new Document(
+        vertexNode.getId(),
+        Map.of(
+            "name", vertexNode.getName(),
+            "type", vertexNode.getType(),
+            "properties", vertexNode.getProperties().toString()
+        )
+    );
+    try {
+      vectorStore.delete(List.of(vertexNode.getId()));
+    } catch (Exception ignore) {
+    }
+    vectorStore.add(List.of(document));
+  }
+
+  public void updateVectorStore(@Nonnull VertexNode vertexNode) {
+
+    addVertexToVectorStore(vertexNode);
   }
 
   public void deleteVertex(String vertexId) {
 
-    getVertex(vertexId).ifPresent(vertexNodeRepository::delete);
+    getVertex(vertexId).ifPresent(it -> {
+      vertexNodeRepository.delete(it);
+      vectorStore.delete(List.of(it.getId()));
+    });
   }
 
   public void updateVertices(List<String> vertexIds, String newType) {
 
     final var vertexNodes = vertexNodeRepository.findAllById(vertexIds);
 
-    final var managedVertexNode = new HashSet<>(vertexNodes);
+    final var managedVertexNodes = new HashSet<>(vertexNodes);
 
-    managedVertexNode.forEach(it -> {
+    managedVertexNodes.forEach(it -> {
       it.setType(newType);
-      vertexNodeRepository.save(it);
+      final var managedVertexNode = vertexNodeRepository.save(it);
+      updateVectorStore(managedVertexNode);
     });
   }
 
@@ -64,7 +103,8 @@ public class Neo4jVertexService {
 
     getVertex(id).ifPresent(it -> {
       it.setName(name);
-      vertexNodeRepository.save(it);
+      final var managedVertexNode = vertexNodeRepository.save(it);
+      updateVectorStore(managedVertexNode);
     });
   }
 
@@ -78,7 +118,9 @@ public class Neo4jVertexService {
 
     values.add(request.getValue());
 
-    vertexNodeRepository.save(vertexNode);
+    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+
+    updateVectorStore(managedVertexNode);
   }
 
   public void updateProperty(@Nonnull Vertex vertex, @Nonnull UpdatePropertyRequest request) {
@@ -89,7 +131,9 @@ public class Neo4jVertexService {
     vertexNode.getProperties().get(request.getKey()).remove(request.getOldValue());
     vertexNode.getProperties().get(request.getKey()).add(request.getNewValue());
 
-    vertexNodeRepository.save(vertexNode);
+    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+
+    updateVectorStore(managedVertexNode);
   }
 
   public void deleteProperty(@Nonnull Vertex vertex, @Nonnull String key, @Nonnull String value) {
@@ -103,6 +147,7 @@ public class Neo4jVertexService {
       vertexNode.getProperties().remove(key);
     }
 
-    vertexNodeRepository.save(vertexNode);
+    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+    updateVectorStore(managedVertexNode);
   }
 }

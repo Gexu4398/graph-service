@@ -30,6 +30,8 @@ public class Neo4jVectorStoreConfig {
 
   private boolean initializeSchema;
 
+  private String label;
+
   @Value("${spring.ai.openai.api-key}")
   private String apiKey;
 
@@ -43,6 +45,7 @@ public class Neo4jVectorStoreConfig {
         .databaseName(databaseName)
         .distanceType(distanceType)
         .embeddingDimension(embeddingDimension)
+        .label(label)
         .indexName(indexName)
         .initializeSchema(initializeSchema)
         .batchingStrategy(new TokenCountBatchingStrategy())

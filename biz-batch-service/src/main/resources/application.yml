@@ -8,18 +8,20 @@ spring:
     name: biz-batch-service
   ai:
     openai:
-      api-key: 7257b5ab-1cd1-424e-902d-79d08bc11442
-      base-url: http://10.1.141.33:8000
-      chat:
+      api-key: bbae247c-d560-4881-81c6-98fd252ab8ec
+      base-url: http://10.1.141.33:18080
+      embedding:
         options:
-          model: SCHAT
+          model: BAAI/bge-m3
+        embeddings-path: /v1/embeddings
     vectorstore:
       neo4j:
         initialize-schema: true
         database-name: neo4j
         index-name: graph-embedding-index
-        embedding-dimension: 1536
+        embedding-dimension: 768
         distance-type: cosine
+        label: VertexDocument
   datasource:
     url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/batch
     username: root

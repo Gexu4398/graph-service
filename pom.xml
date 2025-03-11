@@ -70,7 +70,7 @@
     <commons-io.version>2.16.1</commons-io.version>
     <commons-text.version>1.12.0</commons-text.version>
     <testcontainers-neo4j.version>1.20.5</testcontainers-neo4j.version>
-    <spring-ai.version>1.0.0-SNAPSHOT</spring-ai.version>
+    <spring-ai.version>1.0.0-M6</spring-ai.version>
     <apache.poi-version>5.4.0</apache.poi-version>
     <docx4j-version>11.5.2</docx4j-version>
     <pdfbox-version>3.0.4</pdfbox-version>
