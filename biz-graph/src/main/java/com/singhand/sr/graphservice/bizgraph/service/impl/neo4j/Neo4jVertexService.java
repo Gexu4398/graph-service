@@ -1,5 +1,8 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.neo4j;
 
+import cn.hutool.core.collection.CollUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
@@ -9,7 +12,9 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Slf4j
@@ -61,5 +66,43 @@ public class Neo4jVertexService {
       it.setName(name);
       vertexNodeRepository.save(it);
     });
+  }
+
+  public void newProperty(@Nonnull Vertex vertex, @Nonnull NewPropertyRequest request) {
+
+    final var vertexNode = getVertex(vertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var values = vertexNode.getProperties()
+        .computeIfAbsent(request.getKey(), v -> new HashSet<>());
+
+    values.add(request.getValue());
+
+    vertexNodeRepository.save(vertexNode);
+  }
+
+  public void updateProperty(@Nonnull Vertex vertex, @Nonnull UpdatePropertyRequest request) {
+
+    final var vertexNode = getVertex(vertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    vertexNode.getProperties().get(request.getKey()).remove(request.getOldValue());
+    vertexNode.getProperties().get(request.getKey()).add(request.getNewValue());
+
+    vertexNodeRepository.save(vertexNode);
+  }
+
+  public void deleteProperty(@Nonnull Vertex vertex, @Nonnull String key, @Nonnull String value) {
+
+    final var vertexNode = getVertex(vertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    vertexNode.getProperties().get(key).remove(value);
+
+    if (CollUtil.isEmpty(vertexNode.getProperties().get(key))) {
+      vertexNode.getProperties().remove(key);
+    }
+
+    vertexNodeRepository.save(vertexNode);
   }
 }

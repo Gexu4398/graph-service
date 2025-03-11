@@ -122,6 +122,8 @@ public class JpaVertexService implements VertexService {
 
     final var managedVertex = vertexRepository.save(vertex);
 
+    neo4jVertexService.newVertex(managedVertex);
+
     Datasource datasource;
     if (null != request.getDatasourceId()) {
       datasource = getDatasource(request);
@@ -141,7 +143,6 @@ public class JpaVertexService implements VertexService {
       newProperty(managedVertex, newPropertyRequest);
     });
 
-    neo4jVertexService.newVertex(managedVertex);
     return managedVertex;
   }
 
@@ -188,6 +189,8 @@ public class JpaVertexService implements VertexService {
     if (null != request.getDatasourceId()) {
       addEvidence(managedPropertyValue, request);
     }
+
+    neo4jVertexService.newProperty(vertex, request);
   }
 
   @Override
@@ -219,6 +222,8 @@ public class JpaVertexService implements VertexService {
       managedOldPropertyValue.clearEvidences();
       managedOldPropertyValue.setValue(request.getNewValue());
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
+
+      neo4jVertexService.updateProperty(vertex, request);
       addEvidence(propertyValue, request);
       setFeature(propertyValue, "checked", request.getChecked().toString());
     }
@@ -255,6 +260,8 @@ public class JpaVertexService implements VertexService {
       dbProperty.setVertex(null);
       vertexRepository.save(vertex);
     }
+
+    neo4jVertexService.deleteProperty(vertex, key, dbPropertyValue.getValue());
   }
 
   @Override

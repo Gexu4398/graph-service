@@ -1,7 +1,9 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
 import jakarta.validation.constraints.NotBlank;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -13,6 +15,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Exclude;
 import org.springframework.data.annotation.Version;
+import org.springframework.data.neo4j.core.schema.CompositeProperty;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
@@ -41,6 +44,11 @@ public class VertexNode {
 
   @Version
   private Long version;
+
+  @CompositeProperty
+  @Default
+  @Exclude
+  private Map<String,Set<String>> properties = new HashMap<>();
 
   @Relationship(type = "CONNECTED_TO", direction = Relationship.Direction.OUTGOING)
   @Default
