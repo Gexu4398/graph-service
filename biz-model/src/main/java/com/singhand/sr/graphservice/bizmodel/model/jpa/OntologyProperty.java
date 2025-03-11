@@ -18,6 +18,7 @@ import java.util.Calendar;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -52,6 +53,10 @@ public class OntologyProperty {
 
   @Column(nullable = false)
   private String type;
+
+  @Column(nullable = false)
+  @Default
+  private boolean multiValue = false;
 
   @ManyToOne
   @JsonIgnore

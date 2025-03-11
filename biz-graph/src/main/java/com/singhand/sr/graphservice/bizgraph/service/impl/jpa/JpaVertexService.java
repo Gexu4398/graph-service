@@ -143,6 +143,8 @@ public class JpaVertexService implements VertexService {
       newProperty(managedVertex, newPropertyRequest);
     });
 
+    neo4jVertexService.updateVectorStore(managedVertex.getID());
+
     return managedVertex;
   }
 

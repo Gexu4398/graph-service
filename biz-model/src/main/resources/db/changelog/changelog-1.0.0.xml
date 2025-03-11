@@ -231,6 +231,9 @@
       <column name="type" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
+      <column name="multivalue" type="boolean">
+        <constraints nullable="false"/>
+      </column>
       <column name="ontology_id" type="BIGINT"/>
       <column name="relationmodel_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>

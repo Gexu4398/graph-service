@@ -33,6 +33,7 @@ public class Neo4jVertexService {
   public Neo4jVertexService(VertexNodeRepository vertexNodeRepository,
       Neo4jVectorStore vectorStore) {
 
+
     this.vertexNodeRepository = vertexNodeRepository;
     this.vectorStore = vectorStore;
   }
@@ -60,6 +61,7 @@ public class Neo4jVertexService {
 
     final var document = new Document(
         vertexNode.getId(),
+        vertexNode.getName(),
         Map.of(
             "name", vertexNode.getName(),
             "type", vertexNode.getType(),
@@ -68,9 +70,17 @@ public class Neo4jVertexService {
     );
     try {
       vectorStore.delete(List.of(vertexNode.getId()));
-    } catch (Exception ignore) {
+    } catch (Exception e) {
+      log.error(e.getMessage());
     }
     vectorStore.add(List.of(document));
+  }
+
+  public void updateVectorStore(@Nonnull String id) {
+
+    final var vertexNode = getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    addVertexToVectorStore(vertexNode);
   }
 
   public void updateVectorStore(@Nonnull VertexNode vertexNode) {
