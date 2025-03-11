@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.testenvironments.helper;
 
 import cn.hutool.core.util.StrUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
@@ -19,6 +20,7 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakRoleService
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakUserService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
@@ -252,5 +254,34 @@ public class DataHelper {
     Optional.ofNullable(datasource)
         .ifPresent(it -> newPropertyRequest.setDatasourceId(datasource.getID()));
     vertexService.newProperty(vertex, newPropertyRequest);
+  }
+
+  @Transactional("bizTransactionManager")
+  public void newOntologyRelation(String name, Ontology inOntology, Ontology outOntology) {
+
+    ontologyService.newRelation(name, inOntology, outOntology);
+  }
+
+  @Transactional("bizTransactionManager")
+  public Edge newEdge(Vertex inVertex, Vertex outVertex, String name,
+      String evidence, Map<String, String> features) {
+
+    return newEdge(inVertex, outVertex, name, evidence, features, null, "default");
+  }
+
+  @Transactional("bizTransactionManager")
+  public Edge newEdge(Vertex inVertex, Vertex outVertex, String name,
+      String evidence, Map<String, String> features, Datasource datasource, String scope) {
+
+    final var newVertexEdgeRequest = new NewEdgeRequest();
+    newVertexEdgeRequest.setName(name);
+    newVertexEdgeRequest.setScope(scope);
+    newVertexEdgeRequest.setContent(evidence);
+    newVertexEdgeRequest.setFeatures(features);
+    if (datasource != null) {
+      newVertexEdgeRequest.setDatasourceId(datasource.getID());
+    }
+    newVertexEdgeRequest.setCreator("admin");
+    return vertexService.newEdge(inVertex, outVertex, newVertexEdgeRequest);
   }
 }

@@ -10,10 +10,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.crypto.digest.MD5;
 import cn.hutool.json.JSONUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
@@ -22,6 +24,7 @@ import com.singhand.sr.graphservice.bizservice.BaseTestEnvironment;
 import com.singhand.sr.graphservice.testenvironments.mock.MockDataSource;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntology;
 import com.singhand.sr.graphservice.testenvironments.mock.MockOntologyProperty;
+import com.singhand.sr.graphservice.testenvironments.mock.MockRelationModel;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
@@ -57,6 +60,9 @@ public class VertexControllerTest extends BaseTestEnvironment {
 
   @Autowired
   private DatasourceRepository datasourceRepository;
+
+  @Autowired
+  private EdgeRepository edgeRepository;
 
   @Test
   @SneakyThrows
@@ -324,12 +330,41 @@ public class VertexControllerTest extends BaseTestEnvironment {
     mockMvc.perform(delete("/vertex/" + vertex.getID() + "/property")
             .param("key", "age")
             .param("value", MD5.create().digestHex(value))
-            .param("mode","md5"))
+            .param("mode", "md5"))
         .andExpect(status().isOk());
 
     new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {
       final var managedVertex = vertexRepository.findById(vertex.getID()).orElseThrow();
       Assertions.assertTrue(managedVertex.getProperties().isEmpty());
     });
+  }
+
+  @SneakyThrows
+  @Test
+  @MockRelationModel(name = "contains")
+  void testNewEdge() {
+
+    final var ontology = dataHelper.newOntology("testNewEdge", null);
+
+    dataHelper.newOntologyRelation("contains", ontology, ontology);
+
+    final var inVertex = dataHelper.newVertex(faker.name().name(), "testNewEdge");
+    final var outVertex = dataHelper.newVertex(faker.name().name(), "testNewEdge");
+
+    final var request = new NewEdgeRequest();
+    request.setName("contains");
+
+    mockMvc.perform(post("/vertex/" + inVertex.getID() + "/edge/" + outVertex.getID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(JSONUtil.toJsonStr(List.of(request))))
+        .andExpect(status().isOk());
+
+    final var edge = edgeRepository.findByNameAndInVertexAndOutVertexAndScope("contains", inVertex,
+        outVertex, "default").orElse(null);
+
+    Assertions.assertNotNull(edge);
+    Assertions.assertEquals(inVertex, edge.getInVertex());
+    Assertions.assertEquals(outVertex, edge.getOutVertex());
+    Assertions.assertEquals("contains", edge.getName());
   }
 }

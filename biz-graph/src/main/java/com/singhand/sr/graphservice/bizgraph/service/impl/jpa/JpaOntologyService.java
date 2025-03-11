@@ -235,8 +235,6 @@ public class JpaOntologyService implements OntologyService {
   public RelationInstance newRelation(@Nonnull String name, @Nonnull Ontology inOntology,
       @Nonnull Ontology outOntology) {
 
-    assert !inOntology.equals(outOntology);
-
     final var exists = relationInstanceRepository
         .existsByNameAndInOntologyAndOutOntology(name, inOntology, outOntology);
 
