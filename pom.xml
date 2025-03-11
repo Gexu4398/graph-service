@@ -24,9 +24,9 @@
     <module>biz-keycloak-model</module>
     <module>biz-shell</module>
     <module>biz-batch-service</module>
-      <module>test-environments</module>
+    <module>test-environments</module>
     <module>testcontainers-minio</module>
-      <module>biz-graph</module>
+    <module>biz-graph</module>
   </modules>
 
   <profiles>
@@ -70,7 +70,7 @@
     <commons-io.version>2.16.1</commons-io.version>
     <commons-text.version>1.12.0</commons-text.version>
     <testcontainers-neo4j.version>1.20.5</testcontainers-neo4j.version>
-    <spring-ai.version>1.0.0-M6</spring-ai.version>
+    <spring-ai.version>1.0.0-SNAPSHOT</spring-ai.version>
     <apache.poi-version>5.4.0</apache.poi-version>
     <docx4j-version>11.5.2</docx4j-version>
     <pdfbox-version>3.0.4</pdfbox-version>
@@ -80,6 +80,25 @@
     <jsoup-version>1.19.1</jsoup-version>
     <maven.build.timestamp.format>yyyMMddHHmmss</maven.build.timestamp.format>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>spring-snapshots</id>
+      <name>Spring Snapshots</name>
+      <url>https://repo.spring.io/snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
 
   <dependencyManagement>
     <dependencies>
