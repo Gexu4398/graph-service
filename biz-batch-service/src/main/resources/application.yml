@@ -8,12 +8,20 @@ spring:
     name: biz-batch-service
   ai:
     openai:
-      api-key: bbae247c-d560-4881-81c6-98fd252ab8ec
       base-url: http://10.1.141.33:18080
+      api-key: bbae247c-d560-4881-81c6-98fd252ab8ec
+      chat:
+        base-url: http://10.1.141.33:8000
+        api-key: 7257b5ab-1cd1-424e-902d-79d08bc11442
+        completions-path: /v1/chat/completions
+        options:
+          model: SCHAT
       embedding:
+        base-url: http://10.1.141.33:18080
+        api-key: bbae247c-d560-4881-81c6-98fd252ab8ec
+        embeddings-path: /v1/embeddings
         options:
           model: BAAI/bge-m3
-        embeddings-path: /v1/embeddings
     vectorstore:
       neo4j:
         initialize-schema: true
