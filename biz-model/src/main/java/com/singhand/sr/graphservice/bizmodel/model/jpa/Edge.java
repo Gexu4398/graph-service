@@ -169,4 +169,10 @@ public class Edge {
     property.setEdge(this);
     getProperties().put(property.getKey(), property);
   }
+
+  public void addEvidence(Evidence evidence) {
+
+    getEvidences().add(evidence);
+    evidence.setEdge(this);
+  }
 }

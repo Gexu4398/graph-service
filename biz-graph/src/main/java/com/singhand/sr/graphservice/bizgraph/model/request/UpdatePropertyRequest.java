@@ -23,8 +23,8 @@ public class UpdatePropertyRequest extends NewEvidenceRequest {
   private String newValue;
 
   @Schema(description = "是否可信")
-  private Boolean verified = true;
+  private boolean verified = true;
 
   @Schema(description = "是否校验")
-  private Boolean checked = true;
+  private boolean checked = true;
 }

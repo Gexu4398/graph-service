@@ -153,16 +153,19 @@ public class VertexController {
       @Valid @RequestBody NewPropertyRequest newPropertyRequest) {
 
     final var vertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var ontology = ontologyRepository.findByName(vertex.getType())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
-    ontologyService.getProperty(ontology, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在！"));
+    final var ontologyProperty = ontologyService.getProperty(ontology, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
 
     if (propertyRepository.findByVertexAndKey(vertex, key).isPresent()) {
       final var property = propertyRepository.findByVertexAndKey(vertex, key).get();
+      if (!ontologyProperty.isMultiValue() && CollUtil.isNotEmpty(property.getValues())) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "属性已存在值，且该属性不支持多值");
+      }
       final var valueMd5 = MD5.create().digestHex(newPropertyRequest.getValue());
 
       final var value = property.getValues()
@@ -171,7 +174,7 @@ public class VertexController {
           .findFirst();
 
       if (value.isPresent()) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "该属性值已存在！");
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "该属性值已存在");
       }
     }
 
@@ -189,30 +192,24 @@ public class VertexController {
       @Valid @RequestBody List<UpdatePropertyRequest> requests) {
 
     final var vertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var ontology = ontologyRepository.findByName(vertex.getType())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
     final var username = JwtHelper.getUsername();
 
+    final var ontologyProperties = new HashMap<String, Boolean>();
     requests.forEach(request -> {
-      ontologyService.getProperty(ontology, request.getKey())
-          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在！"));
+      if (null == ontologyProperties.get(request.getKey())) {
+        ontologyService.getProperty(ontology, request.getKey())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
+        ontologyProperties.put(request.getKey(), true);
+      }
 
-      if (propertyRepository.findByVertexAndKey(vertex, request.getKey()).isPresent()) {
-        final var property = propertyRepository
-            .findByVertexAndKey(vertex, request.getKey())
-            .get();
-        final var valueMd5 = MD5.create().digestHex(request.getNewValue());
-        final var value = property.getValues()
-            .stream()
-            .filter(it -> it.getMd5().equals(valueMd5))
-            .findFirst();
-        if (value.isPresent() &&
-            !request.getNewValue().equals(request.getOldValue())) {
-          throw new ResponseStatusException(HttpStatus.CONFLICT, "该属性值已存在！");
-        }
+      final var propertyOptional = propertyRepository.findByVertexAndKey(vertex, request.getKey());
+      if (propertyOptional.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "该属性不存在");
       }
       request.setCreator(username);
     });
@@ -229,11 +226,11 @@ public class VertexController {
       @RequestParam(defaultValue = "raw") String mode) {
 
     if (mode.equals("raw")) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为为md5!");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为为md5");
     }
 
     final var vertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     vertexService.deleteProperty(vertex, key, value, mode);
   }
@@ -246,20 +243,20 @@ public class VertexController {
       @Valid @RequestBody List<NewEdgeRequest> requests) {
 
     if (id.equals(outId)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自身建立关系！");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自身建立关系");
     }
 
     final var inVertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var outVertex = vertexService.getVertex(outId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var username = JwtHelper.getUsername();
 
     requests.forEach(request -> {
       request.setCreator(username);
-//      vertexService.newEdge(inVertex, outVertex, request);
+      vertexService.newEdge(inVertex, outVertex, request);
     });
   }
 }

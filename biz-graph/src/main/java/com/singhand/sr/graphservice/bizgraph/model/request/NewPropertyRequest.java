@@ -20,8 +20,8 @@ public class NewPropertyRequest extends NewEvidenceRequest {
   private String value;
 
   @Schema(description = "是否验证")
-  private Boolean verified = true;
+  private boolean verified = true;
 
   @Schema(description = "是否校验")
-  private Boolean checked = true;
+  private boolean checked = true;
 }

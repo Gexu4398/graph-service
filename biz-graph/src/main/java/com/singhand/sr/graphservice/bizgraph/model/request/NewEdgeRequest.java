@@ -22,10 +22,10 @@ public class NewEdgeRequest extends NewEvidenceRequest {
   private String scope = "default";
 
   @Schema(description = "采信")
-  private Boolean verified = true;
+  private boolean verified = true;
 
   @Schema(description = "验证")
-  private Boolean checked = true;
+  private boolean checked = true;
 
   private Map<String, String> props = new HashMap<>();
 }

@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
@@ -10,6 +11,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Feature;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
@@ -19,6 +21,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Property_;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.FeatureRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
@@ -71,6 +74,8 @@ public class JpaVertexService implements VertexService {
 
   private final EvidenceRepository evidenceRepository;
 
+  private final EdgeRepository edgeRepository;
+
   private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
   @Autowired
@@ -79,7 +84,7 @@ public class JpaVertexService implements VertexService {
       @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
       PropertyRepository propertyRepository, PropertyValueRepository propertyValueRepository,
       FeatureRepository featureRepository, DatasourceRepository datasourceRepository,
-      EvidenceRepository evidenceRepository) {
+      EvidenceRepository evidenceRepository, EdgeRepository edgeRepository) {
 
     this.vertexRepository = vertexRepository;
     this.neo4jVertexService = neo4jVertexService;
@@ -89,6 +94,7 @@ public class JpaVertexService implements VertexService {
     this.featureRepository = featureRepository;
     this.datasourceRepository = datasourceRepository;
     this.evidenceRepository = evidenceRepository;
+    this.edgeRepository = edgeRepository;
   }
 
   @Override
@@ -182,11 +188,11 @@ public class JpaVertexService implements VertexService {
     propertyValue.setValue(request.getValue());
     final var managedPropertyValue = propertyValueRepository.save(propertyValue);
 
-    if (request.getVerified()) {
+    if (request.isVerified()) {
       setVerified(vertex, request.getKey(), request.getValue());
     }
 
-    setFeature(propertyValue, "checked", request.getChecked().toString());
+    setFeature(propertyValue, "checked", String.valueOf(request.isChecked()));
 
     if (null != request.getDatasourceId()) {
       addEvidence(managedPropertyValue, request);
@@ -200,7 +206,7 @@ public class JpaVertexService implements VertexService {
 
     final var managedProperty = Optional.ofNullable(
             vertex.getProperties().get(request.getKey()))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
 
     final var oldValueMd5 = MD5.create().digestHex(request.getOldValue());
 
@@ -208,7 +214,7 @@ public class JpaVertexService implements VertexService {
         .stream()
         .filter(value -> value.getMd5().equals(oldValueMd5))
         .findFirst()
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
 
     final var newValueMd5 = MD5.create().digestHex(request.getNewValue());
 
@@ -219,7 +225,7 @@ public class JpaVertexService implements VertexService {
         managedOldPropertyValue.clearEvidences();
         addEvidence(managedOldPropertyValue, request);
       }
-      setFeature(managedOldPropertyValue, "checked", request.getChecked().toString());
+      setFeature(managedOldPropertyValue, "checked", String.valueOf(request.isChecked()));
     } else {
       managedOldPropertyValue.clearEvidences();
       managedOldPropertyValue.setValue(request.getNewValue());
@@ -227,10 +233,10 @@ public class JpaVertexService implements VertexService {
 
       neo4jVertexService.updateProperty(vertex, request);
       addEvidence(propertyValue, request);
-      setFeature(propertyValue, "checked", request.getChecked().toString());
+      setFeature(propertyValue, "checked", String.valueOf(request.isChecked()));
     }
 
-    if (request.getVerified()) {
+    if (request.isVerified()) {
       setVerified(vertex, request.getKey(), request.getNewValue());
     }
   }
@@ -240,7 +246,7 @@ public class JpaVertexService implements VertexService {
       @Nonnull String mode) {
 
     final var dbProperty = Optional.ofNullable(vertex.getProperties().get(key))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
 
     String valueMd5;
     if (mode.equals("md5")) {
@@ -252,7 +258,7 @@ public class JpaVertexService implements VertexService {
     final var dbPropertyValue = dbProperty.getValues().stream()
         .filter(it -> it.getMd5().equals(valueMd5))
         .findFirst()
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
 
     dbProperty.removeValue(dbPropertyValue);
     propertyRepository.save(dbProperty);
@@ -267,18 +273,159 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
+  public Edge newEdge(@Nonnull Vertex inVertex, @Nonnull Vertex outVertex,
+      @Nonnull NewEdgeRequest request) {
+
+    assert !inVertex.equals(outVertex);
+
+    if (null != request.getDatasourceId()) {
+      getDatasource(request);
+    }
+
+    final var oldEdge = edgeRepository.findByNameAndInVertexAndOutVertexAndScope(
+        request.getName(), inVertex, outVertex, request.getScope());
+
+    if (oldEdge.isPresent()) {
+      final var edge = oldEdge.get();
+      edge.getEvidences()
+          .stream()
+          .filter(it -> it.getDatasource().getID().equals(request.getDatasourceId()))
+          .forEach(Evidence::detachAll);
+
+      addEvidence(edge, request);
+      return edge;
+    }
+
+    final var edge = new Edge();
+    edge.setInVertex(inVertex);
+    edge.setOutVertex(outVertex);
+    edge.setScope(request.getScope());
+    edge.setName(request.getName());
+    request.getFeatures().forEach((k, v) -> setFeature(edge, k, v));
+    final var managedEdge = edgeRepository.save(edge);
+
+    request.getProps().forEach((k, v) -> {
+      final var newPropertyRequest = new NewPropertyRequest();
+      newPropertyRequest.setKey(k);
+      newPropertyRequest.setValue(request.getProps().get(v));
+      newPropertyRequest.setContent(request.getContent());
+      newPropertyRequest.setVerified(request.isVerified());
+      newPropertyRequest.setChecked(request.isChecked());
+      newPropertyRequest.setDatasourceId(request.getDatasourceId());
+      newProperty(edge, newPropertyRequest);
+    });
+
+    inVertex.getActiveEdges().add(managedEdge);
+    outVertex.getPassiveEdges().add(managedEdge);
+
+    addEvidence(edge, request);
+
+    if (request.isVerified()) {
+      setVerified(managedEdge);
+    }
+
+    setFeature(managedEdge, "checked", String.valueOf(request.isChecked()));
+
+    return managedEdge;
+  }
+
+  @Override
+  public void addEvidence(@Nonnull Edge edge, @Nonnull NewEvidenceRequest newEvidenceRequest) {
+
+    final var managedDatasource = getDatasource(newEvidenceRequest);
+    final var evidence = new Evidence();
+    evidence.setContent(newEvidenceRequest.getContent());
+    edge.addEvidence(evidence);
+    managedDatasource.addEvidence(evidence);
+    evidenceRepository.save(evidence);
+  }
+
+  @Override
+  public void setFeature(@Nonnull Edge edge, @Nonnull String key, @Nonnull String value) {
+
+    final var feature = edge.getFeatures().getOrDefault(key, new Feature());
+    feature.setKey(key);
+    feature.setValue(value);
+    edge.addFeature(feature);
+    featureRepository.save(feature);
+  }
+
+  @Override
+  public void newProperty(@Nonnull Edge edge, @Nonnull NewPropertyRequest newPropertyRequest) {
+
+    final var property = getProperty(edge, newPropertyRequest.getKey())
+        .orElse(new Property());
+    property.setKey(newPropertyRequest.getKey());
+    edge.addProperty(property);
+    final var managedProperty = propertyRepository.save(property);
+
+    final var valueMd5 = MD5.create().digestHex(newPropertyRequest.getValue());
+    final var propertyValue = managedProperty.getValues()
+        .stream()
+        .filter(it -> it.getMd5().equals(valueMd5))
+        .findFirst()
+        .orElse(new PropertyValue());
+    managedProperty.addValue(propertyValue);
+    propertyValue.setValue(newPropertyRequest.getValue());
+    final var managedPropertyValue = propertyValueRepository.save(propertyValue);
+
+    if (newPropertyRequest.isVerified()) {
+      setVerified(edge);
+      setVerified(edge, newPropertyRequest.getKey(), newPropertyRequest.getValue());
+    }
+    if (newPropertyRequest.isChecked()) {
+      setFeature(propertyValue, "checked", String.valueOf(true));
+      setFeature(edge, "checked", String.valueOf(newPropertyRequest.isChecked()));
+    }
+
+    addEvidence(managedPropertyValue, newPropertyRequest);
+  }
+
+  @Override
+  public void setVerified(Edge edge) {
+
+    setFeature(edge, "verified", "true");
+  }
+
+  @Override
+  public Optional<Edge> getEdge(String name, Vertex inVertex, Vertex outVertex, String scope) {
+
+    return edgeRepository.findByNameAndInVertexAndOutVertexAndScope(name, inVertex, outVertex,
+        scope);
+  }
+
+  @Override
   public Optional<Property> getProperty(Vertex vertex, String key) {
 
     return propertyRepository.findByVertexAndKey(vertex, key);
   }
 
   @Override
+  public Optional<Property> getProperty(Edge edge, String key) {
+
+    return propertyRepository.findByEdgeAndKey(edge, key);
+  }
+
+  @Override
+  public void setVerified(Edge edge, String key, String value) {
+
+    final var property = getProperty(edge, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = getPropertyValue(property, value)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    setFeature(propertyValue, "verified", "true");
+    property.getValues().stream()
+        .filter(it -> it != propertyValue)
+        .forEach(it -> setFeature(it, "verified", "false"));
+  }
+
+  @Override
   public void setVerified(Vertex vertex, String key, String value) {
 
     final var property = getProperty(vertex, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
     final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
     setFeature(propertyValue, "verified", "true");
     property.getValues().stream()
         .filter(it -> it != propertyValue)
@@ -312,7 +459,7 @@ public class JpaVertexService implements VertexService {
   private Datasource getDatasource(@Nonnull NewEvidenceRequest newEvidenceRequest) {
 
     return datasourceRepository.findById(newEvidenceRequest.getDatasourceId())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
   }
 
   private void updateVertices(List<String> vertexIds, String newType) {
@@ -349,9 +496,9 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public CompletableFuture<Void> batchDeleteVertex(Set<String> types) {
+  public void batchDeleteVertex(Set<String> types) {
 
-    return CompletableFuture.runAsync(() ->
+    CompletableFuture.runAsync(() ->
             deleteVerticesByTypes(types), VIRTUAL_EXECUTOR)
         .exceptionally(ex -> {
           log.error("异步删除顶点任务出现异常", ex);
@@ -361,9 +508,9 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public CompletableFuture<Void> batchUpdateVertex(String oldType, String newType) {
+  public void batchUpdateVertex(String oldType, String newType) {
 
-    return CompletableFuture.runAsync(() ->
+    CompletableFuture.runAsync(() ->
             updateVerticesByType(oldType, newType), VIRTUAL_EXECUTOR)
         .exceptionally(ex -> {
           log.error("异步修改顶点任务出现异常", ex);
