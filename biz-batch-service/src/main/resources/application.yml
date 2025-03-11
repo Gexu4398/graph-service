@@ -6,6 +6,20 @@ server:
 spring:
   application:
     name: biz-batch-service
+  ai:
+    openai:
+      api-key: 7257b5ab-1cd1-424e-902d-79d08bc11442
+      base-url: http://10.1.141.33:8000
+      chat:
+        options:
+          model: SCHAT
+    vectorstore:
+      neo4j:
+        initialize-schema: true
+        database-name: neo4j
+        index-name: graph-embedding-index
+        embedding-dimension: 1536
+        distance-type: cosine
   datasource:
     url: jdbc:postgresql://${PGSQL_HOST:localhost}:5432/batch
     username: root
