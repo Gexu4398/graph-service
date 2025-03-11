@@ -280,6 +280,7 @@
       <column name="contenttype" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
+      <column name="source" type="VARCHAR(255)"/>
       <column name="description" type="text"/>
       <column name="url" type="VARCHAR(2000)"/>
       <column name="creator" type="VARCHAR(255)">

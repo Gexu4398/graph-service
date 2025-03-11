@@ -87,6 +87,9 @@ public class Datasource {
   @Column(columnDefinition = "text")
   private String description;
 
+  @Column
+  private String source;
+
   @Column(length = 2000)
   private String url;
 

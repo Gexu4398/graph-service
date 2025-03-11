@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.testenvironments.helper;
 
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.RelationModelService;
@@ -20,9 +21,11 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.SneakyThrows;
@@ -168,6 +171,16 @@ public class DataHelper {
     return relationModelService.newRelationModel(name);
   }
 
+  public Datasource newDatasource(String name) {
+
+    return newDatasource(name, "sourceType", "");
+  }
+
+  public Datasource newDatasource(String name, String sourceType, String html) {
+
+    return newDatasource(name, sourceType, "contentType", html, "", "");
+  }
+
   public Datasource newDatasource(String name, String sourceType, String contentType, String text,
       String html, String url) {
 
@@ -187,14 +200,57 @@ public class DataHelper {
     return datasourceRepository.save(datasource);
   }
 
+  public Datasource newDatasource(String name, String sourceType, String contentType, String text) {
+
+    final var datasource = new Datasource();
+    datasource.setTitle(NAME_PREFIX + name);
+    datasource.setContentType(contentType);
+    datasource.setSourceType(sourceType);
+    datasource.setCreator("admin");
+
+    final var datasourceContent = new DatasourceContent();
+    datasourceContent.setText(text);
+
+    datasource.addContent(datasourceContent);
+
+    return datasourceRepository.save(datasource);
+  }
+
   @SneakyThrows
   @Transactional("bizTransactionManager")
-  public void newVertex(String name, String type) {
+  public Vertex newVertex(String name, String type) {
 
     final var request = new NewVertexRequest();
     request.setName(name);
     request.setType(type);
 
-    vertexService.newVertex(request);
+    return vertexService.newVertex(request);
+  }
+
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public Vertex newVertex(String name, String type, Map<String, String> props) {
+
+    final var request = new NewVertexRequest();
+    request.setName(name);
+    request.setType(type);
+    request.setProps(props);
+
+    return vertexService.newVertex(request);
+  }
+
+  @Transactional("bizTransactionManager")
+  public void newProperty(Vertex vertex, String key, String value, String evidence,
+      boolean verified, Datasource datasource) {
+
+    final var newPropertyRequest = new NewPropertyRequest();
+    newPropertyRequest.setKey(key);
+    newPropertyRequest.setValue(value);
+    newPropertyRequest.setContent(evidence);
+    newPropertyRequest.setVerified(verified);
+    newPropertyRequest.setCreator("admin");
+    Optional.ofNullable(datasource)
+        .ifPresent(it -> newPropertyRequest.setDatasourceId(datasource.getID()));
+    vertexService.newProperty(vertex, newPropertyRequest);
   }
 }

@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.EdgeRelation;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import jakarta.annotation.Nonnull;
@@ -33,7 +34,6 @@ public class Neo4jVertexService {
   public Neo4jVertexService(VertexNodeRepository vertexNodeRepository,
       Neo4jVectorStore vectorStore) {
 
-
     this.vertexNodeRepository = vertexNodeRepository;
     this.vectorStore = vectorStore;
   }
@@ -59,13 +59,21 @@ public class Neo4jVertexService {
 
   public void addVertexToVectorStore(@Nonnull VertexNode vertexNode) {
 
+    StringBuilder relationsInfo = new StringBuilder();
+    for (EdgeRelation edge : vertexNode.getEdges()) {
+      relationsInfo.append("关系类型: ").append(edge.getName())
+          .append(", 目标节点: ").append(edge.getVertexNode().getName())
+          .append("; ");
+    }
+
     final var document = new Document(
         vertexNode.getId(),
         vertexNode.getName(),
         Map.of(
             "name", vertexNode.getName(),
             "type", vertexNode.getType(),
-            "properties", vertexNode.getProperties().toString()
+            "properties", vertexNode.getProperties().toString(),
+            "relations", relationsInfo.toString()
         )
     );
     try {

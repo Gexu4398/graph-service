@@ -332,6 +332,10 @@ public class JpaVertexService implements VertexService {
   @Override
   public void addEvidence(@Nonnull Edge edge, @Nonnull NewEvidenceRequest newEvidenceRequest) {
 
+    if (null == newEvidenceRequest.getDatasourceId()) {
+      return;
+    }
+
     final var managedDatasource = getDatasource(newEvidenceRequest);
     final var evidence = new Evidence();
     evidence.setContent(newEvidenceRequest.getContent());
@@ -446,6 +450,10 @@ public class JpaVertexService implements VertexService {
   @Override
   public void addEvidence(@Nonnull PropertyValue propertyValue,
       @Nonnull NewEvidenceRequest newEvidenceRequest) {
+
+    if (null == newEvidenceRequest.getDatasourceId()) {
+      return;
+    }
 
     final var managedDatasource = getDatasource(newEvidenceRequest);
 
