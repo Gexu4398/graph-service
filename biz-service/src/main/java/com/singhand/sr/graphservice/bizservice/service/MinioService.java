@@ -8,6 +8,7 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.http.Method;
+import jakarta.annotation.Nonnull;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -76,5 +77,20 @@ public class MinioService {
         .object(object)
         .stream(inputStream, -1, 10485760)
         .build());
+  }
+
+  public String getObjectFromKey(@Nonnull String key) {
+
+    if (key.contains("https")) {
+      return "";
+    }
+    final var matcher = objectNamePattern.matcher(key);
+    if (!matcher.matches()) {
+      return "";
+    }
+    final var path = matcher.group("path");
+    final var date = matcher.group("date");
+    final var filename = matcher.group("name");
+    return String.format("%s/%s/%s", path, date, filename);
   }
 }

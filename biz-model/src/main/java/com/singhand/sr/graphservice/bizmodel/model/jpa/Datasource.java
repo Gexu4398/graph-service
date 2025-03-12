@@ -170,4 +170,21 @@ public class Datasource {
     evidence.setDatasource(this);
     getEvidences().add(evidence);
   }
+
+  public void detachVertex(@Nonnull Vertex vertex) {
+
+    vertex.getDatasources().remove(this);
+    getVertices().remove(vertex);
+  }
+
+  public void clearEvidences() {
+
+    getEvidences().forEach(evidence -> {
+      evidence.detachPicture();
+      evidence.detachPropertyValue();
+      evidence.detachEdge();
+      evidence.setDatasource(null);
+    });
+    getEvidences().clear();
+  }
 }

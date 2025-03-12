@@ -173,4 +173,10 @@ public class Vertex {
       getDatasources().clear();
     }
   }
+
+  public void attachDatasource(Datasource datasource) {
+
+    getDatasources().add(datasource);
+    datasource.getVertices().add(this);
+  }
 }
