@@ -20,4 +20,11 @@ public interface VertexNodeRepository extends BaseNodeRepository<VertexNode, Str
       DELETE r
       """)
   void deleteRelation(String inId, String outId, String name);
+
+  @Query("""
+      MATCH (a:Vertex)-[r:CONNECTED_TO {name: $name}]->(b:Vertex)
+      WHERE a.id = $inId AND b.id = $outId
+      RETURN COUNT(r) > 0
+      """)
+  boolean existsRelation(String inId, String outId, String name);
 }

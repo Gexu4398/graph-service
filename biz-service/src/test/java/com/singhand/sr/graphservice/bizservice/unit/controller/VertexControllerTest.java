@@ -13,6 +13,7 @@ import cn.hutool.json.JSONUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
@@ -366,5 +367,80 @@ public class VertexControllerTest extends BaseTestEnvironment {
     Assertions.assertEquals(inVertex, edge.getInVertex());
     Assertions.assertEquals(outVertex, edge.getOutVertex());
     Assertions.assertEquals("contains", edge.getName());
+
+    final var exists = vertexNodeRepository
+        .existsRelation(inVertex.getID(), outVertex.getID(), "contains");
+
+    Assertions.assertTrue(exists);
+  }
+
+  @SneakyThrows
+  @Test
+  @MockRelationModel(name = "contains")
+  @MockRelationModel(name = "association")
+  void testUpdateEdge() {
+
+    final var ontology = dataHelper.newOntology("testUpdateEdge", null);
+
+    dataHelper.newOntologyRelation("contains", ontology, ontology);
+
+    final var inVertex = dataHelper.newVertex(faker.name().name(), "testUpdateEdge");
+    final var outVertex = dataHelper.newVertex(faker.name().name(), "testUpdateEdge");
+
+    dataHelper.newEdge(inVertex, outVertex, "contains");
+
+    final var request = new UpdateEdgeRequest();
+    request.setOldId(outVertex.getID());
+    request.setOldName("contains");
+    request.setNewName("association");
+
+    mockMvc.perform(put("/vertex/" + inVertex.getID() + "/edge/" + outVertex.getID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(JSONUtil.toJsonStr(request)))
+        .andExpect(status().isOk());
+
+    final var edge = edgeRepository.findByNameAndInVertexAndOutVertexAndScope("association",
+        inVertex,
+        outVertex, "default").orElse(null);
+
+    Assertions.assertNotNull(edge);
+    Assertions.assertEquals(inVertex, edge.getInVertex());
+    Assertions.assertEquals(outVertex, edge.getOutVertex());
+    Assertions.assertEquals("association", edge.getName());
+
+    final var exists = vertexNodeRepository
+        .existsRelation(inVertex.getID(), outVertex.getID(), "association");
+
+    Assertions.assertTrue(exists);
+  }
+
+  @SneakyThrows
+  @Test
+  @MockRelationModel(name = "contains")
+  void testDeleteEdge() {
+
+    final var ontology = dataHelper.newOntology("testDeleteEdge", null);
+
+    dataHelper.newOntologyRelation("contains", ontology, ontology);
+
+    final var inVertex = dataHelper.newVertex(faker.name().name(), "testDeleteEdge");
+    final var outVertex = dataHelper.newVertex(faker.name().name(), "testDeleteEdge");
+
+    dataHelper.newEdge(inVertex, outVertex, "contains");
+
+    mockMvc.perform(delete("/vertex/" + inVertex.getID() + "/edge/" + outVertex.getID())
+            .param("name", "contains"))
+        .andExpect(status().isOk());
+
+    final var edge = edgeRepository.findByNameAndInVertexAndOutVertexAndScope("association",
+        inVertex,
+        outVertex, "default").orElse(null);
+
+    Assertions.assertNull(edge);
+
+    final var exists = vertexNodeRepository
+        .existsRelation(inVertex.getID(), outVertex.getID(), "association");
+
+    Assertions.assertFalse(exists);
   }
 }

@@ -186,13 +186,13 @@ public class Neo4jVertexService {
     vertexNodeRepository.save(inVertexNode);
   }
 
-  public void deleteEdge(@Nonnull String name, @Nonnull Vertex inVertex,
-      @Nonnull Vertex outVertex) {
+  public void deleteEdge(@Nonnull String name, @Nonnull String inVertexId,
+      @Nonnull String outVertexId) {
 
-    final var inVertexNode = getVertex(inVertex.getID())
+    final var inVertexNode = getVertex(inVertexId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
-    final var outVertexNode = getVertex(outVertex.getID())
+    final var outVertexNode = getVertex(outVertexId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var edge = inVertexNode.getEdges().stream()
@@ -207,7 +207,7 @@ public class Neo4jVertexService {
 
     inVertexNode.getEdges().remove(edge);
 
-    vertexNodeRepository.deleteRelation(inVertex.getID(), outVertex.getID(), name);
+    vertexNodeRepository.deleteRelation(inVertexNode.getId(), outVertexNode.getId(), name);
 
     vertexNodeRepository.save(inVertexNode);
   }

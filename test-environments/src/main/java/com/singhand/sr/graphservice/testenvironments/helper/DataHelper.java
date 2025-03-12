@@ -263,6 +263,12 @@ public class DataHelper {
   }
 
   @Transactional("bizTransactionManager")
+  public Edge newEdge(Vertex inVertex, Vertex outVertex, String name) {
+
+    return newEdge(inVertex, outVertex, name, "", Map.of(), null, "default");
+  }
+
+  @Transactional("bizTransactionManager")
   public Edge newEdge(Vertex inVertex, Vertex outVertex, String name,
       String evidence, Map<String, String> features) {
 

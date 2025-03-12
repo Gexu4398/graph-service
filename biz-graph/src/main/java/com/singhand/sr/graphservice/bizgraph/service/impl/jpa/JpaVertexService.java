@@ -487,12 +487,15 @@ public class JpaVertexService implements VertexService {
   @Override
   public void deleteEdge(@Nonnull Edge edge) {
 
+    final var inVertexId = edge.getInVertex().getID();
+    final var outVertexId = edge.getOutVertex().getID();
+
     edge.clearEvidences();
     edge.clearProperties();
     edge.detachVertices();
     edgeRepository.delete(edge);
 
-    neo4jVertexService.deleteEdge(edge.getName(), edge.getInVertex(), edge.getOutVertex());
+    neo4jVertexService.deleteEdge(edge.getName(), inVertexId, outVertexId);
   }
 
   @Override
