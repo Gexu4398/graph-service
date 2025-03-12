@@ -439,6 +439,9 @@ public class JpaVertexService implements VertexService {
     propertyValue.setValue(newPropertyRequest.getValue());
     final var managedPropertyValue = propertyValueRepository.save(propertyValue);
 
+    neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
+        edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
+
     if (newPropertyRequest.isVerified()) {
       setVerified(edge);
       setVerified(edge, newPropertyRequest.getKey(), newPropertyRequest.getValue());

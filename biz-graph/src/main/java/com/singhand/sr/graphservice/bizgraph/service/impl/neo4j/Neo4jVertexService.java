@@ -63,6 +63,7 @@ public class Neo4jVertexService {
     for (EdgeRelation edge : vertexNode.getEdges()) {
       relationsInfo.append("关系类型: ").append(edge.getName())
           .append(", 目标节点: ").append(edge.getVertexNode().getName())
+          .append(", 属性: ").append(edge.getProperties().toString())
           .append("; ");
     }
 
@@ -246,5 +247,30 @@ public class Neo4jVertexService {
     vertexNode.getProperties().remove(key);
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
     updateVectorStore(managedVertexNode);
+  }
+
+  public void newEdgeProperty(String name, String inVertexId, String outVertexId, String key,
+      String value) {
+
+    final var inVertexNode = getVertex(inVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var outVertexNode = getVertex(outVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    inVertexNode.getEdges()
+        .stream()
+        .filter(it -> it.getName().equals(name) &&
+            it.getVertexNode().equals(outVertexNode))
+        .findFirst()
+        .ifPresentOrElse(it -> {
+          final var values = it.getProperties().computeIfAbsent(key, v -> new HashSet<>());
+          values.add(value);
+          final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
+
+          updateVectorStore(managedInVertexNode);
+        }, () -> {
+          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
+        });
   }
 }
