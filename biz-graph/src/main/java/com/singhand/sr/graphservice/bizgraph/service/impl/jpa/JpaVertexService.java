@@ -45,6 +45,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * JpaVertexService类提供了对JPA数据库中Vertex的操作服务。
+ */
 @Service
 @Slf4j
 public class JpaVertexService implements VertexService {
@@ -67,6 +70,19 @@ public class JpaVertexService implements VertexService {
 
   private final VertexServiceHelper vertexServiceHelper;
 
+  /**
+   * 构造函数，初始化各个仓库和服务。
+   *
+   * @param vertexRepository        Vertex的仓库
+   * @param neo4jVertexService      Neo4jVertexService服务
+   * @param propertyRepository      Property的仓库
+   * @param propertyValueRepository PropertyValue的仓库
+   * @param featureRepository       Feature的仓库
+   * @param datasourceRepository    Datasource的仓库
+   * @param evidenceRepository      Evidence的仓库
+   * @param edgeRepository          Edge的仓库
+   * @param vertexServiceHelper     VertexServiceHelper帮助类
+   */
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
       Neo4jVertexService neo4jVertexService,
@@ -200,6 +216,40 @@ public class JpaVertexService implements VertexService {
     }
 
     neo4jVertexService.newProperty(vertex, request);
+  }
+
+  @Override
+  public void newProperty(@Nonnull Edge edge, @Nonnull NewPropertyRequest newPropertyRequest) {
+
+    final var property = getProperty(edge, newPropertyRequest.getKey())
+        .orElse(new Property());
+    property.setKey(newPropertyRequest.getKey());
+    edge.addProperty(property);
+    final var managedProperty = propertyRepository.save(property);
+
+    final var valueMd5 = MD5.create().digestHex(newPropertyRequest.getValue());
+    final var propertyValue = managedProperty.getValues()
+        .stream()
+        .filter(it -> it.getMd5().equals(valueMd5))
+        .findFirst()
+        .orElse(new PropertyValue());
+    managedProperty.addValue(propertyValue);
+    propertyValue.setValue(newPropertyRequest.getValue());
+    final var managedPropertyValue = propertyValueRepository.save(propertyValue);
+
+    neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
+        edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
+
+    if (newPropertyRequest.isVerified()) {
+      setVerified(edge);
+      setVerified(edge, newPropertyRequest.getKey(), newPropertyRequest.getValue());
+    }
+    if (newPropertyRequest.isChecked()) {
+      setFeature(propertyValue, "checked", String.valueOf(true));
+      setFeature(edge, "checked", String.valueOf(newPropertyRequest.isChecked()));
+    }
+
+    addEvidence(managedPropertyValue, newPropertyRequest);
   }
 
   @Override
@@ -411,6 +461,23 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
+  public void addEvidence(@Nonnull PropertyValue propertyValue,
+      @Nonnull NewEvidenceRequest newEvidenceRequest) {
+
+    if (null == newEvidenceRequest.getDatasourceId()) {
+      return;
+    }
+
+    final var managedDatasource = getDatasource(newEvidenceRequest);
+
+    final var evidence = new Evidence();
+    evidence.setContent(newEvidenceRequest.getContent());
+    propertyValue.addEvidence(evidence);
+    managedDatasource.addEvidence(evidence);
+    evidenceRepository.save(evidence);
+  }
+
+  @Override
   public void setFeature(@Nonnull Edge edge, @Nonnull String key, @Nonnull String value) {
 
     final var feature = edge.getFeatures().getOrDefault(key, new Feature());
@@ -421,43 +488,46 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public void newProperty(@Nonnull Edge edge, @Nonnull NewPropertyRequest newPropertyRequest) {
+  public void setFeature(@Nonnull PropertyValue propertyValue, @Nonnull String key,
+      @Nonnull String value) {
 
-    final var property = getProperty(edge, newPropertyRequest.getKey())
-        .orElse(new Property());
-    property.setKey(newPropertyRequest.getKey());
-    edge.addProperty(property);
-    final var managedProperty = propertyRepository.save(property);
-
-    final var valueMd5 = MD5.create().digestHex(newPropertyRequest.getValue());
-    final var propertyValue = managedProperty.getValues()
-        .stream()
-        .filter(it -> it.getMd5().equals(valueMd5))
-        .findFirst()
-        .orElse(new PropertyValue());
-    managedProperty.addValue(propertyValue);
-    propertyValue.setValue(newPropertyRequest.getValue());
-    final var managedPropertyValue = propertyValueRepository.save(propertyValue);
-
-    neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
-        edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
-
-    if (newPropertyRequest.isVerified()) {
-      setVerified(edge);
-      setVerified(edge, newPropertyRequest.getKey(), newPropertyRequest.getValue());
-    }
-    if (newPropertyRequest.isChecked()) {
-      setFeature(propertyValue, "checked", String.valueOf(true));
-      setFeature(edge, "checked", String.valueOf(newPropertyRequest.isChecked()));
-    }
-
-    addEvidence(managedPropertyValue, newPropertyRequest);
+    final var feature = propertyValue.getFeatures().getOrDefault(key, new Feature());
+    feature.setKey(key);
+    feature.setValue(value);
+    propertyValue.addFeature(feature);
+    featureRepository.save(feature);
   }
 
   @Override
   public void setVerified(Edge edge) {
 
     setFeature(edge, "verified", "true");
+  }
+
+  @Override
+  public void setVerified(Edge edge, String key, String value) {
+
+    final var property = getProperty(edge, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = getPropertyValue(property, value)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    setFeature(propertyValue, "verified", "true");
+    property.getValues().stream()
+        .filter(it -> it != propertyValue)
+        .forEach(it -> setFeature(it, "verified", "false"));
+  }
+
+  @Override
+  public void setVerified(Vertex vertex, String key, String value) {
+
+    final var property = getProperty(vertex, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = getPropertyValue(property, value)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    setFeature(propertyValue, "verified", "true");
+    property.getValues().stream()
+        .filter(it -> it != propertyValue)
+        .forEach(it -> setFeature(it, "verified", "false"));
   }
 
   @Override
@@ -477,19 +547,6 @@ public class JpaVertexService implements VertexService {
   public Optional<Property> getProperty(Edge edge, String key) {
 
     return propertyRepository.findByEdgeAndKey(edge, key);
-  }
-
-  @Override
-  public void setVerified(Edge edge, String key, String value) {
-
-    final var property = getProperty(edge, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
-    final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
-    setFeature(propertyValue, "verified", "true");
-    property.getValues().stream()
-        .filter(it -> it != propertyValue)
-        .forEach(it -> setFeature(it, "verified", "false"));
   }
 
   @Override
@@ -604,47 +661,6 @@ public class JpaVertexService implements VertexService {
   public void setChecked(Edge edge) {
 
     setFeature(edge, "checked", "true");
-  }
-
-  @Override
-  public void setVerified(Vertex vertex, String key, String value) {
-
-    final var property = getProperty(vertex, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
-    final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
-    setFeature(propertyValue, "verified", "true");
-    property.getValues().stream()
-        .filter(it -> it != propertyValue)
-        .forEach(it -> setFeature(it, "verified", "false"));
-  }
-
-  @Override
-  public void setFeature(@Nonnull PropertyValue propertyValue, @Nonnull String key,
-      @Nonnull String value) {
-
-    final var feature = propertyValue.getFeatures().getOrDefault(key, new Feature());
-    feature.setKey(key);
-    feature.setValue(value);
-    propertyValue.addFeature(feature);
-    featureRepository.save(feature);
-  }
-
-  @Override
-  public void addEvidence(@Nonnull PropertyValue propertyValue,
-      @Nonnull NewEvidenceRequest newEvidenceRequest) {
-
-    if (null == newEvidenceRequest.getDatasourceId()) {
-      return;
-    }
-
-    final var managedDatasource = getDatasource(newEvidenceRequest);
-
-    final var evidence = new Evidence();
-    evidence.setContent(newEvidenceRequest.getContent());
-    propertyValue.addEvidence(evidence);
-    managedDatasource.addEvidence(evidence);
-    evidenceRepository.save(evidence);
   }
 
   private Datasource getDatasource(@Nonnull NewEvidenceRequest newEvidenceRequest) {

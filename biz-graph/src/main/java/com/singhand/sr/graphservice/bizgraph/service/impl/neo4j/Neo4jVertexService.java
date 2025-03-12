@@ -21,6 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Neo4jVertexService类提供了对Neo4j数据库中VertexNode的操作服务。
+ */
 @Service
 @Slf4j
 @Transactional(transactionManager = "bizNeo4jTransactionManager")
@@ -30,6 +33,12 @@ public class Neo4jVertexService {
 
   private final Neo4jVectorStore vectorStore;
 
+  /**
+   * 构造函数，初始化VertexNodeRepository和Neo4jVectorStore。
+   *
+   * @param vertexNodeRepository VertexNode的仓库
+   * @param vectorStore          Neo4j的向量存储
+   */
   @Autowired
   public Neo4jVertexService(VertexNodeRepository vertexNodeRepository,
       Neo4jVectorStore vectorStore) {
@@ -38,11 +47,23 @@ public class Neo4jVertexService {
     this.vectorStore = vectorStore;
   }
 
+  /**
+   * 根据vertexId获取VertexNode。
+   *
+   * @param vertexId VertexNode的ID
+   * @return 包含VertexNode的Optional对象
+   */
   public Optional<VertexNode> getVertex(String vertexId) {
 
     return vertexNodeRepository.findById(vertexId);
   }
 
+  /**
+   * 创建新的VertexNode。
+   *
+   * @param vertex Vertex对象
+   * @return 新创建的VertexNode
+   */
   public VertexNode newVertex(@Nonnull Vertex vertex) {
 
     final var vertexNode = new VertexNode();
@@ -51,12 +72,16 @@ public class Neo4jVertexService {
     vertexNode.setType(vertex.getType());
 
     final var managedvertexNode = vertexNodeRepository.save(vertexNode);
-
     addVertexToVectorStore(managedvertexNode);
 
     return managedvertexNode;
   }
 
+  /**
+   * 将VertexNode添加到向量存储中。
+   *
+   * @param vertexNode VertexNode对象
+   */
   public void addVertexToVectorStore(@Nonnull VertexNode vertexNode) {
 
     StringBuilder relationsInfo = new StringBuilder();
@@ -85,6 +110,11 @@ public class Neo4jVertexService {
     vectorStore.add(List.of(document));
   }
 
+  /**
+   * 更新向量存储中的VertexNode。
+   *
+   * @param id VertexNode的ID
+   */
   public void updateVectorStore(@Nonnull String id) {
 
     final var vertexNode = getVertex(id)
@@ -92,11 +122,21 @@ public class Neo4jVertexService {
     addVertexToVectorStore(vertexNode);
   }
 
+  /**
+   * 更新向量存储中的VertexNode。
+   *
+   * @param vertexNode VertexNode对象
+   */
   public void updateVectorStore(@Nonnull VertexNode vertexNode) {
 
     addVertexToVectorStore(vertexNode);
   }
 
+  /**
+   * 删除VertexNode。
+   *
+   * @param vertexId VertexNode的ID
+   */
   public void deleteVertex(String vertexId) {
 
     getVertex(vertexId).ifPresent(it -> {
@@ -105,10 +145,15 @@ public class Neo4jVertexService {
     });
   }
 
+  /**
+   * 更新多个VertexNode的类型。
+   *
+   * @param vertexIds VertexNode的ID列表
+   * @param newType   新的类型
+   */
   public void updateVertices(List<String> vertexIds, String newType) {
 
     final var vertexNodes = vertexNodeRepository.findAllById(vertexIds);
-
     final var managedVertexNodes = new HashSet<>(vertexNodes);
 
     managedVertexNodes.forEach(it -> {
@@ -118,6 +163,12 @@ public class Neo4jVertexService {
     });
   }
 
+  /**
+   * 更新VertexNode的名称。
+   *
+   * @param id   VertexNode的ID
+   * @param name 新的名称
+   */
   public void updateVertex(String id, String name) {
 
     getVertex(id).ifPresent(it -> {
@@ -127,6 +178,12 @@ public class Neo4jVertexService {
     });
   }
 
+  /**
+   * 为VertexNode添加新的属性。
+   *
+   * @param vertex  Vertex对象
+   * @param request 新属性请求
+   */
   public void newProperty(@Nonnull Vertex vertex, @Nonnull NewPropertyRequest request) {
 
     final var vertexNode = getVertex(vertex.getID())
@@ -138,10 +195,15 @@ public class Neo4jVertexService {
     values.add(request.getValue());
 
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-
     updateVectorStore(managedVertexNode);
   }
 
+  /**
+   * 更新VertexNode的属性。
+   *
+   * @param vertex  Vertex对象
+   * @param request 更新属性请求
+   */
   public void updateProperty(@Nonnull Vertex vertex, @Nonnull UpdatePropertyRequest request) {
 
     final var vertexNode = getVertex(vertex.getID())
@@ -151,10 +213,16 @@ public class Neo4jVertexService {
     vertexNode.getProperties().get(request.getKey()).add(request.getNewValue());
 
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-
     updateVectorStore(managedVertexNode);
   }
 
+  /**
+   * 删除VertexNode的属性值。
+   *
+   * @param vertex Vertex对象
+   * @param key    属性键
+   * @param value  属性值
+   */
   public void deletePropertyValue(@Nonnull Vertex vertex, @Nonnull String key,
       @Nonnull String value) {
 
@@ -171,6 +239,13 @@ public class Neo4jVertexService {
     updateVectorStore(managedVertexNode);
   }
 
+  /**
+   * 为VertexNode添加新的边。
+   *
+   * @param name      边的名称
+   * @param inVertex  入边的Vertex对象
+   * @param outVertex 出边的Vertex对象
+   */
   public void newEdge(@Nonnull String name, @Nonnull Vertex inVertex, @Nonnull Vertex outVertex) {
 
     final var inVertexNode = getVertex(inVertex.getID())
@@ -186,10 +261,16 @@ public class Neo4jVertexService {
     inVertexNode.getEdges().add(edgeRelation);
 
     final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
-
     updateVectorStore(managedInVertexNode);
   }
 
+  /**
+   * 删除VertexNode的边。
+   *
+   * @param name        边的名称
+   * @param inVertexId  入边的VertexNode的ID
+   * @param outVertexId 出边的VertexNode的ID
+   */
   public void deleteEdge(@Nonnull String name, @Nonnull String inVertexId,
       @Nonnull String outVertexId) {
 
@@ -200,8 +281,8 @@ public class Neo4jVertexService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var edge = inVertexNode.getEdges().stream()
-        .filter(it -> it.getName().equals(name) &&
-            it.getVertexNode().equals(outVertexNode))
+        .filter(it -> it.getName().equals(name)
+            && it.getVertexNode().equals(outVertexNode))
         .findFirst()
         .orElse(null);
 
@@ -210,14 +291,20 @@ public class Neo4jVertexService {
     }
 
     inVertexNode.getEdges().remove(edge);
-
     vertexNodeRepository.deleteRelation(inVertexNode.getId(), outVertexNode.getId(), name);
 
     final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
-
     updateVectorStore(managedInVertexNode);
   }
 
+  /**
+   * 更新VertexNode的边。
+   *
+   * @param oldName   旧的边的名称
+   * @param newName   新的边的名称
+   * @param inVertex  入边的Vertex对象
+   * @param outVertex 出边的Vertex对象
+   */
   public void updateEdge(@Nonnull String oldName, @Nonnull String newName, @Nonnull Vertex inVertex,
       @Nonnull Vertex outVertex) {
 
@@ -228,8 +315,8 @@ public class Neo4jVertexService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     inVertexNode.getEdges().stream()
-        .filter(it -> it.getName().equals(oldName) &&
-            it.getVertexNode().equals(outVertexNode))
+        .filter(it -> it.getName().equals(oldName)
+            && it.getVertexNode().equals(outVertexNode))
         .findFirst()
         .ifPresentOrElse(it -> {
           it.setName(newName);
@@ -240,6 +327,12 @@ public class Neo4jVertexService {
         });
   }
 
+  /**
+   * 删除VertexNode的属性。
+   *
+   * @param vertex Vertex对象
+   * @param key    属性键
+   */
   public void deleteProperty(@Nonnull Vertex vertex, String key) {
 
     final var vertexNode = getVertex(vertex.getID())
@@ -249,6 +342,15 @@ public class Neo4jVertexService {
     updateVectorStore(managedVertexNode);
   }
 
+  /**
+   * 为VertexNode的边添加新的属性。
+   *
+   * @param name        边的名称
+   * @param inVertexId  入边的VertexNode的ID
+   * @param outVertexId 出边的VertexNode的ID
+   * @param key         属性键
+   * @param value       属性值
+   */
   public void newEdgeProperty(String name, String inVertexId, String outVertexId, String key,
       String value) {
 
@@ -260,8 +362,8 @@ public class Neo4jVertexService {
 
     inVertexNode.getEdges()
         .stream()
-        .filter(it -> it.getName().equals(name) &&
-            it.getVertexNode().equals(outVertexNode))
+        .filter(it -> it.getName().equals(name)
+            && it.getVertexNode().equals(outVertexNode))
         .findFirst()
         .ifPresentOrElse(it -> {
           final var values = it.getProperties().computeIfAbsent(key, v -> new HashSet<>());

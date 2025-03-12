@@ -319,14 +319,14 @@ public class VertexController {
   }
 
   @Operation(summary = "删除关系")
-  @DeleteMapping("{id}/edge/{outID}")
+  @DeleteMapping("{id}/edge/{outId}")
   @Transactional("bizTransactionManager")
-  public void deleteEdge(@PathVariable String id, @PathVariable String outID,
+  public void deleteEdge(@PathVariable String id, @PathVariable String outId,
       @RequestParam String name, @RequestParam(defaultValue = "default") String scope) {
 
     final var inVertex = vertexService.getVertex(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
-    final var outVertex = vertexService.getVertex(outID)
+    final var outVertex = vertexService.getVertex(outId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     vertexService.getEdge(name, inVertex, outVertex, scope)
@@ -540,17 +540,17 @@ public class VertexController {
       @PathVariable("outId") String outVertexId,
       @Valid @RequestBody MarkEdgeVerifiedRequest markEdgeVerifiedRequest) {
 
-    vertexService.setVerified(
-        vertexService.getEdge(markEdgeVerifiedRequest.getName(),
-                vertexService.getVertex(inVertexId)
-                    .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在")),
-                vertexService.getVertex(outVertexId)
-                    .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在")),
-                markEdgeVerifiedRequest.getScope())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"))
-    );
+    final var inVertex = vertexService.getVertex(inVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var outVertex = vertexService.getVertex(outVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var edge = vertexService.getEdge(markEdgeVerifiedRequest.getName(), inVertex, outVertex,
+            markEdgeVerifiedRequest.getScope())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    vertexService.setVerified(edge);
   }
 
   @Operation(summary = "验证关系")
