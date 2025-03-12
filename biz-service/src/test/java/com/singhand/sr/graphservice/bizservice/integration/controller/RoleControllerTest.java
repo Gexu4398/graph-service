@@ -1,24 +1,28 @@
 package com.singhand.sr.graphservice.bizservice.integration.controller;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import cn.hutool.json.JSONUtil;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.request.NewRoleRequest;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.request.RenameRoleRequest;
 import com.singhand.sr.graphservice.bizkeycloakmodel.repository.KeycloakRoleRepository;
 import com.singhand.sr.graphservice.testenvironments.KeycloakIntegrationTestEnvironment;
+import java.util.List;
+import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import java.util.List;
-import java.util.Set;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Slf4j
 @WithMockUser(username = "admin", authorities = "role:crud")

@@ -1,10 +1,9 @@
 package com.singhand.sr.graphservice.bizbatchservice.converter.html;
 
+import java.util.Formatter;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
-
-import java.util.Formatter;
 
 /**
  * Implementation of {@link HtmlHelper} for XSSF files.

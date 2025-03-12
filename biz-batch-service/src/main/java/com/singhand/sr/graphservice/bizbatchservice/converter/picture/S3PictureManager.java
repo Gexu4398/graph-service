@@ -4,13 +4,12 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.crypto.digest.MD5;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import java.io.ByteArrayInputStream;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.io.ByteArrayInputStream;
 
 @Component
 public class S3PictureManager implements PictureManager {
