@@ -78,6 +78,7 @@
     <jai-imageio-jpeg2000.version>1.4.0</jai-imageio-jpeg2000.version>
     <jbig2-imageio.version>3.0.4</jbig2-imageio.version>
     <jsoup-version>1.19.1</jsoup-version>
+    <knife4j-openapi3-jakarta-spring-boot-starter.version>4.5.0</knife4j-openapi3-jakarta-spring-boot-starter.version>
     <maven.build.timestamp.format>yyyMMddHHmmss</maven.build.timestamp.format>
   </properties>
 
@@ -346,6 +347,11 @@
         <artifactId>jsoup</artifactId>
         <version>${jsoup-version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.github.xiaoymin</groupId>
+        <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+        <version>${knife4j-openapi3-jakarta-spring-boot-starter.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -375,6 +381,11 @@
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.github.xiaoymin</groupId>
+      <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
