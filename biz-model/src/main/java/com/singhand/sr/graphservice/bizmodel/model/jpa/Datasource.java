@@ -151,7 +151,7 @@ public class Datasource {
     return getClass().hashCode();
   }
 
-  public void addContent(@Nonnull DatasourceContent datasourceContent) {
+  public void attachContent(@Nonnull DatasourceContent datasourceContent) {
 
     datasourceContent.setDatasource(this);
     setDatasourceContent(datasourceContent);

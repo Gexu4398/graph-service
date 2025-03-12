@@ -140,7 +140,7 @@ public class ImportDatasourceTasklet implements Tasklet {
       }
     };
 
-    datasource.addContent(datasourceContent);
+    datasource.attachContent(datasourceContent);
 
     // 此处要开辟新事务，否则会合并到最外层事务再提交，进而导致导入过程看不到数据源的问题。
     final var transaction = new TransactionTemplate(bizTransactionManager);
