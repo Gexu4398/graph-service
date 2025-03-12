@@ -184,7 +184,9 @@ public class Neo4jVertexService {
 
     inVertexNode.getEdges().add(edgeRelation);
 
-    vertexNodeRepository.save(inVertexNode);
+    final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
+
+    updateVectorStore(managedInVertexNode);
   }
 
   public void deleteEdge(@Nonnull String name, @Nonnull String inVertexId,
@@ -210,7 +212,9 @@ public class Neo4jVertexService {
 
     vertexNodeRepository.deleteRelation(inVertexNode.getId(), outVertexNode.getId(), name);
 
-    vertexNodeRepository.save(inVertexNode);
+    final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
+
+    updateVectorStore(managedInVertexNode);
   }
 
   public void updateEdge(@Nonnull String oldName, @Nonnull String newName, @Nonnull Vertex inVertex,
@@ -228,7 +232,8 @@ public class Neo4jVertexService {
         .findFirst()
         .ifPresentOrElse(it -> {
           it.setName(newName);
-          vertexNodeRepository.save(inVertexNode);
+          final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
+          updateVectorStore(managedInVertexNode);
         }, () -> {
           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
         });
@@ -239,6 +244,7 @@ public class Neo4jVertexService {
     final var vertexNode = getVertex(vertex.getID())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     vertexNode.getProperties().remove(key);
-    vertexNodeRepository.save(vertexNode);
+    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+    updateVectorStore(managedVertexNode);
   }
 }
