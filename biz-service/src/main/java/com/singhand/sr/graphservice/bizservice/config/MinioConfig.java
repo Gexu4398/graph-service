@@ -47,10 +47,10 @@ public class MinioConfig {
     if (!existsBucketNotification(client)) {
       log.info("不存在 SQS 设置，正在自动设置 ...");
       setBucketNotification(client);
-      log.info("Minio SQS 自动设置完成！");
+      log.info("Minio SQS 自动设置完成");
     }
 
-    log.info("MinioClient 初始化完成！");
+    log.info("MinioClient 初始化完成");
     return client;
   }
 

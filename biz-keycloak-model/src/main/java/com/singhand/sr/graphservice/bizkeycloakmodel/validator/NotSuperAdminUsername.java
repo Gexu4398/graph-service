@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface NotSuperAdminUsername {
 
-    String message() default "不能对 admin 账号执行该操作！";
+    String message() default "不能对 admin 账号执行该操作";
 
     Class<?>[] groups() default {};
 

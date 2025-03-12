@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface NotSuperAdminRole {
 
-  String message() default "不能编辑超级管理员角色！";
+  String message() default "不能编辑超级管理员角色";
 
   Class<?>[] groups() default {};
 

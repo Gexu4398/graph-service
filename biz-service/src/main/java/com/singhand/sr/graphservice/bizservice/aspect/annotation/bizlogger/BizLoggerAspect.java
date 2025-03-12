@@ -98,7 +98,7 @@ public class BizLoggerAspect {
       final var resolver = (Resolver) applicationContext.getBean(resolve.resolver());
       return resolver.getProperty(joinPoint, proceed, resolve.value()).toString();
     } catch (Exception e) {
-      log.error("日志取值出错！ beanPath = {}", resolve.value(), e);
+      log.error("日志取值出错 beanPath = {}", resolve.value(), e);
       return "";
     }
   }
@@ -158,7 +158,7 @@ public class BizLoggerAspect {
 
       bizLogRepository.save(bizLog);
     } catch (Exception e) {
-      log.error("保存日志出错！", e);
+      log.error("保存日志出错", e);
     }
 
     return proceed;
@@ -224,7 +224,7 @@ public class BizLoggerAspect {
 
         bizLogRepository.save(bizLog);
       } catch (Exception e) {
-        log.error("保存日志出错！", e);
+        log.error("保存日志出错", e);
       }
     }
 

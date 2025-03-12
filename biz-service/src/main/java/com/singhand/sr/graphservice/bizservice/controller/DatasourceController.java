@@ -70,7 +70,7 @@ public class DatasourceController {
       @RequestParam(required = false, defaultValue = "true") boolean hideHtml) {
 
     final var datasource = datasourceService.getDatasource(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
 
     final var datasourceResponse = new DatasourceResponse();
     BeanUtil.copyProperties(datasource, datasourceResponse);
@@ -133,7 +133,7 @@ public class DatasourceController {
             .launchImportDatasourceJob(managedDatasource.getID(), username, uuid);
       }).toList();
     }
-    throw new ResponseStatusException(HttpStatus.CONFLICT, "已经有数据源正在上传中！");
+    throw new ResponseStatusException(HttpStatus.CONFLICT, "已经有数据源正在上传中");
   }
 
   @PostMapping("{id}/vertex/{vertexId}")
@@ -142,9 +142,9 @@ public class DatasourceController {
   public Datasource attachVertex(@PathVariable Long id, @PathVariable String vertexId) {
 
     final var datasource = datasourceService.getDatasource(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
     final var vertex = vertexService.getVertex(vertexId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     return datasourceService.attachVertex(datasource, vertex);
   }
 
@@ -154,10 +154,10 @@ public class DatasourceController {
   public Datasource detachVertex(@PathVariable Long id, @PathVariable String vertexId) {
 
     final var datasource = datasourceService.getDatasource(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
 
     final var vertex = vertexService.getVertex(vertexId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     return datasourceService.detachVertex(datasource, vertex);
   }
@@ -175,7 +175,7 @@ public class DatasourceController {
   public Page<Vertex> getVertices(@PathVariable Long id, Pageable pageable) {
 
     final var datasource = datasourceService.getDatasource(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
 
     return vertexRepository.findByDatasources_ID(datasource.getID(), pageable);
   }

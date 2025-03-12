@@ -69,18 +69,18 @@ public class Datasource {
   private Long ID;
 
   @Column(nullable = false)
-  @NotBlank(message = "标题为空！")
+  @NotBlank(message = "标题为空")
   @FullTextField(highlightable = Highlightable.ANY, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
   @KeywordField(name = "title_keyword")
   private String title;
 
   @Column(nullable = false)
-  @NotBlank(message = "来源类型为空！")
+  @NotBlank(message = "来源类型为空")
   @KeywordField(name = "sourceType_keyword")
   private String sourceType;
 
   @Column(nullable = false)
-  @NotBlank(message = "内容类型为空！")
+  @NotBlank(message = "内容类型为空")
   @KeywordField(name = "contentType_keyword")
   private String contentType;
 

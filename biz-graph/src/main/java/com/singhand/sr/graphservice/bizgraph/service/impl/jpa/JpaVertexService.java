@@ -246,14 +246,14 @@ public class JpaVertexService implements VertexService {
 
     final var managedProperty = Optional
         .ofNullable(edge.getProperties().get(request.getKey()))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
 
     final var oldValueMd5 = MD5.create().digestHex(request.getOldValue());
     final var managedOldPropertyValue = managedProperty.getValues()
         .stream()
         .filter(value -> value.getMd5().equals(oldValueMd5))
         .findFirst()
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
 
     final var newValueMd5 = MD5.create().digestHex(request.getNewValue());
 
@@ -316,14 +316,14 @@ public class JpaVertexService implements VertexService {
       @Nonnull String mode) {
 
     final var dbProperty = Optional.ofNullable(edge.getProperties().get(key))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
 
     final var valueMd5 = mode.equals("md5") ? value : MD5.create().digestHex(value);
 
     final var dbPropertyValue = dbProperty.getValues().stream()
         .filter(it -> it.getMd5().equals(valueMd5))
         .findFirst()
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
 
     dbProperty.getValues().remove(dbPropertyValue);
     dbPropertyValue.setProperty(null);
@@ -557,6 +557,50 @@ public class JpaVertexService implements VertexService {
   public void batchDeleteVertexEdge(String name) {
 
     vertexServiceHelper.batchDeleteVertexEdge(name);
+  }
+
+  @Override
+  public Page<Evidence> getEvidences(Vertex vertex, String key, String value, String mode,
+      Pageable pageable) {
+
+    final var property = getProperty(vertex, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = getPropertyValue(property, value, mode)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    return evidenceRepository.findByPropertyValue(propertyValue, pageable);
+  }
+
+  @Override
+  public Page<Evidence> getEvidences(Edge edge, String key, String value, String mode,
+      Pageable pageable) {
+
+    return evidenceRepository.findByEdge(edge, pageable);
+  }
+
+  @Override
+  public void setChecked(Vertex vertex, String key, String value) {
+
+    final var property = getProperty(vertex, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = getPropertyValue(property, value)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    setFeature(propertyValue, "checked", "true");
+  }
+
+  @Override
+  public void setChecked(Edge edge, String key, String value) {
+
+    final var property = getProperty(edge, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = getPropertyValue(property, value)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    setFeature(propertyValue, "checked", "true");
+  }
+
+  @Override
+  public void setChecked(Edge edge) {
+
+    setFeature(edge, "checked", "true");
   }
 
   @Override

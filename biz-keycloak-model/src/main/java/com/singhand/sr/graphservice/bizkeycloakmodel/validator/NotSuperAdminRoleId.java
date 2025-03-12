@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface NotSuperAdminRoleId {
 
-  String message() default "不能创建超级管理员角色的账号！";
+  String message() default "不能创建超级管理员角色的账号";
 
   Class<?>[] groups() default {};
 

@@ -140,7 +140,7 @@ public class KeycloakUserService {
           .findFirst()
           .orElse("");
       if (!value.equals("rejected")) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "账号已存在！");
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "账号已存在");
       }
 
       final var userResource = keycloakService.getUserResourceById(user.getId());
@@ -378,9 +378,9 @@ public class KeycloakUserService {
     final var username = JwtHelper.getUsername();
     final var userEntity = userEntityRepository.findByUsernameAndRealmId(username,
             keycloakService.getRealm())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "当前用户不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "当前用户不存在"));
     if (!userEntity.getEnabled()) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前用户已被禁用！");
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前用户已被禁用");
     }
     final var userResource = keycloakService.getUserResourceById(userEntity.getId());
     final var userRepresentation = userResource.toRepresentation();
@@ -427,7 +427,7 @@ public class KeycloakUserService {
         .block();
 
     if (jsonObject == null) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "原密码错误！");
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "原密码错误");
     }
 
     final var sessionState = jsonObject.get("session_state", String.class);

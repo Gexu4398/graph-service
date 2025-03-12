@@ -114,7 +114,7 @@ public class KeycloakService {
   public UserResource getUserResource(String username) {
 
     final var userEntity = userEntityRepository.findByUsernameAndRealmId(username, getRealm())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在"));
     final var usersResource = getUsersResource();
     return usersResource.get(userEntity.getId());
   }
@@ -210,7 +210,7 @@ public class KeycloakService {
     roleRepresentation.setClientRole(true);
     final var exists = keycloakRoleRepository.existsByNameAndClientRole(roleName, true);
     if (exists) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "角色名称已存在！");
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "角色名称已存在");
     }
     getClientResource().roles().create(roleRepresentation);
     return getClientResource().roles().get(roleName);
@@ -219,12 +219,12 @@ public class KeycloakService {
   public void joinGroup(String userId, String groupId) {
 
     userEntityRepository.findById(userId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在"));
     final var userResource = getUserResourceById(userId);
     if (groupId != null) {
       userResource.groups().forEach(it -> userResource.leaveGroup(it.getId()));
       keycloakGroupRepository.findById(groupId)
-          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "部门不存在！"));
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "部门不存在"));
       userResource.joinGroup(groupId);
     } else {
       userResource.groups().forEach(it -> userResource.leaveGroup(it.getId()));

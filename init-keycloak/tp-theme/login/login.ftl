@@ -105,7 +105,7 @@
     const form = document.getElementById('kc-form-login');
     const username = form.username.value || '';
     if (username.length === 0) {
-      setErrorMessage('账号不可为空！', 'username');
+      setErrorMessage('账号不可为空', 'username');
       return;
     }
     let baseUrl = '${client.baseUrl!""}api/v1';
@@ -147,7 +147,7 @@
         setErrorMessage('密码错误，你还可以输入' + (10 - retries) + '次', 'password')
         document.getElementById("password").focus()
       } else if (retries === 10) {
-        setErrorMessage('密码多次输入错误，账号已锁定，请联系管理员解锁！', 'username');
+        setErrorMessage('密码多次输入错误，账号已锁定，请联系管理员解锁', 'username');
       }
     })
   }
@@ -162,11 +162,11 @@
     const username = form.username.value || '';
     const password = form.password.value || '';
     if (username.length === 0) {
-      setErrorMessage('请输入用户名！', 'username');
-      setErrorMessage('请输入密码！', 'password');
+      setErrorMessage('请输入用户名', 'username');
+      setErrorMessage('请输入密码', 'password');
       return;
     } else if (password.length === 0) {
-      setErrorMessage('请输入密码！', 'password');
+      setErrorMessage('请输入密码', 'password');
       return;
     }
     let baseUrl = '${client.baseUrl!""}api/v1';
@@ -183,9 +183,9 @@
       clearErrorMessage();
       form.submit();
     } else if (status === 'reset-password') {
-      setErrorMessage('账号已锁定，请联系管理员解锁！', 'username');
+      setErrorMessage('账号已锁定，请联系管理员解锁', 'username');
     } else if (status === 'disable') {
-      setErrorMessage('账号已停用，请联系管理员了解详情！', 'username');
+      setErrorMessage('账号已停用，请联系管理员了解详情', 'username');
     }
   }
 
@@ -231,15 +231,15 @@
     const username = form.username.value || '';
     hideResetDialog()
     if (username.length === 0) {
-      setErrorMessage('账号不可为空！', 'username');
+      setErrorMessage('账号不可为空', 'username');
       event.preventDefault();
       return;
     } else if (username === 'admin') {
-      setErrorMessage('不能重置管理员账号的密码！', 'username');
+      setErrorMessage('不能重置管理员账号的密码', 'username');
       event.preventDefault();
       return;
     } else if (username.startsWith('reserved_')) {
-      setErrorMessage('不能重置预留账号的密码！', 'username');
+      setErrorMessage('不能重置预留账号的密码', 'username');
       event.preventDefault();
       return;
     }
@@ -254,16 +254,16 @@
     }
     const status = resp.headers.get('x-amz-meta-status');
     if (status === 'reset-password') {
-      setErrorMessage('该账号已锁定，请联系管理员解锁！', 'username');
+      setErrorMessage('该账号已锁定，请联系管理员解锁', 'username');
       return;
     } else if (status === 'disable') {
-      setErrorMessage('账号已停用，请联系管理员了解详情！', 'username');
+      setErrorMessage('账号已停用，请联系管理员了解详情', 'username');
       return;
     } else if (status === 'pending') {
-      setErrorMessage('账号审核中，无法重置密码！', 'username');
+      setErrorMessage('账号审核中，无法重置密码', 'username');
       return;
     } else if (status === 'rejected') {
-      setErrorMessage('账号已驳回，无法重置密码！', 'username');
+      setErrorMessage('账号已驳回，无法重置密码', 'username');
       return;
     }
     const resetUrl = baseUrl + '/reset-password/' + username;

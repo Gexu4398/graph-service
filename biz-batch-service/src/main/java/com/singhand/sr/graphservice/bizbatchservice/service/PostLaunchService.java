@@ -48,7 +48,7 @@ public class PostLaunchService {
                     jobRepository.deleteJobInstance(jobInstance);
                     return;
                   }
-                  log.info("JobInstance {}-{} 正在执行，不可删除！", jobInstance.getJobName(),
+                  log.info("JobInstance {}-{} 正在执行，不可删除", jobInstance.getJobName(),
                       jobInstance.getInstanceId());
                 }
             ));
@@ -88,7 +88,7 @@ public class PostLaunchService {
             jobExecution.setStatus(BatchStatus.ABANDONED);
             jobExecution.setExitStatus(ExitStatus.FAILED);
             jobRepository.update(jobExecution);
-            log.info("已停止！");
+            log.info("已停止");
           });
         });
       } catch (NoSuchJobException ignored) {

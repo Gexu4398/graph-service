@@ -121,7 +121,7 @@ public class UserController {
   public User newUser(@Valid @RequestBody NewUserRequest request) {
 
     if (request.getUsername().startsWith("reserved_")) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请务使用 reserved_ 开头命名！");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请务使用 reserved_ 开头命名");
     }
     return keycloakUserService.newUser(request);
   }
@@ -234,7 +234,7 @@ public class UserController {
   public void deleteUser(@NotSuperAdminUserId @PathVariable String id) {
 
     if (id.equalsIgnoreCase(JwtHelper.getUserId())) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不能删除自己！");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不能删除自己");
     }
 
     keycloakUserService.deleteUserById(id);

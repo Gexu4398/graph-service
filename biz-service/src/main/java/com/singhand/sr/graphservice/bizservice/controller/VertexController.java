@@ -3,7 +3,12 @@ package com.singhand.sr.graphservice.bizservice.controller;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.request.MarkEdgeCheckedRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.MarkEdgeVerifiedRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.MarkPropertyValueCheckedRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.MarkPropertyValueVerifiedRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
@@ -13,6 +18,7 @@ import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.helper.JwtHelper;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
@@ -228,7 +234,7 @@ public class VertexController {
       @RequestParam(defaultValue = "raw") String mode) {
 
     if (mode.equals("raw")) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为为md5");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为md5");
     }
 
     final var vertex = vertexService.getVertex(id)
@@ -270,26 +276,26 @@ public class VertexController {
       @Valid @RequestBody UpdateEdgeRequest request) {
 
     if (id.equals(outId)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自己建立关系！");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自己建立关系");
     }
 
     final var inVertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     final var outVertex = vertexService.getVertex(outId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     Edge oldEdge;
     if (StrUtil.isNotBlank(request.getOldId())) {
       final var oldOutVertex = vertexService.getVertex(request.getOldId())
-          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
       oldEdge = vertexService
           .getEdge(request.getOldName(), inVertex, oldOutVertex, request.getScope())
-          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     } else {
       oldEdge = vertexService
           .getEdge(request.getOldName(), inVertex, outVertex, request.getScope())
-          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     }
 
     final var newEdge = vertexService
@@ -319,13 +325,13 @@ public class VertexController {
       @RequestParam String name, @RequestParam(defaultValue = "default") String scope) {
 
     final var inVertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var outVertex = vertexService.getVertex(outID)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     vertexService.getEdge(name, inVertex, outVertex, scope)
         .ifPresentOrElse(vertexService::deleteEdge, () -> {
-          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！");
+          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
         });
   }
 
@@ -338,11 +344,11 @@ public class VertexController {
       @RequestParam String key, @Valid @RequestBody NewPropertyRequest newPropertyRequest) {
 
     final var inVertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var outVertex = vertexService.getVertex(outId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     newPropertyRequest.setKey(key);
     newPropertyRequest.setCreator(JwtHelper.getUsername());
     vertexService.newProperty(edge, newPropertyRequest);
@@ -357,11 +363,11 @@ public class VertexController {
       @Valid @RequestBody List<UpdatePropertyRequest> requests) {
 
     final var inVertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var outVertex = vertexService.getVertex(outId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
 
     final var username = JwtHelper.getUsername();
     requests.forEach(updatePropertyRequest -> {
@@ -379,14 +385,191 @@ public class VertexController {
       @RequestParam(defaultValue = "raw") String mode) {
 
     if (mode.equals("raw")) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode传参要为md5!");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为md5!");
     }
     final var inVertex = vertexService.getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var outVertex = vertexService.getVertex(outId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     vertexService.deleteProperty(edge, key, value, mode);
+  }
+
+  @Operation(summary = "根据实体属性知识查询属性证据")
+  @GetMapping("/{id}/property/evidence")
+  public Page<Evidence> getEvidenceByPropertyValue(@PathVariable String id,
+      @RequestParam String key, @RequestParam String value,
+      @RequestParam(defaultValue = "raw") String mode, Pageable pageable) {
+
+    if (mode.equals("raw")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为md5!");
+    }
+
+    final var vertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    return vertexService.getEvidences(vertex, key, value, mode, pageable);
+  }
+
+  @Operation(summary = "根据关系属性知识查询属性证据")
+  @GetMapping("{id}/edge/{outId}/property/evidence")
+  public Page<Evidence> getEvidenceByEdgePropertyValue(@PathVariable String id,
+      @PathVariable String outId, @RequestParam String name,
+      @RequestParam String key, @RequestParam String value,
+      @RequestParam(defaultValue = "default") String scope,
+      @RequestParam(defaultValue = "raw") String mode, Pageable pageable) {
+
+    if (mode.equals("raw")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode请为md5!");
+    }
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    return vertexService.getEvidences(edge, key, value, mode, pageable);
+  }
+
+  @Operation(summary = "为属性值添加证据")
+  @PostMapping("{id}/property/evidence")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void addEvidenceByPropertyValue(@PathVariable String id, @RequestParam String key,
+      @RequestParam String value, @RequestBody NewEvidenceRequest newEvidenceRequest) {
+
+    final var vertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var property = vertexService.getProperty(vertex, key)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
+    final var propertyValue = vertexService.getPropertyValue(property, value)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
+    newEvidenceRequest.setCreator(JwtHelper.getUsername());
+    vertexService.addEvidence(propertyValue, newEvidenceRequest);
+  }
+
+  @Operation(summary = "为关系添加证据")
+  @PostMapping("{id}/edge/{outId}/evidence")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void addEvidencesByEdge(@PathVariable String id, @PathVariable String outId,
+      @RequestParam String name, @RequestParam(defaultValue = "default") String scope,
+      @RequestBody NewEvidenceRequest newEvidenceRequest) {
+
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+    newEvidenceRequest.setCreator(JwtHelper.getUsername());
+    vertexService.addEvidence(edge, newEvidenceRequest);
+  }
+
+  @Operation(summary = "采信属性值")
+  @PostMapping("{id}:markPropertyValueVerified")
+  @Transactional("bizTransactionManager")
+  public void markPropertyValueVerified(@PathVariable("id") String vertexId,
+      @Valid @RequestBody MarkPropertyValueVerifiedRequest markPropertyValueVerifiedRequest) {
+
+    final var vertex = vertexService.getVertex(vertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    vertexService.setVerified(vertex,
+        markPropertyValueVerifiedRequest.getKey(),
+        markPropertyValueVerifiedRequest.getValue());
+  }
+
+  @Operation(summary = "验证属性值")
+  @PostMapping("{id}:markPropertyValueChecked")
+  @Transactional("bizTransactionManager")
+  public void markPropertyValueChecked(@PathVariable("id") String vertexId,
+      @Valid @RequestBody MarkPropertyValueCheckedRequest markPropertyValueCheckedRequest) {
+
+    final var vertex = vertexService.getVertex(vertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    vertexService.setChecked(vertex,
+        markPropertyValueCheckedRequest.getKey(),
+        markPropertyValueCheckedRequest.getValue());
+  }
+
+  @Operation(summary = "采信关系的属性值")
+  @PostMapping("{id}/edge/{outId}:markPropertyValueVerified")
+  @Transactional("bizTransactionManager")
+  public void markEdgePropertyValueVerified(@PathVariable("id") String inVertexId,
+      @PathVariable("outId") String outVertexId, @RequestParam String name,
+      @RequestParam(defaultValue = "default") String scope,
+      @Valid @RequestBody MarkPropertyValueVerifiedRequest markPropertyValueVerifiedRequest) {
+
+    final var inVertex = vertexService.getVertex(inVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertex = vertexService.getVertex(outVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+    vertexService.setVerified(edge,
+        markPropertyValueVerifiedRequest.getKey(),
+        markPropertyValueVerifiedRequest.getValue());
+  }
+
+  @Operation(summary = "验证关系的属性值")
+  @PostMapping("{id}/edge/{outId}:markPropertyValueChecked")
+  @Transactional("bizTransactionManager")
+  public void markEdgePropertyValueChecked(@PathVariable("id") String inVertexId,
+      @PathVariable("outId") String outVertexId, @RequestParam String name,
+      @RequestParam(defaultValue = "default") String scope,
+      @Valid @RequestBody MarkPropertyValueCheckedRequest markPropertyValueCheckedRequest) {
+
+    final var inVertex = vertexService.getVertex(inVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertex = vertexService.getVertex(outVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+    vertexService.setChecked(edge, markPropertyValueCheckedRequest.getKey(),
+        markPropertyValueCheckedRequest.getValue());
+  }
+
+  @Operation(summary = "采信关系")
+  @PostMapping("{id}/edge/{outId}:markEdgeVerified")
+  @Transactional("bizTransactionManager")
+  public void markEdgeVerified(@PathVariable("id") String inVertexId,
+      @PathVariable("outId") String outVertexId,
+      @Valid @RequestBody MarkEdgeVerifiedRequest markEdgeVerifiedRequest) {
+
+    vertexService.setVerified(
+        vertexService.getEdge(markEdgeVerifiedRequest.getName(),
+                vertexService.getVertex(inVertexId)
+                    .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在")),
+                vertexService.getVertex(outVertexId)
+                    .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在")),
+                markEdgeVerifiedRequest.getScope())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"))
+    );
+  }
+
+  @Operation(summary = "验证关系")
+  @PostMapping("{id}/edge/{outId}:markEdgeChecked")
+  @Transactional("bizTransactionManager")
+  public void markEdgeChecked(@PathVariable("id") String inVertexId,
+      @PathVariable("outId") String outVertexId,
+      @Valid @RequestBody MarkEdgeCheckedRequest markEdgeCheckedRequest) {
+
+    final var inVertex = vertexService.getVertex(inVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var outVertex = vertexService.getVertex(outVertexId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var edge = vertexService.getEdge(markEdgeCheckedRequest.getName(), inVertex, outVertex,
+            markEdgeCheckedRequest.getScope())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
+
+    vertexService.setChecked(edge);
   }
 }

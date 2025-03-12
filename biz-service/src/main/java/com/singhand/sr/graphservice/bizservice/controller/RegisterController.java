@@ -45,7 +45,7 @@ public class RegisterController {
   public User register(@RequestBody RegisterUserRequest request) {
 
     if (request.getUsername().startsWith("reserved_")) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请务使用 reserved_ 开头命名！");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请务使用 reserved_ 开头命名");
     }
     return keycloakUserService.registerUser(request);
   }

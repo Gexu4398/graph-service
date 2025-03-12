@@ -8,6 +8,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
@@ -111,4 +112,15 @@ public interface VertexService {
   void batchDeleteVertexEdge(String name, String inVertexType, String outVertexType);
 
   void batchDeleteVertexEdge(String name);
+
+  Page<Evidence> getEvidences(Vertex vertex, String key, String value, String mode,
+      Pageable pageable);
+
+  Page<Evidence> getEvidences(Edge edge, String key, String value, String mode, Pageable pageable);
+
+  void setChecked(Vertex vertex, String key, String value);
+
+  void setChecked(Edge edge, String key, String value);
+
+  void setChecked(Edge edge);
 }

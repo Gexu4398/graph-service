@@ -46,7 +46,7 @@ public class DefaultResolver implements Resolver {
         }
       }
     }
-    throw new Exception("BizLogger 中没有发现 ResponseBody 参数！");
+    throw new Exception("BizLogger 中没有发现 ResponseBody 参数");
   }
 
   @SneakyThrows
