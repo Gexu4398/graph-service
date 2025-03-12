@@ -197,7 +197,7 @@ public class DataHelper {
     datasourceContent.setText(text);
     datasourceContent.setHtml(html);
 
-    datasource.addContent(datasourceContent);
+    datasource.attachContent(datasourceContent);
 
     return datasourceRepository.save(datasource);
   }
@@ -213,7 +213,7 @@ public class DataHelper {
     final var datasourceContent = new DatasourceContent();
     datasourceContent.setText(text);
 
-    datasource.addContent(datasourceContent);
+    datasource.attachContent(datasourceContent);
 
     return datasourceRepository.save(datasource);
   }
