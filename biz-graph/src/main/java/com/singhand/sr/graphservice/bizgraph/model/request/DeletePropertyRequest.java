@@ -1,8 +1,8 @@
 package com.singhand.sr.graphservice.bizgraph.model.request;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 import java.util.Set;
+import lombok.Data;
 
 @Data
 public class DeletePropertyRequest {

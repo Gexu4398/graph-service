@@ -1,11 +1,11 @@
 package com.singhand.sr.graphservice.bizmodel.repository.neo4j;
 
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
-import org.springframework.data.neo4j.repository.query.Query;
-import org.springframework.stereotype.Repository;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.data.neo4j.repository.query.Query;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface VertexNodeRepository extends BaseNodeRepository<VertexNode, String> {
