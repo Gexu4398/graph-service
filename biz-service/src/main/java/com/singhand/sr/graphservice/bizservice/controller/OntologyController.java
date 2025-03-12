@@ -9,12 +9,14 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationInstance;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,13 +49,17 @@ public class OntologyController {
 
   private final VertexService vertexService;
 
+  private final OntologyPropertyRepository ontologyPropertyRepository;
+
   @Autowired
   public OntologyController(OntologyService ontologyService,
-      RelationModelRepository relationModelRepository, VertexService vertexService) {
+      RelationModelRepository relationModelRepository, VertexService vertexService,
+      OntologyPropertyRepository ontologyPropertyRepository) {
 
     this.ontologyService = ontologyService;
     this.relationModelRepository = relationModelRepository;
     this.vertexService = vertexService;
+    this.ontologyPropertyRepository = ontologyPropertyRepository;
   }
 
   @Operation(summary = "获取本体详情")
@@ -154,6 +160,9 @@ public class OntologyController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
     ontologyService.updateOntologyProperty(ontology, request);
+
+    vertexService.batchUpdateVertexProperty(ontology.getName(), request.getOldName(),
+        request.getNewName());
   }
 
   @Operation(summary = "删除本体属性")
@@ -166,7 +175,14 @@ public class OntologyController {
     final var ontology = ontologyService.getOntology(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
+    final var properties = ontologyPropertyRepository.findAllById(request.getPropertyIds());
+    final var keys = properties.stream()
+        .map(OntologyProperty::getName)
+        .collect(Collectors.toSet());
+
     ontologyService.deleteOntologyProperties(ontology, request);
+
+    keys.forEach(it -> vertexService.batchDeleteVertexProperty(ontology.getName(), it));
   }
 
   @Operation(summary = "获取本体树")
@@ -226,8 +242,12 @@ public class OntologyController {
     final var relationModel_2 = relationModelRepository.findByName(newName)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在"));
 
-    return ontologyService.updateRelation(relationModel.getName(), relationModel_2.getName(),
-        inOntology, outOntology);
+    final var relationInstance = ontologyService.updateRelation(relationModel.getName(),
+        relationModel_2.getName(), inOntology, outOntology);
+
+    vertexService.batchUpdateVertexEdge(name, newName, inOntology.getName(), outOntology.getName());
+
+    return relationInstance;
   }
 
   @Operation(summary = "删除本体关系")
@@ -247,5 +267,7 @@ public class OntologyController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在"));
 
     ontologyService.deleteRelation(relationModel.getName(), inOntology, outOntology);
+
+    vertexService.batchDeleteVertexEdge(name, inOntology.getName(), outOntology.getName());
   }
 }

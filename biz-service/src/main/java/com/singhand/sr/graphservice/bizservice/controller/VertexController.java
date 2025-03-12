@@ -235,7 +235,7 @@ public class VertexController {
     final var vertex = vertexService.getVertex(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
-    vertexService.deleteProperty(vertex, key, value, mode);
+    vertexService.deletePropertyValue(vertex, key, value, mode);
   }
 
   @Operation(summary = "插入关系")

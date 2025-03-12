@@ -154,7 +154,8 @@ public class Neo4jVertexService {
     updateVectorStore(managedVertexNode);
   }
 
-  public void deleteProperty(@Nonnull Vertex vertex, @Nonnull String key, @Nonnull String value) {
+  public void deletePropertyValue(@Nonnull Vertex vertex, @Nonnull String key,
+      @Nonnull String value) {
 
     final var vertexNode = getVertex(vertex.getID())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
@@ -231,5 +232,13 @@ public class Neo4jVertexService {
         }, () -> {
           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
         });
+  }
+
+  public void deleteProperty(@Nonnull Vertex vertex, String key) {
+
+    final var vertexNode = getVertex(vertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    vertexNode.getProperties().remove(key);
+    vertexNodeRepository.save(vertexNode);
   }
 }

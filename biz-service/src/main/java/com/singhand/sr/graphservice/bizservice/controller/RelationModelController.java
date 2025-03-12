@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
 import com.singhand.sr.graphservice.bizgraph.service.RelationModelService;
+import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,10 +29,14 @@ public class RelationModelController {
 
   private final RelationModelService relationModelService;
 
+  private final VertexService vertexService;
+
   @Autowired
-  public RelationModelController(RelationModelService relationModelService) {
+  public RelationModelController(RelationModelService relationModelService,
+      VertexService vertexService) {
 
     this.relationModelService = relationModelService;
+    this.vertexService = vertexService;
   }
 
   @Operation(summary = "获取关系模型详情")
@@ -65,7 +70,14 @@ public class RelationModelController {
   @Transactional("bizTransactionManager")
   public RelationModel updateRelationModel(@PathVariable Long id, @RequestParam String name) {
 
-    return relationModelService.updateRelationModel(id, name);
+    final var relationModel = relationModelService.getRelationModel(id)
+        .orElseThrow(() -> new RuntimeException("关系模型不存在"));
+
+    final var oldName = relationModel.getName();
+
+    final var managedRelationModel = relationModelService.updateRelationModel(id, name);
+    vertexService.batchUpdateVertexEdge(oldName, name);
+    return managedRelationModel;
   }
 
   @Operation(summary = "删除关系模型")
@@ -74,6 +86,13 @@ public class RelationModelController {
   @Transactional("bizTransactionManager")
   public void deleteRelationModel(@PathVariable Long id) {
 
+    final var relationModel = relationModelService.getRelationModel(id)
+        .orElseThrow(() -> new RuntimeException("关系模型不存在"));
+
+    final var name = relationModel.getName();
+
     relationModelService.deleteRelationModel(id);
+
+    vertexService.batchDeleteVertexEdge(name);
   }
 }

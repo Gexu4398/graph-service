@@ -90,7 +90,7 @@ public class DatasourceService {
 
     emptyPropertyValues.forEach((key, value) ->
         value.forEach(propertyValue ->
-            vertexService.deleteProperty(vertex, key, propertyValue.getMd5(), "md5")));
+            vertexService.deletePropertyValue(vertex, key, propertyValue.getMd5(), "md5")));
 
     vertex.getEdges().forEach(Edge::clearEvidences);
 
@@ -205,7 +205,7 @@ public class DatasourceService {
             }
           });
       emptyPropertyValues.forEach((k, v) -> v.forEach(
-          value -> vertexService.deleteProperty(vertex, k, value.getMd5(), "md5")));
+          value -> vertexService.deletePropertyValue(vertex, k, value.getMd5(), "md5")));
       vertex.getEdges().forEach(Edge::clearEvidences);
       vertex.getDatasources().remove(datasource);
     });

@@ -112,4 +112,12 @@ public class Property {
     values.forEach(value -> value.setProperty(null));
     values.clear();
   }
+
+  public void clearValues() {
+
+    if (null != getValues()) {
+      getValues().forEach(value -> value.setProperty(null));
+      getValues().clear();
+    }
+  }
 }

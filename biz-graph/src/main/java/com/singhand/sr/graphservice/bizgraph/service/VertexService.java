@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -32,10 +31,6 @@ public interface VertexService {
   void deleteVertex(String id);
 
   void deleteVertices(List<String> vertexIds);
-
-  void batchDeleteVertex(Set<String> types);
-
-  void batchUpdateVertex(String oldType, String newType);
 
   Vertex updateVertex(String id, String name);
 
@@ -80,7 +75,9 @@ public interface VertexService {
 
   void updateProperty(Edge edge, UpdatePropertyRequest updatePropertyRequest);
 
-  void deleteProperty(Vertex vertex, String key, String value, String mode);
+  void deletePropertyValue(Vertex vertex, String key, String value, String mode);
+
+  void deleteProperty(Vertex vertex, String key);
 
   void deleteProperty(Edge edge, String key, String value, String mode);
 
@@ -97,4 +94,21 @@ public interface VertexService {
   void deleteEdge(Edge edge);
 
   void updateEdge(Edge oldEdge, UpdateEdgeRequest request);
+
+  void batchDeleteVertex(Set<String> types);
+
+  void batchUpdateVertex(String oldType, String newType);
+
+  void batchUpdateVertexProperty(String vertexType, String oldKey, String newKey);
+
+  void batchDeleteVertexProperty(String vertexType, String key);
+
+  void batchUpdateVertexEdge(String name, String newName, String inVertexType,
+      String outVertexType);
+
+  void batchUpdateVertexEdge(String name, String newName);
+
+  void batchDeleteVertexEdge(String name, String inVertexType, String outVertexType);
+
+  void batchDeleteVertexEdge(String name);
 }

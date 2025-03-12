@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.helper.VertexServiceHelper;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
@@ -30,29 +31,18 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueReposit
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.criteria.JoinType;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -62,8 +52,6 @@ public class JpaVertexService implements VertexService {
   private final VertexRepository vertexRepository;
 
   private final Neo4jVertexService neo4jVertexService;
-
-  private final PlatformTransactionManager bizTransactionManager;
 
   private final PropertyRepository propertyRepository;
 
@@ -77,25 +65,25 @@ public class JpaVertexService implements VertexService {
 
   private final EdgeRepository edgeRepository;
 
-  private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+  private final VertexServiceHelper vertexServiceHelper;
 
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
       Neo4jVertexService neo4jVertexService,
-      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
       PropertyRepository propertyRepository, PropertyValueRepository propertyValueRepository,
       FeatureRepository featureRepository, DatasourceRepository datasourceRepository,
-      EvidenceRepository evidenceRepository, EdgeRepository edgeRepository) {
+      EvidenceRepository evidenceRepository, EdgeRepository edgeRepository,
+      VertexServiceHelper vertexServiceHelper) {
 
     this.vertexRepository = vertexRepository;
     this.neo4jVertexService = neo4jVertexService;
-    this.bizTransactionManager = bizTransactionManager;
     this.propertyRepository = propertyRepository;
     this.propertyValueRepository = propertyValueRepository;
     this.featureRepository = featureRepository;
     this.datasourceRepository = datasourceRepository;
     this.evidenceRepository = evidenceRepository;
     this.edgeRepository = edgeRepository;
+    this.vertexServiceHelper = vertexServiceHelper;
   }
 
   @Override
@@ -116,6 +104,18 @@ public class JpaVertexService implements VertexService {
     }
 
     return vertexRepository.findAll(specifications, pageable);
+  }
+
+  @Override
+  public void deleteVertex(String id) {
+
+    vertexServiceHelper.deleteVertex(id);
+  }
+
+  @Override
+  public void deleteVertices(List<String> vertexIds) {
+
+    vertexServiceHelper.deleteVertices(vertexIds);
   }
 
   @Override
@@ -219,7 +219,6 @@ public class JpaVertexService implements VertexService {
 
     final var newValueMd5 = MD5.create().digestHex(request.getNewValue());
 
-    // 若新值与旧值相同，且不包含新证据，视为仅更新证据
     if (oldValueMd5.equals(newValueMd5)) {
       if (managedOldPropertyValue.getEvidences().stream()
           .noneMatch(it -> it.getContent().equals(request.getContent()))) {
@@ -276,8 +275,8 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public void deleteProperty(@Nonnull Vertex vertex, @Nonnull String key, @Nonnull String value,
-      @Nonnull String mode) {
+  public void deletePropertyValue(@Nonnull Vertex vertex, @Nonnull String key,
+      @Nonnull String value, @Nonnull String mode) {
 
     final var dbProperty = Optional.ofNullable(vertex.getProperties().get(key))
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
@@ -303,7 +302,13 @@ public class JpaVertexService implements VertexService {
       vertexRepository.save(vertex);
     }
 
-    neo4jVertexService.deleteProperty(vertex, key, dbPropertyValue.getValue());
+    neo4jVertexService.deletePropertyValue(vertex, key, dbPropertyValue.getValue());
+  }
+
+  @Override
+  public void deleteProperty(Vertex vertex, String key) {
+
+    vertexServiceHelper.deleteProperty(vertex, key);
   }
 
   @Override
@@ -485,17 +490,9 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public void deleteEdge(@Nonnull Edge edge) {
+  public void deleteEdge(Edge edge) {
 
-    final var inVertexId = edge.getInVertex().getID();
-    final var outVertexId = edge.getOutVertex().getID();
-
-    edge.clearEvidences();
-    edge.clearProperties();
-    edge.detachVertices();
-    edgeRepository.delete(edge);
-
-    neo4jVertexService.deleteEdge(edge.getName(), inVertexId, outVertexId);
+    vertexServiceHelper.deleteEdge(edge);
   }
 
   @Override
@@ -511,6 +508,55 @@ public class JpaVertexService implements VertexService {
 
     neo4jVertexService.updateEdge(request.getOldName(), request.getNewName(), edge.getInVertex(),
         edge.getOutVertex());
+  }
+
+  @Override
+  public void batchDeleteVertex(Set<String> types) {
+
+    vertexServiceHelper.batchDeleteVertex(types);
+  }
+
+  @Override
+  public void batchUpdateVertex(String oldType, String newType) {
+
+    vertexServiceHelper.batchUpdateVertex(oldType, newType);
+  }
+
+  @Override
+  public void batchUpdateVertexProperty(String vertexType, String oldKey, String newKey) {
+
+    vertexServiceHelper.batchUpdateVertexProperty(vertexType, oldKey, newKey);
+  }
+
+  @Override
+  public void batchDeleteVertexProperty(String vertexType, String key) {
+
+    vertexServiceHelper.batchDeleteVertexProperty(vertexType, key);
+  }
+
+  @Override
+  public void batchUpdateVertexEdge(String name, String newName, String inVertexType,
+      String outVertexType) {
+
+    vertexServiceHelper.batchUpdateVertexEdge(name, newName, inVertexType, outVertexType);
+  }
+
+  @Override
+  public void batchUpdateVertexEdge(String name, String newName) {
+
+    vertexServiceHelper.batchUpdateVertexEdge(name, newName);
+  }
+
+  @Override
+  public void batchDeleteVertexEdge(String name, String inVertexType, String outVertexType) {
+
+    vertexServiceHelper.batchDeleteVertexEdge(name, inVertexType, outVertexType);
+  }
+
+  @Override
+  public void batchDeleteVertexEdge(String name) {
+
+    vertexServiceHelper.batchDeleteVertexEdge(name);
   }
 
   @Override
@@ -558,149 +604,6 @@ public class JpaVertexService implements VertexService {
 
     return datasourceRepository.findById(newEvidenceRequest.getDatasourceId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
-  }
-
-  private void updateVertices(List<String> vertexIds, String newType) {
-
-    final var vertices = vertexRepository.findAllById(vertexIds);
-
-    final var managedVertices = new HashSet<>(vertices);
-
-    managedVertices.forEach(it -> {
-      it.setType(newType);
-      vertexRepository.save(it);
-    });
-
-    neo4jVertexService.updateVertices(vertexIds, newType);
-  }
-
-  @Override
-  public void deleteVertex(String vertexId) {
-
-    getVertex(vertexId).ifPresent(vertex -> {
-      vertex.detachDataSources();
-      vertex.detachEdges();
-
-      vertexRepository.delete(vertex);
-    });
-
-    neo4jVertexService.deleteVertex(vertexId);
-  }
-
-  @Override
-  public void deleteVertices(@Nonnull List<String> vertexIds) {
-
-    vertexIds.forEach(this::deleteVertex);
-  }
-
-  @Override
-  public void batchDeleteVertex(Set<String> types) {
-
-    CompletableFuture.runAsync(() ->
-            deleteVerticesByTypes(types), VIRTUAL_EXECUTOR)
-        .exceptionally(ex -> {
-          log.error("异步删除顶点任务出现异常", ex);
-          throw ex instanceof CompletionException ?
-              (CompletionException) ex : new CompletionException(ex);
-        });
-  }
-
-  @Override
-  public void batchUpdateVertex(String oldType, String newType) {
-
-    CompletableFuture.runAsync(() ->
-            updateVerticesByType(oldType, newType), VIRTUAL_EXECUTOR)
-        .exceptionally(ex -> {
-          log.error("异步修改顶点任务出现异常", ex);
-          throw ex instanceof CompletionException ?
-              (CompletionException) ex : new CompletionException(ex);
-        });
-  }
-
-  private void updateVerticesByType(String oldType, String newType) {
-
-    int pageSize = 500;
-    int pageNumber = 0;
-    Page<Vertex> page;
-
-    do {
-      try {
-        page = vertexRepository.findAll(
-            Specification.where(typeIs(oldType)),
-            PageRequest.of(pageNumber, pageSize)
-        );
-      } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
-        break;
-      }
-
-      final var vertexIds = page.getContent().stream()
-          .map(Vertex::getID)
-          .collect(Collectors.toList());
-
-      if (CollUtil.isNotEmpty(vertexIds)) {
-        try {
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            updateVertices(vertexIds, newType);
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除顶点ID为 {} 时出现异常", vertexIds, e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
-  }
-
-  private void deleteVerticesByTypes(Set<String> types) {
-
-    int pageSize = 500;
-    int pageNumber = 0;
-    Page<Vertex> page;
-
-    do {
-      try {
-        page = vertexRepository.findAll(
-            Specification.where(typesIn(types)),
-            PageRequest.of(pageNumber, pageSize)
-        );
-      } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
-        break;
-      }
-
-      final var vertexIds = page.getContent().stream()
-          .map(Vertex::getID)
-          .collect(Collectors.toList());
-
-      if (CollUtil.isNotEmpty(vertexIds)) {
-        try {
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            deleteVertices(vertexIds);
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除顶点ID为 {} 时出现异常", vertexIds, e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
-  }
-
-  private @Nonnull Specification<Vertex> typeIs(String type) {
-
-    return (root, query, criteriaBuilder) -> {
-      if (StrUtil.isBlank(type)) {
-        return criteriaBuilder.and();
-      }
-      return criteriaBuilder.equal(root.get(Vertex_.TYPE), type);
-    };
   }
 
   private @Nonnull Specification<Vertex> addKeyValueSpecifications(
