@@ -7,6 +7,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
@@ -242,6 +243,39 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
+  public void updateProperty(@Nonnull Edge edge, @Nonnull UpdatePropertyRequest request) {
+
+    final var managedProperty = Optional
+        .ofNullable(edge.getProperties().get(request.getKey()))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+
+    final var oldValueMd5 = MD5.create().digestHex(request.getOldValue());
+    final var managedOldPropertyValue = managedProperty.getValues()
+        .stream()
+        .filter(value -> value.getMd5().equals(oldValueMd5))
+        .findFirst()
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+
+    final var newValueMd5 = MD5.create().digestHex(request.getNewValue());
+
+    if (oldValueMd5.equals(newValueMd5)) {
+      managedOldPropertyValue.getEvidences().clear();
+      addEvidence(managedOldPropertyValue, request);
+    } else {
+      managedOldPropertyValue.clearEvidences();
+      managedOldPropertyValue.setValue(request.getNewValue());
+      final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
+      addEvidence(propertyValue, request);
+    }
+    if (request.isChecked()) {
+      setFeature(edge, "checked", String.valueOf(true));
+    }
+    if (request.isVerified()) {
+      setVerified(edge, request.getKey(), request.getNewValue());
+    }
+  }
+
+  @Override
   public void deleteProperty(@Nonnull Vertex vertex, @Nonnull String key, @Nonnull String value,
       @Nonnull String mode) {
 
@@ -270,6 +304,31 @@ public class JpaVertexService implements VertexService {
     }
 
     neo4jVertexService.deleteProperty(vertex, key, dbPropertyValue.getValue());
+  }
+
+  @Override
+  public void deleteProperty(@Nonnull Edge edge, @Nonnull String key, @Nonnull String value,
+      @Nonnull String mode) {
+
+    final var dbProperty = Optional.ofNullable(edge.getProperties().get(key))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在！"));
+
+    final var valueMd5 = mode.equals("md5") ? value : MD5.create().digestHex(value);
+
+    final var dbPropertyValue = dbProperty.getValues().stream()
+        .filter(it -> it.getMd5().equals(valueMd5))
+        .findFirst()
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在！"));
+
+    dbProperty.getValues().remove(dbPropertyValue);
+    dbPropertyValue.setProperty(null);
+    propertyRepository.save(dbProperty);
+
+    if (CollUtil.isEmpty(dbProperty.getValues())) {
+      edge.getProperties().remove(key);
+      dbProperty.setVertex(null);
+      edgeRepository.save(edge);
+    }
   }
 
   @Override
@@ -303,6 +362,8 @@ public class JpaVertexService implements VertexService {
     edge.setName(request.getName());
     request.getFeatures().forEach((k, v) -> setFeature(edge, k, v));
     final var managedEdge = edgeRepository.save(edge);
+
+    neo4jVertexService.newEdge(request.getName(), inVertex, outVertex);
 
     request.getProps().forEach((k, v) -> {
       final var newPropertyRequest = new NewPropertyRequest();
@@ -421,6 +482,32 @@ public class JpaVertexService implements VertexService {
     property.getValues().stream()
         .filter(it -> it != propertyValue)
         .forEach(it -> setFeature(it, "verified", "false"));
+  }
+
+  @Override
+  public void deleteEdge(@Nonnull Edge edge) {
+
+    edge.clearEvidences();
+    edge.clearProperties();
+    edge.detachVertices();
+    edgeRepository.delete(edge);
+
+    neo4jVertexService.deleteEdge(edge.getName(), edge.getInVertex(), edge.getOutVertex());
+  }
+
+  @Override
+  public void updateEdge(@Nonnull Edge edge, @Nonnull UpdateEdgeRequest request) {
+
+    request.getFeatures().forEach((k, v) -> setFeature(edge, k, v));
+    final var managedNewEdge = edgeRepository.save(edge);
+    managedNewEdge.clearEvidences();
+    addEvidence(edge, request);
+    if (request.isVerified()) {
+      setVerified(managedNewEdge);
+    }
+
+    neo4jVertexService.updateEdge(request.getOldName(), request.getNewName(), edge.getInVertex(),
+        edge.getOutVertex());
   }
 
   @Override

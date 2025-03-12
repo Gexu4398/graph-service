@@ -168,4 +168,68 @@ public class Neo4jVertexService {
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
     updateVectorStore(managedVertexNode);
   }
+
+  public void newEdge(@Nonnull String name, @Nonnull Vertex inVertex, @Nonnull Vertex outVertex) {
+
+    final var inVertexNode = getVertex(inVertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var outVertexNode = getVertex(outVertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var edgeRelation = new EdgeRelation();
+    edgeRelation.setName(name);
+    edgeRelation.setVertexNode(outVertexNode);
+
+    inVertexNode.getEdges().add(edgeRelation);
+
+    vertexNodeRepository.save(inVertexNode);
+  }
+
+  public void deleteEdge(@Nonnull String name, @Nonnull Vertex inVertex,
+      @Nonnull Vertex outVertex) {
+
+    final var inVertexNode = getVertex(inVertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var outVertexNode = getVertex(outVertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var edge = inVertexNode.getEdges().stream()
+        .filter(it -> it.getName().equals(name) &&
+            it.getVertexNode().equals(outVertexNode))
+        .findFirst()
+        .orElse(null);
+
+    if (null == edge) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
+    }
+
+    inVertexNode.getEdges().remove(edge);
+
+    vertexNodeRepository.deleteRelation(inVertex.getID(), outVertex.getID(), name);
+
+    vertexNodeRepository.save(inVertexNode);
+  }
+
+  public void updateEdge(@Nonnull String oldName, @Nonnull String newName, @Nonnull Vertex inVertex,
+      @Nonnull Vertex outVertex) {
+
+    final var inVertexNode = getVertex(inVertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    final var outVertexNode = getVertex(outVertex.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+
+    inVertexNode.getEdges().stream()
+        .filter(it -> it.getName().equals(oldName) &&
+            it.getVertexNode().equals(outVertexNode))
+        .findFirst()
+        .ifPresentOrElse(it -> {
+          it.setName(newName);
+          vertexNodeRepository.save(inVertexNode);
+        }, () -> {
+          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
+        });
+  }
 }

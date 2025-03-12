@@ -6,11 +6,13 @@ import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.response.GetVerticesResponseItem;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.helper.JwtHelper;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
@@ -28,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -258,5 +261,133 @@ public class VertexController {
       request.setCreator(username);
       vertexService.newEdge(inVertex, outVertex, request);
     });
+  }
+
+  @Operation(summary = "修改关系")
+  @PutMapping("{id}/edge/{outId}")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void updateEdge(@PathVariable String id, @PathVariable String outId,
+      @Valid @RequestBody UpdateEdgeRequest request) {
+
+    if (id.equals(outId)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自己建立关系！");
+    }
+
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    Edge oldEdge;
+    if (StrUtil.isNotBlank(request.getOldId())) {
+      final var oldOutVertex = vertexService.getVertex(request.getOldId())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+      oldEdge = vertexService
+          .getEdge(request.getOldName(), inVertex, oldOutVertex, request.getScope())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+    } else {
+      oldEdge = vertexService
+          .getEdge(request.getOldName(), inVertex, outVertex, request.getScope())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+    }
+
+    final var newEdge = vertexService
+        .getEdge(request.getNewName(), inVertex, outVertex, request.getScope())
+        .orElse(null);
+
+    if (null != newEdge && newEdge.equals(oldEdge)) {
+      request.setCreator(JwtHelper.getUsername());
+      vertexService.updateEdge(oldEdge, request);
+    } else {
+      vertexService.deleteEdge(oldEdge);
+      final var newEdgeRequest = new NewEdgeRequest();
+      newEdgeRequest.setCreator(JwtHelper.getUsername());
+      newEdgeRequest.setName(request.getNewName());
+      newEdgeRequest.setContent(request.getContent());
+      newEdgeRequest.setDatasourceId(request.getDatasourceId());
+      newEdgeRequest.setFeatures(request.getFeatures());
+      newEdgeRequest.setScope(request.getScope());
+      vertexService.newEdge(inVertex, outVertex, newEdgeRequest);
+    }
+  }
+
+  @Operation(summary = "删除关系")
+  @DeleteMapping("{id}/edge/{outID}")
+  @Transactional("bizTransactionManager")
+  public void deleteEdge(@PathVariable String id, @PathVariable String outID,
+      @RequestParam String name, @RequestParam(defaultValue = "default") String scope) {
+
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var outVertex = vertexService.getVertex(outID)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    vertexService.getEdge(name, inVertex, outVertex, scope)
+        .ifPresentOrElse(vertexService::deleteEdge, () -> {
+          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！");
+        });
+  }
+
+  @Operation(summary = "新增关系属性")
+  @PostMapping(path = "{id}/edge/{outId}/property")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void newEdgeProperty(@PathVariable String id, @PathVariable String outId,
+      @RequestParam String name, @RequestParam(defaultValue = "default") String scope,
+      @RequestParam String key, @Valid @RequestBody NewPropertyRequest newPropertyRequest) {
+
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+    newPropertyRequest.setKey(key);
+    newPropertyRequest.setCreator(JwtHelper.getUsername());
+    vertexService.newProperty(edge, newPropertyRequest);
+  }
+
+  @Operation(summary = "修改关系属性")
+  @PutMapping("{id}/edge/{outId}/property")
+  @SneakyThrows
+  @Transactional("bizTransactionManager")
+  public void updateEdgeProperties(@PathVariable String id, @PathVariable String outId,
+      @RequestParam(defaultValue = "default") String scope, @RequestParam String name,
+      @Valid @RequestBody List<UpdatePropertyRequest> requests) {
+
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+
+    final var username = JwtHelper.getUsername();
+    requests.forEach(updatePropertyRequest -> {
+      updatePropertyRequest.setCreator(username);
+      vertexService.updateProperty(edge, updatePropertyRequest);
+    });
+  }
+
+  @Operation(summary = "删除关系属性")
+  @DeleteMapping("{id}/edge/{outId}/property")
+  @Transactional("bizTransactionManager")
+  public void deleteEdgeProperty(@PathVariable String id, @PathVariable String outId,
+      @RequestParam String key, @RequestParam String value, @RequestParam String name,
+      @RequestParam(defaultValue = "default") String scope,
+      @RequestParam(defaultValue = "raw") String mode) {
+
+    if (mode.equals("raw")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mode传参要为md5!");
+    }
+    final var inVertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var outVertex = vertexService.getVertex(outId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+    final var edge = vertexService.getEdge(name, inVertex, outVertex, scope)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在！"));
+    vertexService.deleteProperty(edge, key, value, mode);
   }
 }

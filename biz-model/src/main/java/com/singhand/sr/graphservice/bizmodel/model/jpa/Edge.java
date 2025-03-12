@@ -175,4 +175,15 @@ public class Edge {
     getEvidences().add(evidence);
     evidence.setEdge(this);
   }
+
+  public void clearEvidences() {
+
+    getEvidences().forEach(it -> {
+      it.detachDatasource();
+      it.setEdge(null);
+      it.detachPicture();
+      it.detachPropertyValue();
+    });
+    getEvidences().clear();
+  }
 }

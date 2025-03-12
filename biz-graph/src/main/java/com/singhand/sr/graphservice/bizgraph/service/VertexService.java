@@ -5,6 +5,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -76,7 +78,11 @@ public interface VertexService {
 
   void updateProperty(Vertex vertex, UpdatePropertyRequest request);
 
+  void updateProperty(Edge edge, UpdatePropertyRequest updatePropertyRequest);
+
   void deleteProperty(Vertex vertex, String key, String value, String mode);
+
+  void deleteProperty(Edge edge, String key, String value, String mode);
 
   Edge newEdge(Vertex inVertex, Vertex outVertex, NewEdgeRequest request);
 
@@ -87,4 +93,8 @@ public interface VertexService {
   Optional<Edge> getEdge(String name, Vertex inVertex, Vertex outVertex, String scope);
 
   void setVerified(Edge edge, String key, String value);
+
+  void deleteEdge(Edge edge);
+
+  void updateEdge(Edge oldEdge, UpdateEdgeRequest request);
 }
