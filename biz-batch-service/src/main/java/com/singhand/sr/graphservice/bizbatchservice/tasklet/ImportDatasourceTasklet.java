@@ -1,18 +1,26 @@
 package com.singhand.sr.graphservice.bizbatchservice.tasklet;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.StrUtil;
+import com.singhand.sr.graphservice.bizbatchservice.client.feign.AiEvidenceExtractorClient;
+import com.singhand.sr.graphservice.bizbatchservice.client.feign.AiTextExtractorClient;
 import com.singhand.sr.graphservice.bizbatchservice.converter.MsWordConverter;
 import com.singhand.sr.graphservice.bizbatchservice.converter.PdfConverter;
 import com.singhand.sr.graphservice.bizbatchservice.converter.TxtConverter;
 import com.singhand.sr.graphservice.bizbatchservice.converter.picture.S3PictureManager;
+import com.singhand.sr.graphservice.bizbatchservice.model.request.AiEvidenceExtractorRequest;
+import com.singhand.sr.graphservice.bizbatchservice.model.request.AiTextExtractorRequest;
+import com.singhand.sr.graphservice.bizbatchservice.model.response.AiEvidenceExtractorResponse;
+import com.singhand.sr.graphservice.bizbatchservice.model.response.AiTextExtractorResponse;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Picture;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PictureRepository;
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
@@ -66,6 +74,12 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final EvidenceRepository evidenceRepository;
 
+  private final OntologyRepository ontologyRepository;
+
+  private final AiEvidenceExtractorClient aiEvidenceExtractorClient;
+
+  private final AiTextExtractorClient aiTextExtractorClient;
+
   @Autowired
   public ImportDatasourceTasklet(MinioClient minioClient,
       @Value("${minio.bucket}") String bucket,
@@ -74,7 +88,10 @@ public class ImportDatasourceTasklet implements Tasklet {
       S3PictureManager s3PictureManager,
       @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
       @Qualifier("bizEntityManager") EntityManager bizEntityManager,
-      PictureRepository pictureRepository, EvidenceRepository evidenceRepository) {
+      PictureRepository pictureRepository, EvidenceRepository evidenceRepository,
+      OntologyRepository ontologyRepository,
+      AiEvidenceExtractorClient aiEvidenceExtractorClient,
+      AiTextExtractorClient aiTextExtractorClient) {
 
     this.minioClient = minioClient;
     this.bucket = bucket;
@@ -86,6 +103,9 @@ public class ImportDatasourceTasklet implements Tasklet {
     this.bizEntityManager = bizEntityManager;
     this.pictureRepository = pictureRepository;
     this.evidenceRepository = evidenceRepository;
+    this.ontologyRepository = ontologyRepository;
+    this.aiEvidenceExtractorClient = aiEvidenceExtractorClient;
+    this.aiTextExtractorClient = aiTextExtractorClient;
   }
 
   @Override
@@ -149,9 +169,57 @@ public class ImportDatasourceTasklet implements Tasklet {
       datasourceRepository.save(datasource);
       return savePictures(datasource, datasourceContent);
     });
+
+    textExtract(paragraphs, datasource);
+
     bizEntityManager.flush();
 
     return RepeatStatus.FINISHED;
+  }
+
+  @SneakyThrows
+  private void textExtract(List<String> paragraphs, @Nonnull Datasource datasource) {
+
+    final var request = new AiTextExtractorRequest();
+    request.setTexts(paragraphs);
+    log.info("开始调用实体提取服务..........");
+    final var response = aiTextExtractorClient.informationExtract(request);
+    log.info("开始提取实体..........");
+    importAiTextExtractorResult(response, datasource);
+
+    final var evidenceRequest = new AiEvidenceExtractorRequest();
+    evidenceRequest.setTexts(paragraphs);
+    log.info("开始调用事件提取服务..........");
+    final var evidenceResponse = aiEvidenceExtractorClient.propertyEdgeExtract(evidenceRequest);
+    log.info("开始提取事件..........");
+    importAiEvidenceExtractorResult(evidenceResponse, datasource);
+  }
+
+  private void importAiTextExtractorResult(AiTextExtractorResponse response,
+      Datasource datasource) {
+
+  }
+
+  private void importAiEvidenceExtractorResult(@Nonnull AiEvidenceExtractorResponse response,
+      @Nonnull Datasource datasource) {
+
+  }
+
+  private void importVertices(@Nonnull AiTextExtractorResponse response,
+      @Nonnull Datasource datasource) {
+
+    if (CollUtil.isEmpty(response.getEntities())) {
+      return;
+    }
+
+    final var types = ontologyRepository.findAllNames();
+
+    response.getEntities()
+        .stream()
+        .filter(it -> types.contains(it.getType()))
+        .forEach(entity -> {
+
+        });
   }
 
   @SneakyThrows
