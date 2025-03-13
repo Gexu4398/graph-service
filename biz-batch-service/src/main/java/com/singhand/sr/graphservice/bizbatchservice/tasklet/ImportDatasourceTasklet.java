@@ -14,20 +14,27 @@ import com.singhand.sr.graphservice.bizbatchservice.model.request.AiEvidenceExtr
 import com.singhand.sr.graphservice.bizbatchservice.model.request.AiTextExtractorRequest;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiEvidenceExtractorResponse;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiTextExtractorResponse;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Picture;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PictureRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -80,6 +87,12 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final AiTextExtractorClient aiTextExtractorClient;
 
+  private final VertexRepository vertexRepository;
+
+  private final VertexService vertexService;
+
+  private final OntologyPropertyRepository ontologyPropertyRepository;
+
   @Autowired
   public ImportDatasourceTasklet(MinioClient minioClient,
       @Value("${minio.bucket}") String bucket,
@@ -91,7 +104,8 @@ public class ImportDatasourceTasklet implements Tasklet {
       PictureRepository pictureRepository, EvidenceRepository evidenceRepository,
       OntologyRepository ontologyRepository,
       AiEvidenceExtractorClient aiEvidenceExtractorClient,
-      AiTextExtractorClient aiTextExtractorClient) {
+      AiTextExtractorClient aiTextExtractorClient, VertexRepository vertexRepository,
+      VertexService vertexService, OntologyPropertyRepository ontologyPropertyRepository) {
 
     this.minioClient = minioClient;
     this.bucket = bucket;
@@ -106,6 +120,9 @@ public class ImportDatasourceTasklet implements Tasklet {
     this.ontologyRepository = ontologyRepository;
     this.aiEvidenceExtractorClient = aiEvidenceExtractorClient;
     this.aiTextExtractorClient = aiTextExtractorClient;
+    this.vertexRepository = vertexRepository;
+    this.vertexService = vertexService;
+    this.ontologyPropertyRepository = ontologyPropertyRepository;
   }
 
   @Override
@@ -198,6 +215,8 @@ public class ImportDatasourceTasklet implements Tasklet {
   private void importAiTextExtractorResult(AiTextExtractorResponse response,
       Datasource datasource) {
 
+    importVertices(response, datasource);
+    importAttributes(response, datasource);
   }
 
   private void importAiEvidenceExtractorResult(@Nonnull AiEvidenceExtractorResponse response,
@@ -215,10 +234,68 @@ public class ImportDatasourceTasklet implements Tasklet {
     final var types = ontologyRepository.findAllNames();
 
     response.getEntities()
-        .stream()
-        .filter(it -> types.contains(it.getType()))
         .forEach(entity -> {
+          if (!types.contains(entity.getType())) {
+            log.warn("不能识别的实体类型：{}", entity.getType());
+          } else if (StrUtil.isNotBlank(entity.getName()) && StrUtil.isNotBlank(entity.getType())) {
+            final var exists = vertexRepository
+                .findByNameAndType(entity.getName(), entity.getType())
+                .isPresent();
+            if (exists) {
+              return;
+            }
+            final var request = new NewVertexRequest();
+            request.setName(entity.getName());
+            request.setType(entity.getType());
+            request.setDatasourceId(datasource.getID());
+            vertexService.newVertex(request);
+          }
+        });
+  }
 
+  private void importAttributes(@Nonnull AiTextExtractorResponse response,
+      @Nonnull Datasource datasource) {
+
+    final var ontologyPropertyMap = new HashMap<String, Set<String>>();
+
+    response.getAttributes()
+        .forEach(attribute -> {
+          if (StrUtil.isBlank(attribute.getSubject())
+              || StrUtil.isBlank(attribute.getSubjectType())
+              || StrUtil.isBlank(attribute.getRelation())
+              || StrUtil.isBlank(attribute.getObject())) {
+            log.warn("必填项有缺失：name={} type={} key={} value={}", attribute.getSubject(),
+                attribute.getSubjectType(), attribute.getRelation(), attribute.getObject());
+            return;
+          }
+
+          final var vertexType = attribute.getSubjectType();
+          if (CollUtil.isEmpty(ontologyPropertyMap.get(vertexType))) {
+            final var ontologyProperties = ontologyPropertyRepository
+                .findByOntology_Name(vertexType);
+            final var propertyNames = ontologyProperties.stream()
+                .map(OntologyProperty::getName)
+                .collect(Collectors.toSet());
+            ontologyPropertyMap.put(vertexType, propertyNames);
+          }
+          final var properties = ontologyPropertyMap.get(vertexType);
+          if (!properties.contains(attribute.getRelation())) {
+            log.warn("不能识别的属性类型：{}", attribute.getRelation());
+            return;
+          }
+          final var vertex = vertexRepository.findByNameAndType(attribute.getSubject(), vertexType)
+              .orElse(null);
+          if (null == vertex) {
+            log.warn("实体不存在：name={} type={}", attribute.getSubject(), vertexType);
+            return;
+          }
+          final var request = new NewPropertyRequest();
+          request.setKey(attribute.getRelation());
+          request.setValue(attribute.getObject());
+          request.setChecked(false);
+          request.setVerified(false);
+          request.setDatasourceId(datasource.getID());
+          vertexService.newProperty(vertex, request);
         });
   }
 

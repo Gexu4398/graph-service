@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizmodel.repository.jpa;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -13,6 +14,8 @@ public interface OntologyPropertyRepository extends BaseRepository<OntologyPrope
   Page<OntologyProperty> findByOntology(Ontology ontology, Pageable pageable);
 
   Optional<OntologyProperty> findByOntologyAndName(Ontology ontology, String name);
+
+  Set<OntologyProperty> findByOntology_Name(String name);
 
   boolean existsByOntologyAndName(Ontology ontology, String name);
 }
