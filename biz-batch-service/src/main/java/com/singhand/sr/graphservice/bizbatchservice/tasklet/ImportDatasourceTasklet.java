@@ -14,6 +14,7 @@ import com.singhand.sr.graphservice.bizbatchservice.model.request.AiEvidenceExtr
 import com.singhand.sr.graphservice.bizbatchservice.model.request.AiTextExtractorRequest;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiEvidenceExtractorResponse;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiTextExtractorResponse;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
@@ -22,11 +23,14 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Picture;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PictureRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
@@ -93,6 +97,10 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final OntologyPropertyRepository ontologyPropertyRepository;
 
+  private final RelationModelRepository relationModelRepository;
+
+  private final EdgeRepository edgeRepository;
+
   @Autowired
   public ImportDatasourceTasklet(MinioClient minioClient,
       @Value("${minio.bucket}") String bucket,
@@ -105,7 +113,8 @@ public class ImportDatasourceTasklet implements Tasklet {
       OntologyRepository ontologyRepository,
       AiEvidenceExtractorClient aiEvidenceExtractorClient,
       AiTextExtractorClient aiTextExtractorClient, VertexRepository vertexRepository,
-      VertexService vertexService, OntologyPropertyRepository ontologyPropertyRepository) {
+      VertexService vertexService, OntologyPropertyRepository ontologyPropertyRepository,
+      RelationModelRepository relationModelRepository, EdgeRepository edgeRepository) {
 
     this.minioClient = minioClient;
     this.bucket = bucket;
@@ -123,6 +132,8 @@ public class ImportDatasourceTasklet implements Tasklet {
     this.vertexRepository = vertexRepository;
     this.vertexService = vertexService;
     this.ontologyPropertyRepository = ontologyPropertyRepository;
+    this.relationModelRepository = relationModelRepository;
+    this.edgeRepository = edgeRepository;
   }
 
   @Override
@@ -217,6 +228,53 @@ public class ImportDatasourceTasklet implements Tasklet {
 
     importVertices(response, datasource);
     importAttributes(response, datasource);
+    importRelationships(response, datasource);
+  }
+
+  private void importRelationships(@Nonnull AiTextExtractorResponse response,
+      @Nonnull Datasource datasource) {
+
+    final var relations = relationModelRepository.findAllNames();
+
+    response.getRelations().forEach(relationship -> {
+      if (!relations.contains(relationship.getRelation())) {
+        log.warn("不能识别的关系类型：{}", relationship.getRelation());
+        return;
+      }
+
+      final var inVertex = getVertex(relationship.getSubject(), relationship.getSubjectType());
+      final var outVertex = getVertex(relationship.getObject(), relationship.getObjectType());
+
+      if (null == inVertex) {
+        log.warn("主语实体不存在......name={} type={}",
+            relationship.getSubject(), relationship.getSubjectType());
+        return;
+      }
+      if (null == outVertex) {
+        log.warn("宾语实体不存在......name={} type={}",
+            relationship.getObject(), relationship.getObjectType());
+        return;
+      }
+
+      final var request = new NewEdgeRequest();
+      request.setName(relationship.getRelation());
+      request.setDatasourceId(datasource.getID());
+      request.setChecked(false);
+      request.setVerified(false);
+
+      final var exists = edgeRepository.existsByNameAndInVertexAndOutVertexAndScope(
+          relationship.getRelation(), inVertex, outVertex, "default");
+
+      if (exists) {
+        log.warn("关系已存在......name={} in={} out={}",
+            relationship.getRelation(),
+            String.format("%s(%s)", inVertex.getName(), inVertex.getType()),
+            String.format("%s(%s)", outVertex.getName(), outVertex.getType()));
+        return;
+      }
+
+      vertexService.newEdge(inVertex, outVertex, request);
+    });
   }
 
   private void importAiEvidenceExtractorResult(@Nonnull AiEvidenceExtractorResponse response,
@@ -319,6 +377,16 @@ public class ImportDatasourceTasklet implements Tasklet {
           pictureRepository.save(picture);
         })
         .collect(Collectors.toSet());
+  }
+
+  private Vertex getVertex(String name, String type) {
+
+    if (StrUtil.isBlank(name) || StrUtil.isBlank(type)) {
+      log.warn("实体必填项有缺失：name={} type={}", name, type);
+      return null;
+    }
+
+    return vertexRepository.findByNameAndType(name, type).orElse(null);
   }
 
   private @Nonnull Evidence newEvidence(@Nonnull Datasource datasource) {
