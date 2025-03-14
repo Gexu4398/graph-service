@@ -283,6 +283,9 @@
       <column name="creator" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
+      <column name="confidence" type="double" defaultValue="0.0">
+        <constraints nullable="false"/>
+      </column>
       <column name="datasourcecontent_id" type="bigint"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
