@@ -7,6 +7,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
@@ -169,8 +170,9 @@ public interface VertexService {
    *
    * @param propertyValue      属性值对象
    * @param newEvidenceRequest 新证据请求对象
+   * @return 添加证据的源数据对象
    */
-  void addEvidence(PropertyValue propertyValue, NewEvidenceRequest newEvidenceRequest);
+  Datasource addEvidence(PropertyValue propertyValue, NewEvidenceRequest newEvidenceRequest);
 
   /**
    * 为边添加证据。

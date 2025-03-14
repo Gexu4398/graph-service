@@ -188,7 +188,10 @@ public class JpaVertexService implements VertexService {
     final var managedPropertyValue = propertyValueRepository.save(propertyValue);
 
     if (null != request.getDatasourceId()) {
-      addEvidence(managedPropertyValue, request);
+      final var datasource = addEvidence(managedPropertyValue, request);
+      if (null != datasource) {
+        setFeature(managedPropertyValue, "confidence", String.valueOf(datasource.getConfidence()));
+      }
     }
 
     neo4jVertexService.newProperty(vertex, request);
@@ -216,7 +219,10 @@ public class JpaVertexService implements VertexService {
     neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
         edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
 
-    addEvidence(managedPropertyValue, newPropertyRequest);
+    final var datasource = addEvidence(managedPropertyValue, newPropertyRequest);
+    if (null != datasource) {
+      setFeature(managedPropertyValue, "confidence", String.valueOf(datasource.getConfidence()));
+    }
   }
 
   @Override
@@ -240,7 +246,11 @@ public class JpaVertexService implements VertexService {
       if (managedOldPropertyValue.getEvidences().stream()
           .noneMatch(it -> it.getContent().equals(request.getContent()))) {
         managedOldPropertyValue.clearEvidences();
-        addEvidence(managedOldPropertyValue, request);
+        final var datasource = addEvidence(managedOldPropertyValue, request);
+        if (null != datasource) {
+          setFeature(managedOldPropertyValue, "confidence",
+              String.valueOf(datasource.getConfidence()));
+        }
       }
     } else {
       managedOldPropertyValue.clearEvidences();
@@ -248,7 +258,10 @@ public class JpaVertexService implements VertexService {
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
 
       neo4jVertexService.updateProperty(vertex, request);
-      addEvidence(propertyValue, request);
+      final var datasource = addEvidence(propertyValue, request);
+      if (null != datasource) {
+        setFeature(propertyValue, "confidence", String.valueOf(datasource.getConfidence()));
+      }
     }
   }
 
@@ -270,12 +283,19 @@ public class JpaVertexService implements VertexService {
 
     if (oldValueMd5.equals(newValueMd5)) {
       managedOldPropertyValue.getEvidences().clear();
-      addEvidence(managedOldPropertyValue, request);
+      final var datasource = addEvidence(managedOldPropertyValue, request);
+      if (null != datasource) {
+        setFeature(managedOldPropertyValue, "confidence",
+            String.valueOf(datasource.getConfidence()));
+      }
     } else {
       managedOldPropertyValue.clearEvidences();
       managedOldPropertyValue.setValue(request.getNewValue());
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
-      addEvidence(propertyValue, request);
+      final var datasource = addEvidence(propertyValue, request);
+      if (null != datasource) {
+        setFeature(propertyValue, "confidence", String.valueOf(datasource.getConfidence()));
+      }
     }
   }
 
@@ -399,29 +419,31 @@ public class JpaVertexService implements VertexService {
       return;
     }
 
-    final var managedDatasource = getDatasource(newEvidenceRequest);
+    final var datasource = getDatasource(newEvidenceRequest);
     final var evidence = new Evidence();
     evidence.setContent(newEvidenceRequest.getContent());
     edge.addEvidence(evidence);
-    managedDatasource.addEvidence(evidence);
+    datasource.addEvidence(evidence);
     evidenceRepository.save(evidence);
   }
 
   @Override
-  public void addEvidence(@Nonnull PropertyValue propertyValue,
+  public Datasource addEvidence(@Nonnull PropertyValue propertyValue,
       @Nonnull NewEvidenceRequest newEvidenceRequest) {
 
     if (null == newEvidenceRequest.getDatasourceId()) {
-      return;
+      return null;
     }
 
-    final var managedDatasource = getDatasource(newEvidenceRequest);
+    final var datasource = getDatasource(newEvidenceRequest);
 
     final var evidence = new Evidence();
     evidence.setContent(newEvidenceRequest.getContent());
     propertyValue.addEvidence(evidence);
-    managedDatasource.addEvidence(evidence);
+    datasource.addEvidence(evidence);
     evidenceRepository.save(evidence);
+
+    return datasource;
   }
 
   @Override
