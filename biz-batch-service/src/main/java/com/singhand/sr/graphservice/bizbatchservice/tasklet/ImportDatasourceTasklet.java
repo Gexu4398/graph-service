@@ -1,15 +1,11 @@
 package com.singhand.sr.graphservice.bizbatchservice.tasklet;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizbatchservice.client.feign.AiEvidenceExtractorClient;
 import com.singhand.sr.graphservice.bizbatchservice.client.feign.AiTextExtractorClient;
-import com.singhand.sr.graphservice.bizbatchservice.converter.MsWordConverter;
-import com.singhand.sr.graphservice.bizbatchservice.converter.PdfConverter;
-import com.singhand.sr.graphservice.bizbatchservice.converter.TxtConverter;
-import com.singhand.sr.graphservice.bizbatchservice.converter.picture.S3PictureManager;
+import com.singhand.sr.graphservice.bizbatchservice.importer.helper.ExtractHelper;
 import com.singhand.sr.graphservice.bizbatchservice.model.request.AiEvidenceExtractorRequest;
 import com.singhand.sr.graphservice.bizbatchservice.model.request.AiTextExtractorRequest;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiEvidenceExtractorResponse;
@@ -24,6 +20,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Picture;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceContentRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
@@ -36,7 +33,6 @@ import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -73,10 +69,6 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final Long id;
 
-  private final MsWordConverter msWordConverter;
-
-  private final PdfConverter pdfConverter;
-
   private final PlatformTransactionManager bizTransactionManager;
 
   private final EntityManager bizEntityManager;
@@ -101,12 +93,15 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final EdgeRepository edgeRepository;
 
+  private final ExtractHelper extractHelper;
+
+  private final DatasourceContentRepository datasourceContentRepository;
+
   @Autowired
   public ImportDatasourceTasklet(MinioClient minioClient,
       @Value("${minio.bucket}") String bucket,
       @Value("#{jobParameters['id']}") Long id,
       DatasourceRepository datasourceRepository,
-      S3PictureManager s3PictureManager,
       @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
       @Qualifier("bizEntityManager") EntityManager bizEntityManager,
       PictureRepository pictureRepository, EvidenceRepository evidenceRepository,
@@ -114,14 +109,13 @@ public class ImportDatasourceTasklet implements Tasklet {
       AiEvidenceExtractorClient aiEvidenceExtractorClient,
       AiTextExtractorClient aiTextExtractorClient, VertexRepository vertexRepository,
       VertexService vertexService, OntologyPropertyRepository ontologyPropertyRepository,
-      RelationModelRepository relationModelRepository, EdgeRepository edgeRepository) {
+      RelationModelRepository relationModelRepository, EdgeRepository edgeRepository,
+      ExtractHelper extractHelper, DatasourceContentRepository datasourceContentRepository) {
 
     this.minioClient = minioClient;
     this.bucket = bucket;
     this.datasourceRepository = datasourceRepository;
     this.id = id;
-    this.msWordConverter = new MsWordConverter(s3PictureManager);
-    this.pdfConverter = new PdfConverter(s3PictureManager);
     this.bizTransactionManager = bizTransactionManager;
     this.bizEntityManager = bizEntityManager;
     this.pictureRepository = pictureRepository;
@@ -134,6 +128,8 @@ public class ImportDatasourceTasklet implements Tasklet {
     this.ontologyPropertyRepository = ontologyPropertyRepository;
     this.relationModelRepository = relationModelRepository;
     this.edgeRepository = edgeRepository;
+    this.extractHelper = extractHelper;
+    this.datasourceContentRepository = datasourceContentRepository;
   }
 
   @Override
@@ -150,6 +146,7 @@ public class ImportDatasourceTasklet implements Tasklet {
         UUID.randomUUID() + "." + FileNameUtil.extName(object)).toString();
 
     log.info("正在导入数据源.......... 文件名={}", object);
+    updateDatasourceStatus(datasource, Datasource.STATUS_PROCESSING);
 
     minioClient.downloadObject(DownloadObjectArgs.builder()
         .bucket(bucket)
@@ -158,37 +155,20 @@ public class ImportDatasourceTasklet implements Tasklet {
         .filename(tempFilename)
         .build());
 
-    final var extName = FileNameUtil.extName(tempFilename).toLowerCase();
-    final var datasourceContent = new DatasourceContent();
-    final List<String> paragraphs = switch (extName) {
-      case "txt" -> {
-        final var str = FileUtil.readString(tempFilename, StandardCharsets.UTF_8);
-        datasourceContent.setHtml(TxtConverter.str2html(str));
-        datasourceContent.setText(str);
-        yield StrUtil.split(str, "\n");
-      }
-      case "docx" -> {
-        datasourceContent.setHtml(msWordConverter.docx2html(tempFilename));
-        datasourceContent.setText(msWordConverter.docx2txt(tempFilename));
-        yield msWordConverter.docx2lines(tempFilename);
-      }
-      case "doc" -> {
-        datasourceContent.setHtml(msWordConverter.doc2html(tempFilename));
-        datasourceContent.setText(msWordConverter.doc2txt(tempFilename));
-        yield msWordConverter.doc2lines(tempFilename);
-      }
-      case "pdf" -> {
-        datasourceContent.setHtml(pdfConverter.pdf2html(tempFilename));
-        datasourceContent.setText(pdfConverter.pdf2txt(tempFilename));
-        yield pdfConverter.pdf2lines(tempFilename);
-      }
-      default -> {
-        log.warn("不支持的文件类型：{}", extName);
-        yield List.of();
-      }
-    };
+    final var datasourceContent = datasourceContentRepository
+        .findByDatasource_ID(datasource.getID())
+        .orElse(new DatasourceContent());
 
     datasource.attachContent(datasourceContent);
+
+    List<String> paragraphs;
+    try {
+      paragraphs = extractHelper.extractFile(tempFilename, datasourceContent);
+    } catch (Exception e) {
+      log.error("文件解析失败......id={}", datasource.getID(), e);
+      updateDatasourceStatus(datasource, Datasource.STATUS_FAILURE);
+      return RepeatStatus.FINISHED;
+    }
 
     // 此处要开辟新事务，否则会合并到最外层事务再提交，进而导致导入过程看不到数据源的问题。
     final var transaction = new TransactionTemplate(bizTransactionManager);
@@ -200,9 +180,22 @@ public class ImportDatasourceTasklet implements Tasklet {
 
     textExtract(paragraphs, datasource);
 
+    updateDatasourceStatus(datasource, Datasource.STATUS_SUCCESS);
+
     bizEntityManager.flush();
 
     return RepeatStatus.FINISHED;
+  }
+
+  private void updateDatasourceStatus(@Nonnull Datasource datasource,
+      @Nonnull String status) {
+
+    datasource.setStatus(status);
+
+    // 创建新事务并立即提交状态变更
+    final var transaction = new TransactionTemplate(bizTransactionManager);
+    transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transaction.execute(transactionStatus -> datasourceRepository.save(datasource));
   }
 
   @SneakyThrows
