@@ -17,15 +17,13 @@ public class DatasourceDto implements Serializable {
   @NotBlank(message = "标题为空")
   String title;
 
-  @NotBlank(message = "来源类型为空")
-  String sourceType;
-
-  @NotBlank(message = "内容类型为空")
-  String contentType;
+  String source;
 
   String description;
 
   String url;
+
+  String status;
 
   String creator;
 

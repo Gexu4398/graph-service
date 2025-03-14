@@ -274,15 +274,12 @@
       <column name="title" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
-      <column name="sourcetype" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="contenttype" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
       <column name="source" type="VARCHAR(255)"/>
       <column name="description" type="text"/>
       <column name="url" type="VARCHAR(2000)"/>
+      <column name="status" type="VARCHAR(255)" defaultValue="pending">
+        <constraints nullable="false"/>
+      </column>
       <column name="creator" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
@@ -432,12 +429,6 @@
   </changeSet>
 
   <changeSet id="1741233340759-1" author="gexu">
-    <createIndex tableName="datasource" indexName="idx_datasource_sourceType">
-      <column name="sourcetype"/>
-    </createIndex>
-    <createIndex tableName="datasource" indexName="idx_datasource_contentType">
-      <column name="contenttype"/>
-    </createIndex>
     <createIndex tableName="datasource" indexName="idx_datasource_createdAt">
       <column name="createdat"/>
     </createIndex>

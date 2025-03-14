@@ -145,22 +145,9 @@ public class DatasourceService {
     return datasourceResponse;
   }
 
-  public Page<Datasource> getDataSources(String keyword, Set<String> contentTypes,
-      Pageable pageable) {
+  public Page<Datasource> getDataSources(String keyword, Pageable pageable) {
 
-    return datasourceRepository.findAll(Specification.where(titleLike(keyword))
-        .and(contentTypeIn(contentTypes)), pageable);
-  }
-
-  private static @Nonnull Specification<Datasource> contentTypeIn(Set<String> contentTypes) {
-
-    return (root, query, criteriaBuilder) -> {
-      Objects.requireNonNull(query).distinct(true);
-      if (CollUtil.isEmpty(contentTypes)) {
-        return criteriaBuilder.and();
-      }
-      return root.get(Datasource_.CONTENT_TYPE).in(contentTypes);
-    };
+    return datasourceRepository.findAll(Specification.where(titleLike(keyword)), pageable);
   }
 
   private static @Nonnull Specification<Datasource> titleLike(String keyword) {

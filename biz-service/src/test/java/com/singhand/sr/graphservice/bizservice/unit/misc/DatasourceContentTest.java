@@ -34,8 +34,6 @@ public class DatasourceContentTest extends BaseTestEnvironment {
     final var datasource = dataHelper.newDatasource(faker.lorem().characters(),
         faker.lorem().characters(),
         faker.lorem().characters(),
-        faker.lorem().paragraph(),
-        faker.lorem().paragraph(),
         faker.internet().url());
 
     new TransactionTemplate(bizTransactionManager).executeWithoutResult(status -> {

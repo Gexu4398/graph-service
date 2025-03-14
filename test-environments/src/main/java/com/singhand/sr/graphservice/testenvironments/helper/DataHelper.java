@@ -175,22 +175,14 @@ public class DataHelper {
 
   public Datasource newDatasource(String name) {
 
-    return newDatasource(name, "sourceType", "");
+    return newDatasource(name, "");
   }
 
-  public Datasource newDatasource(String name, String sourceType, String html) {
-
-    return newDatasource(name, sourceType, "contentType", html, "", "");
-  }
-
-  public Datasource newDatasource(String name, String sourceType, String contentType, String text,
-      String html, String url) {
+  public Datasource newDatasource(String name, String text, String html, String url) {
 
     final var datasource = new Datasource();
     datasource.setTitle(NAME_PREFIX + name);
     datasource.setUrl(url);
-    datasource.setContentType(contentType);
-    datasource.setSourceType(sourceType);
     datasource.setCreator("admin");
 
     final var datasourceContent = new DatasourceContent();
@@ -202,12 +194,10 @@ public class DataHelper {
     return datasourceRepository.save(datasource);
   }
 
-  public Datasource newDatasource(String name, String sourceType, String contentType, String text) {
+  public Datasource newDatasource(String name, String text) {
 
     final var datasource = new Datasource();
     datasource.setTitle(NAME_PREFIX + name);
-    datasource.setContentType(contentType);
-    datasource.setSourceType(sourceType);
     datasource.setCreator("admin");
 
     final var datasourceContent = new DatasourceContent();

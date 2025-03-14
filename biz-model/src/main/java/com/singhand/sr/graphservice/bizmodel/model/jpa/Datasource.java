@@ -55,12 +55,22 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordFie
 @Builder
 @Indexed(index = "datasource_00001")
 @Table(indexes = {
-    @Index(name = "idx_datasource_sourceType", columnList = "sourceType"),
-    @Index(name = "idx_datasource_contentType", columnList = "contentType"),
     @Index(name = "idx_datasource_createdAt", columnList = "createdAt")
 })
 @Schema
 public class Datasource {
+
+  // 等待抽取
+  public final static String STATUS_PENDING = "pending";
+
+  // 抽取中
+  public final static String STATUS_PROCESSING = "processing";
+
+  // 抽取成功
+  public final static String STATUS_SUCCESS = "success";
+
+  // 抽取失败
+  public final static String STATUS_FAILURE = "failure";
 
   @Id
   @SequenceGenerator(name = "datasource_seq", sequenceName = "datasource_seq", allocationSize = 1)
@@ -74,16 +84,6 @@ public class Datasource {
   @KeywordField(name = "title_keyword")
   private String title;
 
-  @Column(nullable = false)
-  @NotBlank(message = "来源类型为空")
-  @KeywordField(name = "sourceType_keyword")
-  private String sourceType;
-
-  @Column(nullable = false)
-  @NotBlank(message = "内容类型为空")
-  @KeywordField(name = "contentType_keyword")
-  private String contentType;
-
   @Column(columnDefinition = "text")
   private String description;
 
@@ -92,6 +92,9 @@ public class Datasource {
 
   @Column(length = 2000)
   private String url;
+
+  @Column(nullable = false)
+  private String status = STATUS_PENDING;
 
   @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   @Exclude

@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Collection;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -87,11 +86,10 @@ public class DatasourceController {
   @SneakyThrows
   public Page<DatasourceResponse> getDataSources(
       @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
-      @RequestParam(name = "contentType", required = false, defaultValue = "") Set<String> contentTypes,
       @RequestParam(defaultValue = "true") boolean hideHtml,
       Pageable pageable) {
 
-    final var page = datasourceService.getDataSources(keyword, contentTypes, pageable);
+    final var page = datasourceService.getDataSources(keyword, pageable);
 
     if (hideHtml) {
       final var content = page.stream()
