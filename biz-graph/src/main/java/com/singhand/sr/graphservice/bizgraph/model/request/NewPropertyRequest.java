@@ -18,10 +18,4 @@ public class NewPropertyRequest extends NewEvidenceRequest {
   @Schema(description = "属性值")
   @NotBlank(message = "属性值不能为空")
   private String value;
-
-  @Schema(description = "是否验证")
-  private boolean verified = true;
-
-  @Schema(description = "是否校验")
-  private boolean checked = true;
 }

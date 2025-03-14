@@ -21,11 +21,5 @@ public class NewEdgeRequest extends NewEvidenceRequest {
   @Schema(description = "作用域")
   private String scope = "default";
 
-  @Schema(description = "采信")
-  private boolean verified = true;
-
-  @Schema(description = "验证")
-  private boolean checked = true;
-
   private Map<String, String> props = new HashMap<>();
 }

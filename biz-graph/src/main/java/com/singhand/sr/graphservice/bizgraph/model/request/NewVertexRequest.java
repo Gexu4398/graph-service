@@ -29,10 +29,4 @@ public class NewVertexRequest extends NewEvidenceRequest {
 
   @Default
   private Map<String, String> props = new HashMap<>();
-
-  @Default
-  private boolean verified = true;
-
-  @Default
-  private boolean checked = true;
 }

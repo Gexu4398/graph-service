@@ -4,38 +4,13 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizgraph.helper.VertexServiceHelper;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.*;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Feature;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue_;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Property_;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.FeatureRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.*;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.*;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.criteria.JoinType;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,10 +19,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.*;
 
-/**
- * JpaVertexService类提供了对JPA数据库中Vertex的操作服务。
- */
 @Service
 @Slf4j
 public class JpaVertexService implements VertexService {
@@ -70,19 +43,6 @@ public class JpaVertexService implements VertexService {
 
   private final VertexServiceHelper vertexServiceHelper;
 
-  /**
-   * 构造函数，初始化各个仓库和服务。
-   *
-   * @param vertexRepository        Vertex的仓库
-   * @param neo4jVertexService      Neo4jVertexService服务
-   * @param propertyRepository      Property的仓库
-   * @param propertyValueRepository PropertyValue的仓库
-   * @param featureRepository       Feature的仓库
-   * @param datasourceRepository    Datasource的仓库
-   * @param evidenceRepository      Evidence的仓库
-   * @param edgeRepository          Edge的仓库
-   * @param vertexServiceHelper     VertexServiceHelper帮助类
-   */
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
       Neo4jVertexService neo4jVertexService,
@@ -159,8 +119,6 @@ public class JpaVertexService implements VertexService {
       newPropertyRequest.setKey(k);
       newPropertyRequest.setValue(v);
       newPropertyRequest.setContent(request.getContent());
-      newPropertyRequest.setVerified(request.isVerified());
-      newPropertyRequest.setChecked(request.isChecked());
       newPropertyRequest.setDatasourceId(null == datasource ? null : datasource.getID());
       newPropertyRequest.setCreator(request.getCreator());
       newProperty(managedVertex, newPropertyRequest);
@@ -205,12 +163,6 @@ public class JpaVertexService implements VertexService {
     propertyValue.setValue(request.getValue());
     final var managedPropertyValue = propertyValueRepository.save(propertyValue);
 
-    if (request.isVerified()) {
-      setVerified(vertex, request.getKey(), request.getValue());
-    }
-
-    setFeature(propertyValue, "checked", String.valueOf(request.isChecked()));
-
     if (null != request.getDatasourceId()) {
       addEvidence(managedPropertyValue, request);
     }
@@ -240,15 +192,6 @@ public class JpaVertexService implements VertexService {
     neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
         edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
 
-    if (newPropertyRequest.isVerified()) {
-      setVerified(edge);
-      setVerified(edge, newPropertyRequest.getKey(), newPropertyRequest.getValue());
-    }
-    if (newPropertyRequest.isChecked()) {
-      setFeature(propertyValue, "checked", String.valueOf(true));
-      setFeature(edge, "checked", String.valueOf(newPropertyRequest.isChecked()));
-    }
-
     addEvidence(managedPropertyValue, newPropertyRequest);
   }
 
@@ -275,7 +218,6 @@ public class JpaVertexService implements VertexService {
         managedOldPropertyValue.clearEvidences();
         addEvidence(managedOldPropertyValue, request);
       }
-      setFeature(managedOldPropertyValue, "checked", String.valueOf(request.isChecked()));
     } else {
       managedOldPropertyValue.clearEvidences();
       managedOldPropertyValue.setValue(request.getNewValue());
@@ -283,11 +225,6 @@ public class JpaVertexService implements VertexService {
 
       neo4jVertexService.updateProperty(vertex, request);
       addEvidence(propertyValue, request);
-      setFeature(propertyValue, "checked", String.valueOf(request.isChecked()));
-    }
-
-    if (request.isVerified()) {
-      setVerified(vertex, request.getKey(), request.getNewValue());
     }
   }
 
@@ -315,12 +252,6 @@ public class JpaVertexService implements VertexService {
       managedOldPropertyValue.setValue(request.getNewValue());
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
       addEvidence(propertyValue, request);
-    }
-    if (request.isChecked()) {
-      setFeature(edge, "checked", String.valueOf(true));
-    }
-    if (request.isVerified()) {
-      setVerified(edge, request.getKey(), request.getNewValue());
     }
   }
 
@@ -425,8 +356,6 @@ public class JpaVertexService implements VertexService {
       newPropertyRequest.setKey(k);
       newPropertyRequest.setValue(request.getProps().get(v));
       newPropertyRequest.setContent(request.getContent());
-      newPropertyRequest.setVerified(request.isVerified());
-      newPropertyRequest.setChecked(request.isChecked());
       newPropertyRequest.setDatasourceId(request.getDatasourceId());
       newProperty(edge, newPropertyRequest);
     });
@@ -435,12 +364,6 @@ public class JpaVertexService implements VertexService {
     outVertex.getPassiveEdges().add(managedEdge);
 
     addEvidence(edge, request);
-
-    if (request.isVerified()) {
-      setVerified(managedEdge);
-    }
-
-    setFeature(managedEdge, "checked", String.valueOf(request.isChecked()));
 
     return managedEdge;
   }
@@ -562,9 +485,6 @@ public class JpaVertexService implements VertexService {
     final var managedNewEdge = edgeRepository.save(edge);
     managedNewEdge.clearEvidences();
     addEvidence(edge, request);
-    if (request.isVerified()) {
-      setVerified(managedNewEdge);
-    }
 
     neo4jVertexService.updateEdge(request.getOldName(), request.getNewName(), edge.getInVertex(),
         edge.getOutVertex());
@@ -635,32 +555,6 @@ public class JpaVertexService implements VertexService {
       Pageable pageable) {
 
     return evidenceRepository.findByEdge(edge, pageable);
-  }
-
-  @Override
-  public void setChecked(Vertex vertex, String key, String value) {
-
-    final var property = getProperty(vertex, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
-    final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
-    setFeature(propertyValue, "checked", "true");
-  }
-
-  @Override
-  public void setChecked(Edge edge, String key, String value) {
-
-    final var property = getProperty(edge, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
-    final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
-    setFeature(propertyValue, "checked", "true");
-  }
-
-  @Override
-  public void setChecked(Edge edge) {
-
-    setFeature(edge, "checked", "true");
   }
 
   private Datasource getDatasource(@Nonnull NewEvidenceRequest newEvidenceRequest) {

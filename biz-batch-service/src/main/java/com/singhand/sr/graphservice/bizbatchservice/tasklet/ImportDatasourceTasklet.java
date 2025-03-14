@@ -252,8 +252,6 @@ public class ImportDatasourceTasklet implements Tasklet {
       final var request = new NewEdgeRequest();
       request.setName(relationship.getRelation());
       request.setDatasourceId(datasource.getID());
-      request.setChecked(false);
-      request.setVerified(false);
 
       final var exists = edgeRepository.existsByNameAndInVertexAndOutVertexAndScope(
           relationship.getRelation(), inVertex, outVertex, "default");
@@ -343,8 +341,6 @@ public class ImportDatasourceTasklet implements Tasklet {
           final var request = new NewPropertyRequest();
           request.setKey(attribute.getRelation());
           request.setValue(attribute.getObject());
-          request.setChecked(false);
-          request.setVerified(false);
           request.setDatasourceId(datasource.getID());
           vertexService.newProperty(vertex, request);
         });

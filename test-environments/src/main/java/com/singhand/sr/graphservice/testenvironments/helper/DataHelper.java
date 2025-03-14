@@ -239,7 +239,6 @@ public class DataHelper {
     newPropertyRequest.setKey(key);
     newPropertyRequest.setValue(value);
     newPropertyRequest.setContent(evidence);
-    newPropertyRequest.setVerified(verified);
     newPropertyRequest.setCreator("admin");
     Optional.ofNullable(datasource)
         .ifPresent(it -> newPropertyRequest.setDatasourceId(datasource.getID()));

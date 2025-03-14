@@ -376,29 +376,4 @@ public interface VertexService {
    * @return 证据分页对象
    */
   Page<Evidence> getEvidences(Edge edge, String key, String value, String mode, Pageable pageable);
-
-  /**
-   * 设置顶点属性值为已检查。
-   *
-   * @param vertex 顶点对象
-   * @param key    属性键
-   * @param value  属性值
-   */
-  void setChecked(Vertex vertex, String key, String value);
-
-  /**
-   * 设置边属性值为已检查。
-   *
-   * @param edge  边对象
-   * @param key   属性键
-   * @param value 属性值
-   */
-  void setChecked(Edge edge, String key, String value);
-
-  /**
-   * 设置边为已检查。
-   *
-   * @param edge 边对象
-   */
-  void setChecked(Edge edge);
 }

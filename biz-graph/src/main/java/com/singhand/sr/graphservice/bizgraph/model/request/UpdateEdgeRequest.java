@@ -25,7 +25,4 @@ public class UpdateEdgeRequest extends NewEvidenceRequest {
 
   @Schema(description = "关系特征")
   private Map<String, String> features = new HashMap<>();
-
-  @Schema(description = "是否采信")
-  private boolean verified = true;
 }

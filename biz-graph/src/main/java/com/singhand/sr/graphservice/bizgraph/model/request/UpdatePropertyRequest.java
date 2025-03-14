@@ -21,10 +21,4 @@ public class UpdatePropertyRequest extends NewEvidenceRequest {
   @Schema(description = "修改的属性值")
   @NotBlank(message = "修改的属性值不能为空")
   private String newValue;
-
-  @Schema(description = "是否可信")
-  private boolean verified = true;
-
-  @Schema(description = "是否校验")
-  private boolean checked = true;
 }
