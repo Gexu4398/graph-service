@@ -120,6 +120,16 @@ public class BatchJobController {
         jobExecution.setExitStatus(ExitStatus.FAILED);
         jobRepository.update(jobExecution);
       }
+
+      final var jobInstance = jobExecution.getJobInstance();
+
+      jobExecution.getStepExecutions().forEach(stepExecution -> {
+        log.info("删除 StepExecution {}-{}", stepExecution.getStepName(),
+            stepExecution.getId());
+        jobRepository.deleteStepExecution(stepExecution);
+      });
+
+      jobRepository.deleteJobInstance(jobInstance);
     } catch (Exception e) {
       log.error("停止或移除作业时发生错误: {}", id, e);
     }
