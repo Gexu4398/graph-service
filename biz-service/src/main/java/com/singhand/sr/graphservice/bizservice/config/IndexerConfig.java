@@ -1,6 +1,5 @@
 package com.singhand.sr.graphservice.bizservice.config;
 
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import jakarta.persistence.EntityManager;
 import lombok.SneakyThrows;
@@ -30,12 +29,6 @@ public class IndexerConfig {
   public void indexPersistedData() {
 
     final var searchSession = Search.session(entityManager);
-
-    final var datasourceIndexer = searchSession.massIndexer(Datasource.class)
-        .threadsToLoadObjects(THREAD_NUMBER);
-    final var schemaManager = searchSession.schemaManager(Datasource.class);
-    schemaManager.createIfMissing();
-    datasourceIndexer.startAndWait();
 
     final var vertexIndexer = searchSession.massIndexer(Vertex.class)
         .threadsToLoadObjects(THREAD_NUMBER);

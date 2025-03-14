@@ -19,8 +19,6 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Feature;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue_;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Property_;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
@@ -31,15 +29,16 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
-import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.EntityManager;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.search.mapper.orm.Search;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -68,13 +67,16 @@ public class JpaVertexService implements VertexService {
 
   private final VertexServiceHelper vertexServiceHelper;
 
+  private final EntityManager entityManager;
+
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
       Neo4jVertexService neo4jVertexService,
       PropertyRepository propertyRepository, PropertyValueRepository propertyValueRepository,
       FeatureRepository featureRepository, DatasourceRepository datasourceRepository,
       EvidenceRepository evidenceRepository, EdgeRepository edgeRepository,
-      VertexServiceHelper vertexServiceHelper) {
+      VertexServiceHelper vertexServiceHelper,
+      @Qualifier("bizEntityManager") EntityManager entityManager) {
 
     this.vertexRepository = vertexRepository;
     this.neo4jVertexService = neo4jVertexService;
@@ -85,6 +87,7 @@ public class JpaVertexService implements VertexService {
     this.evidenceRepository = evidenceRepository;
     this.edgeRepository = edgeRepository;
     this.vertexServiceHelper = vertexServiceHelper;
+    this.entityManager = entityManager;
   }
 
   @Override
@@ -94,15 +97,43 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public Page<Vertex> getVertices(String keyword, Set<String> types, Map<String, String> keyValues,
+  public Page<Vertex> getVertices(String keyword, Set<String> types, boolean useEs,
       Pageable pageable) {
 
-    var specifications = Specification
+    if (useEs) {
+      final var searchResult = Search.session(entityManager)
+          .search(Vertex.class)
+          .where(f -> f.bool()
+              .must(f1 -> StrUtil.isBlank(keyword) ? f1.matchAll() : f1.bool()
+                  // 包含匹配（基础匹配）
+                  .must(f1.wildcard().field("name_keyword").matching("*" + keyword + "*"))
+                  // 精确匹配最高权重
+                  .should(f1.match().field("name_keyword").matching(keyword).boost(200.0f))
+                  // 词项开头匹配（比如完整单词）
+                  .should(f1.phrase().field("name_keyword").matching(keyword).boost(150.0f))
+                  // 前缀匹配（以关键词开头）
+                  .should(f1.wildcard().field("name_keyword").matching(keyword + "*").boost(100.0f))
+                  // 使用simpleQueryString进行模糊搜索（~表示模糊搜索）
+                  .should(f1.simpleQueryString().field("name_keyword").matching(keyword + "~")
+                      .boost(50.0f))
+              )
+              .must(f2 -> CollUtil.isEmpty(types) ? f2.matchAll() : f2.terms()
+                  .field("type_keyword")
+                  .matchingAny(types))
+          )
+          .sort(s -> StrUtil.isBlank(keyword) ? s.field(Vertex_.CREATED_AT) : s.score());
+
+      // 使用滚动API实现游标分页
+      try (var scrollResult = searchResult.scroll(pageable.getPageSize())) {
+        final var vertices = scrollResult.next().hits();
+        long totalHits = searchResult.fetchTotalHitCount();
+        return new PageImpl<>(vertices, pageable, totalHits);
+      }
+    }
+
+    final var specifications = Specification
         .where(nameLike(keyword))
         .and(typesIn(types));
-    if (CollUtil.isNotEmpty(keyValues)) {
-      specifications = addKeyValueSpecifications(keyValues, specifications);
-    }
 
     return vertexRepository.findAll(specifications, pageable);
   }
@@ -608,29 +639,6 @@ public class JpaVertexService implements VertexService {
 
     return datasourceRepository.findById(newEvidenceRequest.getDatasourceId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
-  }
-
-  private @Nonnull Specification<Vertex> addKeyValueSpecifications(
-      @Nonnull Map<String, String> keyValues, Specification<Vertex> specification) {
-
-    for (final var entry : keyValues.entrySet()) {
-      specification = specification.and(propertyValueIs(entry.getKey(), entry.getValue()));
-    }
-    return specification;
-  }
-
-  private static @Nonnull Specification<Vertex> propertyValueIs(String key, String valueMd5) {
-
-    return (root, query, criteriaBuilder) -> {
-      Objects.requireNonNull(query).distinct(true);
-      final var propertyJoin = root.<Vertex, Property>join(Vertex_.PROPERTIES, JoinType.LEFT);
-      final var propertyValueJoin = propertyJoin
-          .<Property, PropertyValue>join(Property_.VALUES, JoinType.LEFT);
-
-      return criteriaBuilder.and(
-          criteriaBuilder.equal(propertyJoin.get(Property_.KEY), key),
-          criteriaBuilder.equal(propertyValueJoin.get(PropertyValue_.MD5), valueMd5));
-    };
   }
 
   private static @Nonnull Specification<Vertex> typesIn(Set<String> types) {

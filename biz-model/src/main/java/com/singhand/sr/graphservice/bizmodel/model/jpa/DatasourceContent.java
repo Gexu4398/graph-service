@@ -16,8 +16,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import org.hibernate.search.engine.backend.types.Highlightable;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -36,7 +34,6 @@ public class DatasourceContent {
 
   @Lob
   @Column(columnDefinition = "text")
-  @FullTextField(highlightable = Highlightable.ANY, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
   private String text;
 
   @Lob

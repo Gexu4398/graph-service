@@ -86,7 +86,7 @@ public class VertexController {
   public Page<GetVerticesResponseItem> getVertices(
       @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
       @RequestParam(name = "type", required = false, defaultValue = "") Set<String> types,
-      @RequestParam(name = "keyValue", required = false, defaultValue = "") Set<String> keyValues,
+      @RequestParam(required = false, defaultValue = "false") boolean useEs,
       @RequestParam(defaultValue = "true") boolean recursive,
       Pageable pageable) {
 
@@ -95,14 +95,7 @@ public class VertexController {
       filteredTypes.addAll(ontologyService.getAllSubOntologies(filteredTypes));
     }
 
-    final var properties = new HashMap<String, String>();
-    keyValues.forEach(it -> {
-      final var strings = StrUtil.split(it, ':', 2);
-      properties.put(strings.get(0), strings.get(1));
-    });
-
-    final var page = vertexService
-        .getVertices(keyword, filteredTypes, properties, pageable);
+    final var page = vertexService.getVertices(keyword, filteredTypes, useEs, pageable);
 
     final var content = page.getContent().stream().map(GetVerticesResponseItem::new).toList();
 

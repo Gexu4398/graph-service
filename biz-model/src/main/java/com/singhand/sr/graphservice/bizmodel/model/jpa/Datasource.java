@@ -36,14 +36,6 @@ import lombok.ToString.Exclude;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.search.engine.backend.types.Highlightable;
-import org.hibernate.search.engine.backend.types.ObjectStructure;
-import org.hibernate.search.engine.backend.types.Sortable;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -52,7 +44,6 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordFie
 @ToString
 @Entity
 @Builder
-@Indexed(index = "datasource_00001")
 @Table(indexes = {
     @Index(name = "idx_datasource_createdAt", columnList = "createdAt")
 })
@@ -79,8 +70,6 @@ public class Datasource {
 
   @Column(nullable = false)
   @NotBlank(message = "标题为空")
-  @FullTextField(highlightable = Highlightable.ANY, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
-  @KeywordField(name = "title_keyword")
   private String title;
 
   @Column(columnDefinition = "text")
@@ -103,7 +92,6 @@ public class Datasource {
   @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   @Exclude
   @JsonIgnore
-  @IndexedEmbedded(structure = ObjectStructure.NESTED, includePaths = {"text"})
   private DatasourceContent datasourceContent;
 
   @Column(nullable = false)
@@ -125,14 +113,12 @@ public class Datasource {
   @Temporal(TemporalType.TIMESTAMP)
   @CreationTimestamp
   @JsonProperty(access = Access.READ_ONLY)
-  @GenericField(sortable = Sortable.YES)
   private Calendar createdAt;
 
   @Column
   @Temporal(TemporalType.TIMESTAMP)
   @UpdateTimestamp
   @JsonProperty(access = Access.READ_ONLY)
-  @GenericField(sortable = Sortable.YES)
   private Calendar updatedAt;
 
   @Override

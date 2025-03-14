@@ -15,7 +15,6 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import jakarta.annotation.Nonnull;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.domain.Page;
@@ -45,14 +44,12 @@ public interface VertexService {
   /**
    * 获取顶点分页列表。
    *
-   * @param keyword   关键字
-   * @param types     顶点类型集合
-   * @param keyValues 键值对
-   * @param pageable  分页信息
+   * @param keyword  关键字
+   * @param types    顶点类型集合
+   * @param pageable 分页信息
    * @return 顶点分页对象
    */
-  Page<Vertex> getVertices(String keyword, Set<String> types, Map<String, String> keyValues,
-      Pageable pageable);
+  Page<Vertex> getVertices(String keyword, Set<String> types, boolean useEs, Pageable pageable);
 
   /**
    * 根据ID删除顶点。
@@ -355,9 +352,8 @@ public interface VertexService {
   Page<Evidence> getEvidences(Edge edge, String key, String value, String mode, Pageable pageable);
 
   /**
-   *
-   * @param keyword 实体名称
-   * @param name 关系名称
+   * @param keyword  实体名称
+   * @param name     关系名称
    * @param pageable 分页信息
    * @return 关系分页对象
    */
