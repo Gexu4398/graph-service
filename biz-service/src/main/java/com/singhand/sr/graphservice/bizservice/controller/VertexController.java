@@ -109,6 +109,16 @@ public class VertexController {
     return new PageImpl<>(content, pageable, page.getTotalElements());
   }
 
+  @Operation(summary = "查询关系")
+  @GetMapping("edge")
+  public Page<Edge> getEdges(
+      @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
+      @RequestParam(name = "name", required = false, defaultValue = "") String name,
+      Pageable pageable) {
+
+    return vertexService.getEdges(keyword, name, pageable);
+  }
+
   @Operation(summary = "新增实体")
   @PostMapping
   @SneakyThrows

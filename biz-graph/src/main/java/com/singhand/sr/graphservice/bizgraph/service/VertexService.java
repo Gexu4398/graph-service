@@ -353,4 +353,13 @@ public interface VertexService {
    * @return 证据分页对象
    */
   Page<Evidence> getEvidences(Edge edge, String key, String value, String mode, Pageable pageable);
+
+  /**
+   *
+   * @param keyword 实体名称
+   * @param name 关系名称
+   * @param pageable 分页信息
+   * @return 关系分页对象
+   */
+  Page<Edge> getEdges(String keyword, String name, Pageable pageable);
 }

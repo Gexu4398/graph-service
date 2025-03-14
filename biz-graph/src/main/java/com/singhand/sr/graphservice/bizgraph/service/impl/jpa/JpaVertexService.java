@@ -14,6 +14,7 @@ import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge_;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Feature;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
@@ -569,6 +570,38 @@ public class JpaVertexService implements VertexService {
       Pageable pageable) {
 
     return evidenceRepository.findByEdge(edge, pageable);
+  }
+
+  @Override
+  public Page<Edge> getEdges(String keyword, String name, Pageable pageable) {
+
+    return edgeRepository.findAll(Specification.where(vertexNameLike(keyword)
+        .and(edgeNameLike(name))), pageable);
+  }
+
+  private static @Nonnull Specification<Edge> edgeNameLike(String name) {
+
+    return (root, query, criteriaBuilder) -> {
+      if (StrUtil.isBlank(name)) {
+        return criteriaBuilder.and();
+      }
+      return criteriaBuilder.like(root.get(Edge_.NAME), "%" + name.trim() + "%");
+    };
+  }
+
+  private static @Nonnull Specification<Edge> vertexNameLike(String keyword) {
+
+    return (root, query, criteriaBuilder) -> {
+      if (StrUtil.isBlank(keyword)) {
+        return criteriaBuilder.and();
+      }
+      return criteriaBuilder.or(
+          criteriaBuilder
+              .like(root.get(Edge_.IN_VERTEX).get(Vertex_.NAME), "%" + keyword.trim() + "%"),
+          criteriaBuilder
+              .like(root.get(Edge_.OUT_VERTEX).get(Vertex_.NAME), "%" + keyword.trim() + "%")
+      );
+    };
   }
 
   private Datasource getDatasource(@Nonnull NewEvidenceRequest newEvidenceRequest) {
