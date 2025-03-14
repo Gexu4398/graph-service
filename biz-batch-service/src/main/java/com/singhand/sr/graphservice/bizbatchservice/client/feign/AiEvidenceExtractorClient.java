@@ -10,5 +10,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface AiEvidenceExtractorClient {
 
   @PostMapping("event_extract")
-  AiEvidenceExtractorResponse propertyEdgeExtract(@RequestBody AiEvidenceExtractorRequest request);
+  AiEvidenceExtractorResponse evidenceExtract(@RequestBody AiEvidenceExtractorRequest request);
 }

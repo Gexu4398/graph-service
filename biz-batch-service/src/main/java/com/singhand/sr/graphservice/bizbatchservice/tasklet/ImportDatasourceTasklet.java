@@ -219,7 +219,7 @@ public class ImportDatasourceTasklet implements Tasklet {
     final var evidenceRequest = new AiEvidenceExtractorRequest();
     evidenceRequest.setTexts(paragraphs);
     log.info("开始调用事件提取服务..........");
-    final var evidenceResponse = aiEvidenceExtractorClient.propertyEdgeExtract(evidenceRequest);
+    final var evidenceResponse = aiEvidenceExtractorClient.evidenceExtract(evidenceRequest);
     log.info("开始提取事件..........");
     importAiEvidenceExtractorResult(evidenceResponse, datasource);
   }
