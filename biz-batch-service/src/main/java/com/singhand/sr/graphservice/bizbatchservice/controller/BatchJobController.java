@@ -16,6 +16,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -101,6 +103,26 @@ public class BatchJobController {
         .filter(Objects::nonNull)
         .map(this::jobExecution2OperationResponse)
         .toList();
+  }
+
+  @PostMapping("{id}/stop:remove")
+  public void stopAndRemoveJob(@PathVariable Long id) {
+
+    final var jobExecution = jobExplorer.getJobExecution(id);
+    if (jobExecution == null) {
+      return;
+    }
+
+    try {
+      if (jobExecution.isRunning()) {
+        log.info("停止作业执行: {}", id);
+        jobExecution.setStatus(BatchStatus.ABANDONED);
+        jobExecution.setExitStatus(ExitStatus.FAILED);
+        jobRepository.update(jobExecution);
+      }
+    } catch (Exception e) {
+      log.error("停止或移除作业时发生错误: {}", id, e);
+    }
   }
 
   @Operation(summary = "数据源导入")

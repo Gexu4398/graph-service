@@ -22,6 +22,9 @@ public interface BizBatchServiceClient {
   Collection<OperationResponse> getJobs(@RequestParam String username,
       @RequestParam String jobName);
 
+  @PostMapping("/batch-job/{id}/stop:remove")
+  void stopAndRemoveJob(@PathVariable Long id);
+
   @PostMapping("/batch-job/datasource/{id}/user/{username}/uuid/{uuid}:import")
   OperationResponse launchImportDatasourceJob(@PathVariable Long id, @PathVariable String username,
       @PathVariable String uuid);
