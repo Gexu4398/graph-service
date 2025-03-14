@@ -11,6 +11,8 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AiTextExtractorResponse {
 
+  private String text;
+
   private List<Entity> entities = new LinkedList<>();
 
   private List<AttributeOrRelationship> attributes = new LinkedList<>();

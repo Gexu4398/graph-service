@@ -297,6 +297,7 @@ public class ImportDatasourceTasklet implements Tasklet {
             request.setName(entity.getName());
             request.setType(entity.getType());
             request.setDatasourceId(datasource.getID());
+            request.setContent(response.getText());
             vertexService.newVertex(request);
           }
         });
@@ -342,6 +343,7 @@ public class ImportDatasourceTasklet implements Tasklet {
           request.setKey(attribute.getRelation());
           request.setValue(attribute.getObject());
           request.setDatasourceId(datasource.getID());
+          request.setContent(response.getText());
           vertexService.newProperty(vertex, request);
         });
   }
