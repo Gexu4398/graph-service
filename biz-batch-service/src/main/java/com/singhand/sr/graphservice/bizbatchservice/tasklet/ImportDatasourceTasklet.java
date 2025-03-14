@@ -9,6 +9,7 @@ import com.singhand.sr.graphservice.bizbatchservice.importer.helper.ExtractHelpe
 import com.singhand.sr.graphservice.bizbatchservice.model.request.AiEvidenceExtractorRequest;
 import com.singhand.sr.graphservice.bizbatchservice.model.request.AiTextExtractorRequest;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiEvidenceExtractorResponse;
+import com.singhand.sr.graphservice.bizbatchservice.model.response.AiEvidenceExtractorResponse.Label;
 import com.singhand.sr.graphservice.bizbatchservice.model.response.AiTextExtractorResponse;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
@@ -38,11 +39,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -97,6 +100,8 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final DatasourceContentRepository datasourceContentRepository;
 
+  private final ChatModel chatModel;
+
   @Autowired
   public ImportDatasourceTasklet(MinioClient minioClient,
       @Value("${minio.bucket}") String bucket,
@@ -110,7 +115,8 @@ public class ImportDatasourceTasklet implements Tasklet {
       AiTextExtractorClient aiTextExtractorClient, VertexRepository vertexRepository,
       VertexService vertexService, OntologyPropertyRepository ontologyPropertyRepository,
       RelationModelRepository relationModelRepository, EdgeRepository edgeRepository,
-      ExtractHelper extractHelper, DatasourceContentRepository datasourceContentRepository) {
+      ExtractHelper extractHelper, DatasourceContentRepository datasourceContentRepository,
+      ChatModel chatModel) {
 
     this.minioClient = minioClient;
     this.bucket = bucket;
@@ -130,61 +136,63 @@ public class ImportDatasourceTasklet implements Tasklet {
     this.edgeRepository = edgeRepository;
     this.extractHelper = extractHelper;
     this.datasourceContentRepository = datasourceContentRepository;
+    this.chatModel = chatModel;
   }
 
   @Override
   public RepeatStatus execute(@NonNull StepContribution stepContribution,
-      @NonNull ChunkContext chunkContext) throws Exception {
+      @NonNull ChunkContext chunkContext) {
 
     final var stepContext = stepContribution.getStepExecution();
     final var url = stepContext.getJobParameters().getString("url", "");
     final var datasource = datasourceRepository.findById(id).orElseThrow();
-    final var object = StrUtil.subAfter(StrUtil.isNotBlank(url) ? url : datasource.getUrl(), bucket,
-        true);
 
-    final var tempFilename = Path.of(System.getProperty("java.io.tmpdir"),
-        UUID.randomUUID() + "." + FileNameUtil.extName(object)).toString();
-
-    log.info("正在导入数据源.......... 文件名={}", object);
-    updateDatasourceStatus(datasource, Datasource.STATUS_PROCESSING);
-
-    minioClient.downloadObject(DownloadObjectArgs.builder()
-        .bucket(bucket)
-        .object(object)
-        .overwrite(true)
-        .filename(tempFilename)
-        .build());
-
-    final var datasourceContent = datasourceContentRepository
-        .findByDatasource_ID(datasource.getID())
-        .orElse(new DatasourceContent());
-
-    datasource.attachContent(datasourceContent);
-
-    List<String> paragraphs;
     try {
-      paragraphs = extractHelper.extractFile(tempFilename, datasourceContent);
+      final var object = StrUtil.subAfter(StrUtil.isNotBlank(url) ? url : datasource.getUrl(),
+          bucket,
+          true);
+
+      final var tempFilename = Path.of(System.getProperty("java.io.tmpdir"),
+          UUID.randomUUID() + "." + FileNameUtil.extName(object)).toString();
+
+      log.info("正在导入数据源.......... 文件名={}", object);
+      updateDatasourceStatus(datasource, Datasource.STATUS_PROCESSING);
+
+      minioClient.downloadObject(DownloadObjectArgs.builder()
+          .bucket(bucket)
+          .object(object)
+          .overwrite(true)
+          .filename(tempFilename)
+          .build());
+
+      final var datasourceContent = datasourceContentRepository
+          .findByDatasource_ID(datasource.getID())
+          .orElse(new DatasourceContent());
+
+      datasource.attachContent(datasourceContent);
+
+      final var paragraphs = extractHelper.extractFile(tempFilename, datasourceContent);
+
+      // 此处要开辟新事务，否则会合并到最外层事务再提交，进而导致导入过程看不到数据源的问题。
+      final var transaction = new TransactionTemplate(bizTransactionManager);
+      transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      transaction.execute(status -> {
+        datasourceRepository.save(datasource);
+        return savePictures(datasource, datasourceContent);
+      });
+
+      textExtract(paragraphs, datasource);
+
+      updateDatasourceStatus(datasource, Datasource.STATUS_SUCCESS);
+
+      bizEntityManager.flush();
+
+      return RepeatStatus.FINISHED;
     } catch (Exception e) {
-      log.error("文件解析失败......id={}", datasource.getID(), e);
+      log.error("导入数据源时出现异常", e);
       updateDatasourceStatus(datasource, Datasource.STATUS_FAILURE);
       return RepeatStatus.FINISHED;
     }
-
-    // 此处要开辟新事务，否则会合并到最外层事务再提交，进而导致导入过程看不到数据源的问题。
-    final var transaction = new TransactionTemplate(bizTransactionManager);
-    transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-    transaction.execute(status -> {
-      datasourceRepository.save(datasource);
-      return savePictures(datasource, datasourceContent);
-    });
-
-    textExtract(paragraphs, datasource);
-
-    updateDatasourceStatus(datasource, Datasource.STATUS_SUCCESS);
-
-    bizEntityManager.flush();
-
-    return RepeatStatus.FINISHED;
   }
 
   private void updateDatasourceStatus(@Nonnull Datasource datasource,
@@ -271,6 +279,52 @@ public class ImportDatasourceTasklet implements Tasklet {
   private void importAiEvidenceExtractorResult(@Nonnull AiEvidenceExtractorResponse response,
       @Nonnull Datasource datasource) {
 
+    response.getLabels().forEach(it ->
+        it.forEach((key, value) ->
+            value.forEach(label -> {
+              final var labelText = label.getText();
+              final var properties = new HashMap<String, List<Label>>();
+              final var relations = label.getRelations().entrySet()
+                  .stream()
+                  .map(entry -> {
+                    final var stringBuilder = new StringBuilder();
+                    for (final var entryValue : entry.getValue()) {
+                      properties.put(entry.getKey(), entry.getValue());
+                      stringBuilder.append(entryValue.getText());
+                    }
+                    return String.format("%s:%s", entry.getKey(), stringBuilder);
+                  }).toList();
+              final var content = String.format("事件类型：%s, 事件描述：%s, 属性：%s",
+                  label.getEventType(), labelText, relations);
+              log.warn("content: {}", content);
+
+              final var question = String.format("%s，根据上下文组成一个名称，仅返回名称即可",
+                  content);
+
+              final var result = chatModel.call(question);
+              final var pattern = Pattern.compile("</think>(.*?)$", Pattern.DOTALL);
+              final var matcher = pattern.matcher(result);
+              if (matcher.find()) {
+                final var eventName = matcher.group(1).trim();
+
+                final var request = new NewVertexRequest();
+                request.setName(eventName);
+                request.setType("事件");
+                final var vertex = vertexService.newVertex(request);
+
+                properties.forEach((k, v) ->
+                    v.forEach(labelValue -> {
+                      final var propertyRequest = new NewPropertyRequest();
+                      propertyRequest.setKey(k);
+                      propertyRequest.setValue(labelValue.getText());
+                      propertyRequest.setDatasourceId(datasource.getID());
+                      propertyRequest.setContent(labelValue.getText());
+                      vertexService.newProperty(vertex, propertyRequest);
+                    }));
+              } else {
+                log.warn("无法解析结果：{}", result);
+              }
+            })));
   }
 
   private void importVertices(@Nonnull AiTextExtractorResponse response,

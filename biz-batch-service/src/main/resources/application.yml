@@ -8,20 +8,20 @@ spring:
     name: biz-batch-service
   ai:
     openai:
-      base-url: http://10.1.141.33:18080
-      api-key: bbae247c-d560-4881-81c6-98fd252ab8ec
+      base-url: http://${AI_EMBEDDING_HOST:10.1.141.33}:${AI_EMBEDDING_PORT:18080}
+      api-key: ${AI_EMBEDDING_API_KEY:bbae247c-d560-4881-81c6-98fd252ab8ec}
       chat:
-        base-url: http://10.1.141.33:8000
-        api-key: 7257b5ab-1cd1-424e-902d-79d08bc11442
-        completions-path: /v1/chat/completions
+        base-url: http://${AI_CHAT_HOST:10.1.141.33}:${AI_CHAT_PORT:8000}
+        api-key: ${AI_CHAT_API_KEY:7257b5ab-1cd1-424e-902d-79d08bc11442}
+        completions-path: ${AI_CHAT_COMPLETIONS_PATH:/v1/chat/completions}
         options:
-          model: SCHAT
+          model: ${AI_CHAT_MODEL:SCHAT}
       embedding:
-        base-url: http://10.1.141.33:18080
-        api-key: bbae247c-d560-4881-81c6-98fd252ab8ec
-        embeddings-path: /v1/embeddings
+        base-url: http://${AI_EMBEDDING_HOST:10.1.141.33}:${AI_EMBEDDING_PORT:18080}
+        api-key: ${AI_EMBEDDING_API_KEY:bbae247c-d560-4881-81c6-98fd252ab8ec}
+        embeddings-path: ${AI_EMBEDDING_EMBEDDINGS_PATH:/v1/embeddings}
         options:
-          model: BAAI/bge-m3
+          model: ${AI_EMBEDDING_MODEL:BAAI/bge-m3}
     vectorstore:
       neo4j:
         initialize-schema: true
