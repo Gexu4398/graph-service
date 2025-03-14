@@ -111,31 +111,6 @@ public interface VertexService {
   Optional<Property> getProperty(Edge edge, String key);
 
   /**
-   * 设置顶点属性值为已验证。
-   *
-   * @param vertex 顶点对象
-   * @param key    属性键
-   * @param value  属性值
-   */
-  void setVerified(Vertex vertex, String key, String value);
-
-  /**
-   * 设置边为已验证。
-   *
-   * @param edge 边对象
-   */
-  void setVerified(Edge edge);
-
-  /**
-   * 设置边属性值为已验证。
-   *
-   * @param edge  边对象
-   * @param key   属性键
-   * @param value 属性值
-   */
-  void setVerified(Edge edge, String key, String value);
-
-  /**
    * 根据属性和值获取属性值。
    *
    * @param property 属性对象

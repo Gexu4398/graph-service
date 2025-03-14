@@ -4,13 +4,38 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizgraph.helper.VertexServiceHelper;
-import com.singhand.sr.graphservice.bizgraph.model.request.*;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.*;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.*;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Feature;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue_;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Property_;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.FeatureRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.criteria.JoinType;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,7 +44,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import java.util.*;
 
 @Service
 @Slf4j
@@ -419,38 +443,6 @@ public class JpaVertexService implements VertexService {
     feature.setValue(value);
     propertyValue.addFeature(feature);
     featureRepository.save(feature);
-  }
-
-  @Override
-  public void setVerified(Edge edge) {
-
-    setFeature(edge, "verified", "true");
-  }
-
-  @Override
-  public void setVerified(Edge edge, String key, String value) {
-
-    final var property = getProperty(edge, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
-    final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
-    setFeature(propertyValue, "verified", "true");
-    property.getValues().stream()
-        .filter(it -> it != propertyValue)
-        .forEach(it -> setFeature(it, "verified", "false"));
-  }
-
-  @Override
-  public void setVerified(Vertex vertex, String key, String value) {
-
-    final var property = getProperty(vertex, key)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
-    final var propertyValue = getPropertyValue(property, value)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性值不存在"));
-    setFeature(propertyValue, "verified", "true");
-    property.getValues().stream()
-        .filter(it -> it != propertyValue)
-        .forEach(it -> setFeature(it, "verified", "false"));
   }
 
   @Override
