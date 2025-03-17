@@ -1,12 +1,10 @@
 package com.singhand.sr.graphservice.bizgraph.helper;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
@@ -23,9 +21,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -221,326 +216,356 @@ public class VertexServiceHelper {
   private void deleteVertexEdge(String name) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Edge> page;
+    Long lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        final var pageRequest = PageRequest.of(pageNumber, pageSize);
-        page = edgeRepository.findByName(name, pageRequest);
+        List<Edge> edges;
+        if (lastId == null) {
+          edges = edgeRepository.findTop500ByNameOrderByID(name);
+        } else {
+          edges = edgeRepository.findTop500ByNameAndIDGreaterThanOrderByID(name, lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(edges) && edges.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(edges)) {
+          try {
+            final var edgeSet = new HashSet<>(edges);
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              edgeSet.forEach(
+                  it -> edgeRepository.findById(it.getID()).ifPresent(this::deleteEdge));
+              return true;
+            });
+
+            lastId = edges.getLast().getID();
+          } catch (Exception e) {
+            log.error("删除实体关系出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询边关系时出现异常", e);
         break;
       }
-
-      if (CollUtil.isNotEmpty(page.getContent())) {
-        try {
-          final var edges = new HashSet<>(page.getContent());
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            edges.forEach(it -> edgeRepository.findById(it.getID()).ifPresent(this::deleteEdge));
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除实体关系出现异常", e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void deleteVertexEdge(String name, String inVertexType, String outVertexType) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Edge> page;
+    Long lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        final var pageRequest = PageRequest.of(pageNumber, pageSize);
-        page = edgeRepository.findByNameAndInVertex_TypeAndOutVertex_Type(name, inVertexType,
-            outVertexType, pageRequest);
+        List<Edge> edges;
+        if (lastId == null) {
+          edges = edgeRepository.findTop500ByNameAndInVertex_TypeAndOutVertex_TypeOrderByID(
+              name, inVertexType, outVertexType);
+        } else {
+          edges = edgeRepository.findTop500ByNameAndInVertex_TypeAndOutVertex_TypeAndIDGreaterThanOrderByID(
+              name, inVertexType, outVertexType, lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(edges) && edges.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(edges)) {
+          try {
+            final var edgeSet = new HashSet<>(edges);
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              edgeSet.forEach(
+                  it -> edgeRepository.findById(it.getID()).ifPresent(this::deleteEdge));
+              return true;
+            });
+
+            lastId = edges.getLast().getID();
+          } catch (Exception e) {
+            log.error("删除实体关系出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询边关系时出现异常", e);
         break;
       }
-
-      if (CollUtil.isNotEmpty(page.getContent())) {
-        try {
-          final var edges = new HashSet<>(page.getContent());
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            edges.forEach(it -> edgeRepository.findById(it.getID()).ifPresent(this::deleteEdge));
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除实体关系出现异常", e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void updateVertexEdge(String name, String newName, String inVertexType,
       String outVertexType) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Edge> page;
+    Long lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        final var pageRequest = PageRequest.of(pageNumber, pageSize);
-        page = edgeRepository.findByNameAndInVertex_TypeAndOutVertex_Type(name, inVertexType,
-            outVertexType, pageRequest);
+        List<Edge> edges;
+        if (lastId == null) {
+          // 第一页查询
+          edges = edgeRepository.findTop500ByNameAndInVertex_TypeAndOutVertex_TypeOrderByID(
+              name, inVertexType, outVertexType);
+        } else {
+          // 基于上一页最后ID的查询
+          edges = edgeRepository.findTop500ByNameAndInVertex_TypeAndOutVertex_TypeAndIDGreaterThanOrderByID(
+              name, inVertexType, outVertexType, lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(edges) && edges.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(edges)) {
+          try {
+            final var edgeSet = new HashSet<>(edges);
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              edgeSet.forEach(it ->
+                  edgeRepository.findById(it.getID()).ifPresent(edge -> {
+                    edge.setName(newName);
+                    edgeRepository.save(edge);
+
+                    neo4jVertexService
+                        .updateEdge(name, newName, edge.getInVertex(), edge.getOutVertex());
+                  }));
+              return true;
+            });
+
+            // 记录最后一个处理的ID
+            lastId = edges.getLast().getID();
+          } catch (Exception e) {
+            log.error("修改实体关系出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询边关系时出现异常", e);
         break;
       }
-
-      if (CollUtil.isNotEmpty(page.getContent())) {
-        try {
-          final var edges = new HashSet<>(page.getContent());
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            edges.forEach(it ->
-                edgeRepository.findById(it.getID()).ifPresent(edge -> {
-                  edge.setName(newName);
-                  edgeRepository.save(edge);
-
-                  neo4jVertexService
-                      .updateEdge(name, newName, edge.getInVertex(), edge.getOutVertex());
-                }));
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("修改实体关系出现异常", e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void updateVertexEdge(String name, String newName) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Edge> page;
+    Long lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        final var pageRequest = PageRequest.of(pageNumber, pageSize);
-        page = edgeRepository.findByName(name, pageRequest);
+        List<Edge> edges;
+        if (lastId == null) {
+          edges = edgeRepository.findTop500ByNameOrderByID(name);
+        } else {
+          edges = edgeRepository.findTop500ByNameAndIDGreaterThanOrderByID(name, lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(edges) && edges.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(edges)) {
+          try {
+            final var edgeSet = new HashSet<>(edges);
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              edgeSet.forEach(it ->
+                  edgeRepository.findById(it.getID()).ifPresent(edge -> {
+                    edge.setName(newName);
+                    edgeRepository.save(edge);
+
+                    neo4jVertexService
+                        .updateEdge(name, newName, edge.getInVertex(), edge.getOutVertex());
+                  }));
+              return true;
+            });
+            lastId = edges.getLast().getID();
+          } catch (Exception e) {
+            log.error("修改实体关系出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询边关系时出现异常", e);
         break;
       }
-
-      if (CollUtil.isNotEmpty(page.getContent())) {
-        try {
-          final var edges = new HashSet<>(page.getContent());
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            edges.forEach(it ->
-                edgeRepository.findById(it.getID()).ifPresent(edge -> {
-                  edge.setName(newName);
-                  edgeRepository.save(edge);
-
-                  neo4jVertexService
-                      .updateEdge(name, newName, edge.getInVertex(), edge.getOutVertex());
-                }));
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("修改实体关系出现异常", e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void deleteVertexPropertyKey(Set<String> vertexTypes, String key) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Vertex> page;
+    String lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        page = vertexRepository.findAll(Specification.where(typesIn(vertexTypes)),
-            PageRequest.of(pageNumber, pageSize)
-        );
+        List<Vertex> vertices;
+        if (lastId == null) {
+          vertices = vertexRepository.findTop500ByTypeInOrderByID(vertexTypes);
+        } else {
+          vertices = vertexRepository.findTop500ByTypeInAndIDGreaterThanOrderByID(vertexTypes,
+              lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(vertices) && vertices.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(vertices)) {
+          try {
+            final var vertexSet = new HashSet<>(vertices);
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              vertexSet.forEach(it ->
+                  vertexRepository.findById(it.getID())
+                      .ifPresent(vertex ->
+                          propertyRepository.findByVertexAndKey(vertex, key)
+                              .ifPresent(property -> deleteProperty(vertex, property.getKey()))));
+              return true;
+            });
+
+            lastId = vertices.getLast().getID();
+          } catch (Exception e) {
+            log.error("删除实体属性key出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询顶点时出现异常", e);
         break;
       }
-
-      if (CollUtil.isNotEmpty(page.getContent())) {
-        try {
-          final var vertices = new HashSet<>(page.getContent());
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            vertices.forEach(it ->
-                vertexRepository.findById(it.getID())
-                    .ifPresent(vertex ->
-                        propertyRepository.findByVertexAndKey(vertex, key)
-                            .ifPresent(property -> deleteProperty(vertex, property.getKey()))));
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除实体属性key出现异常", e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void updateVertexPropertyKey(Set<String> vertexTypes, String oldKey, String newKey) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Vertex> page;
+    String lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        page = vertexRepository.findAll(Specification.where(typesIn(vertexTypes)),
-            PageRequest.of(pageNumber, pageSize)
-        );
+        List<Vertex> vertices;
+        if (lastId == null) {
+          vertices = vertexRepository.findTop500ByTypeInOrderByID(vertexTypes);
+        } else {
+          vertices = vertexRepository.findTop500ByTypeInAndIDGreaterThanOrderByID(vertexTypes,
+              lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(vertices) && vertices.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(vertices)) {
+          try {
+            final var vertexSet = new HashSet<>(vertices);
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              vertexSet.forEach(it ->
+                  vertexRepository.findById(it.getID())
+                      .ifPresent(vertex ->
+                          propertyRepository.findByVertexAndKey(vertex, oldKey)
+                              .ifPresent(property -> {
+                                property.setKey(newKey);
+                                vertex.getProperties().remove(oldKey);
+                                vertex.getProperties().put(newKey, property);
+                                vertexRepository.save(vertex);
+                              })));
+              return true;
+            });
+
+            lastId = vertices.getLast().getID();
+          } catch (Exception e) {
+            log.error("修改实体属性key出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询顶点时出现异常", e);
         break;
       }
-
-      if (CollUtil.isNotEmpty(page.getContent())) {
-        try {
-          final var vertices = new HashSet<>(page.getContent());
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            vertices.forEach(it ->
-                vertexRepository.findById(it.getID())
-                    .ifPresent(vertex ->
-                        propertyRepository.findByVertexAndKey(vertex, oldKey)
-                            .ifPresent(property -> {
-                              property.setKey(newKey);
-                              vertex.getProperties().remove(oldKey);
-                              vertex.getProperties().put(newKey, property);
-                              vertexRepository.save(vertex);
-                            })));
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("修改实体属性key出现异常", e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void updateVerticesByType(String oldType, String newType) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Vertex> page;
+    String lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        page = vertexRepository.findAll(
-            Specification.where(typeIs(oldType)),
-            PageRequest.of(pageNumber, pageSize)
-        );
+        List<Vertex> vertices;
+        if (lastId == null) {
+          vertices = vertexRepository.findTop500ByTypeOrderByID(oldType);
+        } else {
+          vertices = vertexRepository.findTop500ByTypeAndIDGreaterThanOrderByID(oldType, lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(vertices) && vertices.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(vertices)) {
+          try {
+            final var vertexIds = vertices.stream()
+                .map(Vertex::getID)
+                .collect(Collectors.toList());
+
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              updateVertices(vertexIds, newType);
+              return true;
+            });
+
+            lastId = vertices.getLast().getID();
+          } catch (Exception e) {
+            log.error("更新顶点类型时出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询顶点时出现异常", e);
         break;
       }
-
-      final var vertexIds = page.getContent().stream()
-          .map(Vertex::getID)
-          .collect(Collectors.toList());
-
-      if (CollUtil.isNotEmpty(vertexIds)) {
-        try {
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            updateVertices(vertexIds, newType);
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除顶点ID为 {} 时出现异常", vertexIds, e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
+    }
   }
 
   private void deleteVerticesByTypes(Set<String> types) {
 
     int pageSize = 500;
-    int pageNumber = 0;
-    Page<Vertex> page;
+    String lastId = null;
+    boolean hasMore = true;
 
-    do {
+    while (hasMore) {
       try {
-        page = vertexRepository.findAll(
-            Specification.where(typesIn(types)),
-            PageRequest.of(pageNumber, pageSize)
-        );
+        List<Vertex> vertices;
+        if (lastId == null) {
+          vertices = vertexRepository.findTop500ByTypeInOrderByID(types);
+        } else {
+          vertices = vertexRepository.findTop500ByTypeInAndIDGreaterThanOrderByID(types, lastId);
+        }
+
+        hasMore = CollUtil.isNotEmpty(vertices) && vertices.size() == pageSize;
+
+        if (CollUtil.isNotEmpty(vertices)) {
+          try {
+            final var vertexIds = vertices.stream()
+                .map(Vertex::getID)
+                .collect(Collectors.toList());
+
+            final var transaction = new TransactionTemplate(bizTransactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transaction.execute(status -> {
+              deleteVertices(vertexIds);
+              return true;
+            });
+
+            lastId = vertices.getLast().getID();
+          } catch (Exception e) {
+            log.error("删除顶点时出现异常", e);
+          }
+        }
       } catch (Exception e) {
-        log.error("分页查询第 {} 页时出现异常", pageNumber, e);
+        log.error("查询顶点时出现异常", e);
         break;
       }
-
-      final var vertexIds = page.getContent().stream()
-          .map(Vertex::getID)
-          .collect(Collectors.toList());
-
-      if (CollUtil.isNotEmpty(vertexIds)) {
-        try {
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transaction.execute(status -> {
-            deleteVertices(vertexIds);
-            return true;
-          });
-        } catch (Exception e) {
-          log.error("删除顶点ID为 {} 时出现异常", vertexIds, e);
-        }
-      }
-
-      pageNumber++;
-    } while (page.hasNext());
-  }
-
-  private @Nonnull Specification<Vertex> typeIs(String type) {
-
-    return (root, query, criteriaBuilder) -> {
-      if (StrUtil.isBlank(type)) {
-        return criteriaBuilder.and();
-      }
-      return criteriaBuilder.equal(root.get(Vertex_.TYPE), type);
-    };
-  }
-
-  private static @Nonnull Specification<Vertex> typesIn(Set<String> types) {
-
-    return (root, query, criteriaBuilder) -> {
-      if (CollUtil.isEmpty(types)) {
-        return criteriaBuilder.and();
-      }
-      return root.get(Vertex_.TYPE).in(types);
-    };
+    }
   }
 }
