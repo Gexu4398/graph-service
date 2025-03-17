@@ -52,7 +52,7 @@ graph-service/
 - MinIO (对象存储)
 
 ### 安全认证
-- Keycloak 26.1.3 (身份认证与授权)
+- Keycloak 26.1.4 (身份认证与授权)
 
 ### 批处理
 - Spring Batch (批量数据处理)
