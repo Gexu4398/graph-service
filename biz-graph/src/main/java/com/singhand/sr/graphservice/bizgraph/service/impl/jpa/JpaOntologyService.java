@@ -225,8 +225,18 @@ public class JpaOntologyService implements OntologyService {
 
     ontologyProperty.setName(request.getNewName());
     ontologyProperty.setType(request.getType());
+    ontologyProperty.setMultiValue(request.isMultiValue());
 
     ontologyPropertyRepository.save(ontologyProperty);
+
+    CompletableFuture.runAsync(() ->
+            cascadeUpdatePropertyFromChildren(ontology, request.getOldName(),
+                request.getNewName(), request.getType(), request.isMultiValue()), VIRTUAL_EXECUTOR)
+        .exceptionally(ex -> {
+          log.error("级联更新子类中继承的属性任务出现异常", ex);
+          throw ex instanceof CompletionException ?
+              (CompletionException) ex : new CompletionException(ex);
+        });
   }
 
   @Override
@@ -361,6 +371,45 @@ public class JpaOntologyService implements OntologyService {
           request.setInherited(true);
           newOntologyProperty(child, request);
         });
+  }
+
+  /**
+   * 级联更新子类中继承的属性
+   *
+   * @param parent     父本体
+   * @param oldName    旧属性名
+   * @param newName    新属性名
+   * @param type       更新后的类型
+   * @param multiValue 是否为多值属性
+   */
+  private void cascadeUpdatePropertyFromChildren(@Nonnull Ontology parent, String oldName,
+      String newName, String type, boolean multiValue) {
+
+    Queue<Long> queue = new LinkedList<>();
+    queue.add(parent.getID());
+
+    final var transaction = new TransactionTemplate(bizTransactionManager);
+    transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transaction.execute(status -> {
+      while (CollUtil.isNotEmpty(queue)) {
+        final var parentId = queue.poll();
+        final var children = ontologyRepository.findByParent_ID(parentId);
+
+        for (final var child : children) {
+          ontologyPropertyRepository.findByOntologyAndName(child, oldName)
+              .ifPresent(property -> {
+                if (property.isInherited()) {
+                  property.setName(newName);
+                  property.setType(type);
+                  property.setMultiValue(multiValue);
+                  ontologyPropertyRepository.save(property);
+                  queue.add(child.getID());
+                }
+              });
+        }
+      }
+      return true;
+    });
   }
 
   /**

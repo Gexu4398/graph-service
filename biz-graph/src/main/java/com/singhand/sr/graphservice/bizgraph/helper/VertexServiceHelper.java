@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.bizgraph.helper;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
@@ -48,17 +49,20 @@ public class VertexServiceHelper {
 
   private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
+  private final OntologyService ontologyService;
+
   @Autowired
   public VertexServiceHelper(VertexRepository vertexRepository, EdgeRepository edgeRepository,
       PropertyRepository propertyRepository,
       @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
-      Neo4jVertexService neo4jVertexService) {
+      Neo4jVertexService neo4jVertexService, OntologyService ontologyService) {
 
     this.vertexRepository = vertexRepository;
     this.edgeRepository = edgeRepository;
     this.propertyRepository = propertyRepository;
     this.bizTransactionManager = bizTransactionManager;
     this.neo4jVertexService = neo4jVertexService;
+    this.ontologyService = ontologyService;
   }
 
   public void deleteEdge(@Nonnull Edge edge) {
@@ -143,8 +147,11 @@ public class VertexServiceHelper {
 
   public void batchUpdateVertexProperty(String vertexType, String oldKey, String newKey) {
 
+    // 需要考虑到子集本体的属性
+    final var types = ontologyService.getAllSubOntologies(Set.of(vertexType));
+
     CompletableFuture.runAsync(() ->
-            updateVertexPropertyKey(vertexType, oldKey, newKey), VIRTUAL_EXECUTOR)
+            updateVertexPropertyKey(types, oldKey, newKey), VIRTUAL_EXECUTOR)
         .exceptionally(ex -> {
           log.error("异步修改顶点属性任务出现异常", ex);
           throw ex instanceof CompletionException ?
@@ -154,8 +161,11 @@ public class VertexServiceHelper {
 
   public void batchDeleteVertexProperty(String vertexType, String key) {
 
+    // 需要考虑到子集本体的属性
+    final var types = ontologyService.getAllSubOntologies(Set.of(vertexType));
+
     CompletableFuture.runAsync(() ->
-            deleteVertexPropertyKey(vertexType, key), VIRTUAL_EXECUTOR)
+            deleteVertexPropertyKey(types, key), VIRTUAL_EXECUTOR)
         .exceptionally(ex -> {
           log.error("异步删除顶点属性任务出现异常", ex);
           throw ex instanceof CompletionException ?
@@ -357,7 +367,7 @@ public class VertexServiceHelper {
     } while (page.hasNext());
   }
 
-  private void deleteVertexPropertyKey(String name, String key) {
+  private void deleteVertexPropertyKey(Set<String> vertexTypes, String key) {
 
     int pageSize = 500;
     int pageNumber = 0;
@@ -365,8 +375,7 @@ public class VertexServiceHelper {
 
     do {
       try {
-        page = vertexRepository.findAll(
-            Specification.where(typeIs(name)),
+        page = vertexRepository.findAll(Specification.where(typesIn(vertexTypes)),
             PageRequest.of(pageNumber, pageSize)
         );
       } catch (Exception e) {
@@ -396,7 +405,7 @@ public class VertexServiceHelper {
     } while (page.hasNext());
   }
 
-  private void updateVertexPropertyKey(String vertexType, String oldKey, String newKey) {
+  private void updateVertexPropertyKey(Set<String> vertexTypes, String oldKey, String newKey) {
 
     int pageSize = 500;
     int pageNumber = 0;
@@ -404,8 +413,7 @@ public class VertexServiceHelper {
 
     do {
       try {
-        page = vertexRepository.findAll(
-            Specification.where(typeIs(vertexType)),
+        page = vertexRepository.findAll(Specification.where(typesIn(vertexTypes)),
             PageRequest.of(pageNumber, pageSize)
         );
       } catch (Exception e) {
