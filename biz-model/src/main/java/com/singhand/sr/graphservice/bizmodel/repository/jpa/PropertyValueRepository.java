@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PropertyValueRepository extends BaseRepository<PropertyValue, Long> {
 
+  Set<PropertyValue> findByProperty_Vertex_IDAndProperty_Key(String ID, String key);
+
   Set<PropertyValue> findByProperty_Vertex_ID(String ID);
 
   Optional<PropertyValue> findByProperty_Vertex_IDAndProperty_KeyAndMd5(String ID, String key,

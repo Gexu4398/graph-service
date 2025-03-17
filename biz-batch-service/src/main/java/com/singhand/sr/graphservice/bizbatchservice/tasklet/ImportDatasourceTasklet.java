@@ -14,6 +14,7 @@ import com.singhand.sr.graphservice.bizbatchservice.model.response.AiTextExtract
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.DatasourceContent;
@@ -28,6 +29,7 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PictureRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import io.minio.DownloadObjectArgs;
@@ -102,6 +104,8 @@ public class ImportDatasourceTasklet implements Tasklet {
 
   private final ChatModel chatModel;
 
+  private final PropertyValueRepository propertyValueRepository;
+
   @Autowired
   public ImportDatasourceTasklet(MinioClient minioClient,
       @Value("${minio.bucket}") String bucket,
@@ -116,7 +120,7 @@ public class ImportDatasourceTasklet implements Tasklet {
       VertexService vertexService, OntologyPropertyRepository ontologyPropertyRepository,
       RelationModelRepository relationModelRepository, EdgeRepository edgeRepository,
       ExtractHelper extractHelper, DatasourceContentRepository datasourceContentRepository,
-      ChatModel chatModel) {
+      ChatModel chatModel, PropertyValueRepository propertyValueRepository) {
 
     this.minioClient = minioClient;
     this.bucket = bucket;
@@ -137,6 +141,7 @@ public class ImportDatasourceTasklet implements Tasklet {
     this.extractHelper = extractHelper;
     this.datasourceContentRepository = datasourceContentRepository;
     this.chatModel = chatModel;
+    this.propertyValueRepository = propertyValueRepository;
   }
 
   @Override
@@ -394,13 +399,55 @@ public class ImportDatasourceTasklet implements Tasklet {
             log.warn("实体不存在：name={} type={}", attribute.getSubject(), vertexType);
             return;
           }
-          final var request = new NewPropertyRequest();
-          request.setKey(attribute.getRelation());
-          request.setValue(attribute.getObject());
-          request.setDatasourceId(datasource.getID());
-          request.setContent(response.getText());
-          vertexService.newProperty(vertex, request);
+
+          final var ontologyProperty = ontologyPropertyRepository
+              .findByOntology_NameAndName(vertexType, attribute.getRelation())
+              .orElse(null);
+
+          if (null == ontologyProperty) {
+            log.warn("属性不存在：name={} type={}", attribute.getRelation(), vertexType);
+            return;
+          }
+
+          // 如果是多值属性，则新增属性，否则更新属性
+          if (ontologyProperty.isMultiValue()) {
+            newProperty(attribute.getRelation(), attribute.getObject(), response.getText(), vertex,
+                datasource);
+          } else {
+            final var propertyValue = propertyValueRepository
+                .findByProperty_Vertex_IDAndProperty_Key(vertex.getID(), vertexType)
+                .stream()
+                .findFirst()
+                .orElse(null);
+
+            if (null == propertyValue) {
+              newProperty(attribute.getRelation(), attribute.getObject(), response.getText(),
+                  vertex, datasource);
+            } else {
+              // 对比可信度，如果新的属性可信度更高，则更新
+              if (datasource.getConfidence() > propertyValue.getConfidence()) {
+                final var request = new UpdatePropertyRequest();
+                request.setKey(attribute.getRelation());
+                request.setOldValue(propertyValue.getValue());
+                request.setNewValue(attribute.getObject());
+                request.setDatasourceId(datasource.getID());
+                request.setContent(response.getText());
+                vertexService.updateProperty(vertex, request);
+              }
+            }
+          }
         });
+  }
+
+  private void newProperty(String key, String value, String content, @Nonnull Vertex vertex,
+      @Nonnull Datasource datasource) {
+
+    final var request = new NewPropertyRequest();
+    request.setKey(key);
+    request.setValue(value);
+    request.setDatasourceId(datasource.getID());
+    request.setContent(content);
+    vertexService.newProperty(vertex, request);
   }
 
   @SneakyThrows

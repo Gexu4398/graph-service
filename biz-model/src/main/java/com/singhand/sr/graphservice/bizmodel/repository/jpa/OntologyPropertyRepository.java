@@ -15,6 +15,8 @@ public interface OntologyPropertyRepository extends BaseRepository<OntologyPrope
 
   Optional<OntologyProperty> findByOntologyAndName(Ontology ontology, String name);
 
+  Optional<OntologyProperty> findByOntology_NameAndName(String name, String name1);
+
   Set<OntologyProperty> findByOntology_Name(String name);
 
   boolean existsByOntology_NameAndName(String ontologyName, String name);
