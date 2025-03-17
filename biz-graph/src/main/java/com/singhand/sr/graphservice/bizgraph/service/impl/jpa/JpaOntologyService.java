@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
@@ -16,16 +17,26 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
 import jakarta.annotation.Nonnull;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -40,15 +51,21 @@ public class JpaOntologyService implements OntologyService {
 
   private final RelationInstanceRepository relationInstanceRepository;
 
+  private final PlatformTransactionManager bizTransactionManager;
+
+  private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+
   public JpaOntologyService(OntologyRepository ontologyRepository,
       Neo4jOntologyService neo4jOntologyService,
       OntologyPropertyRepository ontologyPropertyRepository,
-      RelationInstanceRepository relationInstanceRepository) {
+      RelationInstanceRepository relationInstanceRepository,
+      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager) {
 
     this.ontologyRepository = ontologyRepository;
     this.neo4jOntologyService = neo4jOntologyService;
     this.ontologyPropertyRepository = ontologyPropertyRepository;
     this.relationInstanceRepository = relationInstanceRepository;
+    this.bizTransactionManager = bizTransactionManager;
   }
 
   @Override
@@ -87,8 +104,9 @@ public class JpaOntologyService implements OntologyService {
       final var parent = ontologyRepository.findById(parentId)
           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "父本体不存在"));
       parent.addChild(ontology);
-    }
 
+      inheritPropertiesFromParent(parent, ontology);
+    }
     final var managedOntology = ontologyRepository.save(ontology);
     neo4jOntologyService.newOntology(managedOntology, parentId);
     return managedOntology;
@@ -134,6 +152,8 @@ public class JpaOntologyService implements OntologyService {
     final var property = new OntologyProperty();
     property.setName(request.getName());
     property.setType(request.getType());
+    property.setMultiValue(request.isMultiValue());
+    property.setInherited(request.isInherited());
     ontology.addProperty(property);
     ontologyPropertyRepository.save(property);
   }
@@ -192,6 +212,10 @@ public class JpaOntologyService implements OntologyService {
         .findByOntologyAndName(ontology, request.getOldName())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
 
+    if (ontologyProperty.isInherited()) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "继承的属性不允许修改");
+    }
+
     final var exists = ontologyPropertyRepository
         .existsByOntologyAndName(ontology, request.getNewName());
 
@@ -215,11 +239,21 @@ public class JpaOntologyService implements OntologyService {
         .findByOntologyAndName(ontology, propertyName)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
 
+    if (ontologyProperty.isInherited()) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "继承的属性不允许删除");
+    }
+
     ontology.removeProperty(ontologyProperty);
-
     ontologyPropertyRepository.delete(ontologyProperty);
-
     ontologyRepository.save(ontology);
+
+    CompletableFuture.runAsync(() ->
+            cascadeDeletePropertyFromChildren(ontology, propertyName), VIRTUAL_EXECUTOR)
+        .exceptionally(ex -> {
+          log.error("级联删除子类中继承的属性任务出现异常", ex);
+          throw ex instanceof CompletionException ?
+              (CompletionException) ex : new CompletionException(ex);
+        });
   }
 
   @Override
@@ -308,5 +342,58 @@ public class JpaOntologyService implements OntologyService {
   public List<OntologyNode> getSubtreeNodesByIds(Set<Long> ids) {
 
     return neo4jOntologyService.getSubtreeNodesByIds(ids);
+  }
+
+  /**
+   * 从父本体继承属性到子本体
+   *
+   * @param parent 父本体
+   * @param child  子本体
+   */
+  private void inheritPropertiesFromParent(@Nonnull Ontology parent, @Nonnull Ontology child) {
+
+    parent.getProperties()
+        .forEach(it -> {
+          final var request = new NewOntologyPropertyRequest();
+          request.setName(it.getName());
+          request.setType(it.getType());
+          request.setMultiValue(it.isMultiValue());
+          request.setInherited(true);
+          newOntologyProperty(child, request);
+        });
+  }
+
+  /**
+   * 级联删除子类中继承的属性
+   *
+   * @param parent       父本体
+   * @param propertyName 要删除的属性名
+   */
+  private void cascadeDeletePropertyFromChildren(@Nonnull Ontology parent, String propertyName) {
+
+    Queue<Long> queue = new LinkedList<>();
+    queue.add(parent.getID());
+
+    final var transaction = new TransactionTemplate(bizTransactionManager);
+    transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transaction.execute(status -> {
+      while (CollUtil.isNotEmpty(queue)) {
+        final var parentId = queue.poll();
+        final var children = ontologyRepository.findByParent_ID(parentId);
+
+        for (final var child : children) {
+          ontologyPropertyRepository.findByOntologyAndName(child, propertyName)
+              .ifPresent(property -> {
+                if (property.isInherited()) {
+                  child.removeProperty(property);
+                  ontologyPropertyRepository.delete(property);
+                  ontologyRepository.save(child);
+                  queue.add(child.getID());
+                }
+              });
+        }
+      }
+      return true;
+    });
   }
 }

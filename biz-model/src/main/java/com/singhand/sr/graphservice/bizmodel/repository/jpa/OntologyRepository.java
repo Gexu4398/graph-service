@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface OntologyRepository extends BaseRepository<Ontology, Long> {
 
+  Set<Ontology> findByParent_ID(Long ID);
+
   Set<Ontology> findByNameIn(Collection<String> names);
 
   boolean existsByName(String name);

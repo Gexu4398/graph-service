@@ -12,4 +12,8 @@ public class NewOntologyPropertyRequest {
   @NotBlank
   @NotBlank(message = "属性类型不能为空")
   private String type;
+
+  private boolean multiValue = false;
+
+  private boolean inherited = false;
 }

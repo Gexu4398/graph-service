@@ -58,6 +58,10 @@ public class OntologyProperty {
   @Default
   private boolean multiValue = false;
 
+  @Column(nullable = false)
+  @Default
+  private boolean inherited = false;
+
   @ManyToOne
   @JsonIgnore
   private Ontology ontology;

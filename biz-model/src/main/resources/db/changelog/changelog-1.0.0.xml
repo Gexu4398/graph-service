@@ -235,6 +235,7 @@
       <column name="multivalue" type="boolean">
         <constraints nullable="false"/>
       </column>
+      <column name="inherited" type="boolean" defaultValue="false"/>
       <column name="ontology_id" type="BIGINT"/>
       <column name="relationmodel_id" type="BIGINT"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
