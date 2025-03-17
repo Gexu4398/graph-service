@@ -30,6 +30,7 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueReposit
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -217,14 +218,15 @@ public class JpaVertexService implements VertexService {
         .orElse(new PropertyValue());
     managedProperty.addValue(propertyValue);
     propertyValue.setValue(request.getValue());
-    final var managedPropertyValue = propertyValueRepository.save(propertyValue);
 
     if (null != request.getDatasourceId()) {
-      final var datasource = addEvidence(managedPropertyValue, request);
-      if (null != datasource) {
-        setFeature(managedPropertyValue, "confidence", String.valueOf(datasource.getConfidence()));
-      }
+      final var datasource = datasourceRepository.findById(request.getDatasourceId())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
+      propertyValue.setConfidence(datasource.getConfidence());
     }
+    final var managedPropertyValue = propertyValueRepository.save(propertyValue);
+
+    addEvidence(managedPropertyValue, request);
 
     neo4jVertexService.newProperty(vertex, request);
   }
@@ -246,15 +248,18 @@ public class JpaVertexService implements VertexService {
         .orElse(new PropertyValue());
     managedProperty.addValue(propertyValue);
     propertyValue.setValue(newPropertyRequest.getValue());
+
+    if (null != newPropertyRequest.getDatasourceId()) {
+      final var datasource = datasourceRepository.findById(newPropertyRequest.getDatasourceId())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
+      propertyValue.setConfidence(datasource.getConfidence());
+    }
     final var managedPropertyValue = propertyValueRepository.save(propertyValue);
 
     neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
         edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
 
-    final var datasource = addEvidence(managedPropertyValue, newPropertyRequest);
-    if (null != datasource) {
-      setFeature(managedPropertyValue, "confidence", String.valueOf(datasource.getConfidence()));
-    }
+    addEvidence(managedPropertyValue, newPropertyRequest);
   }
 
   @Override
@@ -266,7 +271,7 @@ public class JpaVertexService implements VertexService {
 
     final var oldValueMd5 = MD5.create().digestHex(request.getOldValue());
 
-    final var managedOldPropertyValue = managedProperty.getValues()
+    final var oldPropertyValue = managedProperty.getValues()
         .stream()
         .filter(value -> value.getMd5().equals(oldValueMd5))
         .findFirst()
@@ -274,15 +279,18 @@ public class JpaVertexService implements VertexService {
 
     final var newValueMd5 = MD5.create().digestHex(request.getNewValue());
 
+    if (null != request.getDatasourceId()) {
+      final var datasource = datasourceRepository.findById(request.getDatasourceId())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
+      oldPropertyValue.setConfidence(datasource.getConfidence());
+    }
+    final var managedOldPropertyValue = propertyValueRepository.save(oldPropertyValue);
+
     if (oldValueMd5.equals(newValueMd5)) {
-      if (managedOldPropertyValue.getEvidences().stream()
+      if (oldPropertyValue.getEvidences().stream()
           .noneMatch(it -> it.getContent().equals(request.getContent()))) {
         managedOldPropertyValue.clearEvidences();
-        final var datasource = addEvidence(managedOldPropertyValue, request);
-        if (null != datasource) {
-          setFeature(managedOldPropertyValue, "confidence",
-              String.valueOf(datasource.getConfidence()));
-        }
+        addEvidence(managedOldPropertyValue, request);
       }
     } else {
       managedOldPropertyValue.clearEvidences();
@@ -290,10 +298,7 @@ public class JpaVertexService implements VertexService {
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
 
       neo4jVertexService.updateProperty(vertex, request);
-      final var datasource = addEvidence(propertyValue, request);
-      if (null != datasource) {
-        setFeature(propertyValue, "confidence", String.valueOf(datasource.getConfidence()));
-      }
+      addEvidence(propertyValue, request);
     }
   }
 
@@ -305,7 +310,7 @@ public class JpaVertexService implements VertexService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "属性不存在"));
 
     final var oldValueMd5 = MD5.create().digestHex(request.getOldValue());
-    final var managedOldPropertyValue = managedProperty.getValues()
+    final var oldPropertyValue = managedProperty.getValues()
         .stream()
         .filter(value -> value.getMd5().equals(oldValueMd5))
         .findFirst()
@@ -313,21 +318,21 @@ public class JpaVertexService implements VertexService {
 
     final var newValueMd5 = MD5.create().digestHex(request.getNewValue());
 
+    if (null != request.getDatasourceId()) {
+      final var datasource = datasourceRepository.findById(request.getDatasourceId())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在"));
+      oldPropertyValue.setConfidence(datasource.getConfidence());
+    }
+    final var managedOldPropertyValue = propertyValueRepository.save(oldPropertyValue);
+
     if (oldValueMd5.equals(newValueMd5)) {
       managedOldPropertyValue.getEvidences().clear();
-      final var datasource = addEvidence(managedOldPropertyValue, request);
-      if (null != datasource) {
-        setFeature(managedOldPropertyValue, "confidence",
-            String.valueOf(datasource.getConfidence()));
-      }
+      addEvidence(managedOldPropertyValue, request);
     } else {
       managedOldPropertyValue.clearEvidences();
       managedOldPropertyValue.setValue(request.getNewValue());
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
-      final var datasource = addEvidence(propertyValue, request);
-      if (null != datasource) {
-        setFeature(propertyValue, "confidence", String.valueOf(datasource.getConfidence()));
-      }
+      addEvidence(propertyValue, request);
     }
   }
 
@@ -460,11 +465,11 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public Datasource addEvidence(@Nonnull PropertyValue propertyValue,
+  public void addEvidence(@Nonnull PropertyValue propertyValue,
       @Nonnull NewEvidenceRequest newEvidenceRequest) {
 
     if (null == newEvidenceRequest.getDatasourceId()) {
-      return null;
+      return;
     }
 
     final var datasource = getDatasource(newEvidenceRequest);
@@ -474,8 +479,6 @@ public class JpaVertexService implements VertexService {
     propertyValue.addEvidence(evidence);
     datasource.addEvidence(evidence);
     evidenceRepository.save(evidence);
-
-    return datasource;
   }
 
   @Override
@@ -620,6 +623,12 @@ public class JpaVertexService implements VertexService {
   public Long countVertices(String level) {
 
     return vertexRepository.count(Specification.where(levelIs(level)));
+  }
+
+  @Override
+  public Collection<PropertyValue> getPropertyValues(Vertex vertex) {
+
+    return propertyValueRepository.findDistinctByProperty_Vertex(vertex);
   }
 
   private static @Nonnull Specification<Vertex> levelIs(String level) {

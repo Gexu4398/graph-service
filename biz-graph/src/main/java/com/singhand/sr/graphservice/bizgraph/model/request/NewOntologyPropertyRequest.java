@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.model.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -15,5 +16,6 @@ public class NewOntologyPropertyRequest {
 
   private boolean multiValue = false;
 
+  @JsonIgnore
   private boolean inherited = false;
 }

@@ -7,13 +7,13 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import jakarta.annotation.Nonnull;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -168,9 +168,8 @@ public interface VertexService {
    *
    * @param propertyValue      属性值对象
    * @param newEvidenceRequest 新证据请求对象
-   * @return 添加证据的源数据对象
    */
-  Datasource addEvidence(PropertyValue propertyValue, NewEvidenceRequest newEvidenceRequest);
+  void addEvidence(PropertyValue propertyValue, NewEvidenceRequest newEvidenceRequest);
 
   /**
    * 为边添加证据。
@@ -362,14 +361,24 @@ public interface VertexService {
 
   /**
    * 获取边的数量
+   *
    * @return 边的数量
    */
   Long countEdges();
 
   /**
    * 获取顶点的数量
+   *
    * @param level 顶点层次
    * @return 顶点的数量
    */
   Long countVertices(String level);
+
+  /**
+   * 获取顶点的属性值
+   *
+   * @param vertex 顶点对象
+   * @return 顶点的数量
+   */
+  Collection<PropertyValue> getPropertyValues(Vertex vertex);
 }

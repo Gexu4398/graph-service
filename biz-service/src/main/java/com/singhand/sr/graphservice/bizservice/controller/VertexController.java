@@ -17,6 +17,7 @@ import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.helper.JwtHelper;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.model.reponse.OperationResponse;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
@@ -26,10 +27,13 @@ import com.singhand.sr.graphservice.bizservice.client.feign.BizBatchServiceClien
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,6 +174,23 @@ public class VertexController {
   public void deleteVertices(@RequestBody List<String> vertexIds) {
 
     vertexService.deleteVertices(vertexIds);
+  }
+
+  @Operation(summary = "获取实体属性")
+  @GetMapping("/{id}/property")
+  public Collection<Property> getVertexProperties(@PathVariable String id) {
+
+    final var vertex = vertexService.getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    final var properties = new HashMap<String, Property>();
+    vertexService.getPropertyValues(vertex).forEach(propertyValue -> {
+      final var key = propertyValue.getProperty().getKey();
+      final var property = properties.getOrDefault(key, Property.builder().key(key).build());
+      property.getValues().add(propertyValue);
+      properties.putIfAbsent(key, property);
+    });
+    return properties.values();
   }
 
   @Operation(summary = "添加实体属性")

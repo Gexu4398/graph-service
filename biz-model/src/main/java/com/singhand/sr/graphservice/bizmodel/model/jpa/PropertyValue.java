@@ -17,7 +17,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
-import jakarta.persistence.Transient;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,6 +60,10 @@ public class PropertyValue {
   @Setter(AccessLevel.NONE)
   private String md5;
 
+  @Column
+  @Default
+  private Double confidence = 0.0;
+
   @ManyToOne
   @JsonIgnore
   private Property property;
@@ -86,10 +89,6 @@ public class PropertyValue {
   @Temporal(TemporalType.TIMESTAMP)
   @UpdateTimestamp
   private Calendar updatedAt;
-
-  @Transient
-  @JsonProperty(access = Access.READ_ONLY)
-  private Double confidence;
 
   @Override
   public boolean equals(Object o) {
