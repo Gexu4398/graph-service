@@ -147,11 +147,11 @@ public class VertexServiceHelper {
 
   public void batchUpdateVertexProperty(String vertexType, String oldKey, String newKey) {
 
-    // 需要考虑到子集本体的属性
-    final var types = ontologyService.getAllSubOntologies(Set.of(vertexType));
-
-    CompletableFuture.runAsync(() ->
-            updateVertexPropertyKey(types, oldKey, newKey), VIRTUAL_EXECUTOR)
+    CompletableFuture.runAsync(() -> {
+          // 需要考虑到子集本体的属性
+          final var types = ontologyService.getAllSubOntologies(Set.of(vertexType));
+          updateVertexPropertyKey(types, oldKey, newKey);
+        }, VIRTUAL_EXECUTOR)
         .exceptionally(ex -> {
           log.error("异步修改顶点属性任务出现异常", ex);
           throw ex instanceof CompletionException ?
@@ -161,11 +161,11 @@ public class VertexServiceHelper {
 
   public void batchDeleteVertexProperty(String vertexType, String key) {
 
-    // 需要考虑到子集本体的属性
-    final var types = ontologyService.getAllSubOntologies(Set.of(vertexType));
-
-    CompletableFuture.runAsync(() ->
-            deleteVertexPropertyKey(types, key), VIRTUAL_EXECUTOR)
+    CompletableFuture.runAsync(() -> {
+          // 需要考虑到子集本体的属性
+          final var types = ontologyService.getAllSubOntologies(Set.of(vertexType));
+          deleteVertexPropertyKey(types, key);
+        }, VIRTUAL_EXECUTOR)
         .exceptionally(ex -> {
           log.error("异步删除顶点属性任务出现异常", ex);
           throw ex instanceof CompletionException ?
