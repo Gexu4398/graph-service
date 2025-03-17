@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizbatchservice.controller;
 
 import cn.hutool.core.util.ObjUtil;
+import com.singhand.sr.graphservice.bizgraph.model.request.ImportVertexRequest;
 import com.singhand.sr.graphservice.bizmodel.model.reponse.OperationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,14 +50,17 @@ public class BatchJobController {
 
   private final Job importDatasourceJob;
 
+  private final Job importVertexJob;
+
   @Autowired
   public BatchJobController(JobExplorer jobExplorer, JobRepository jobRepository,
-      JobLauncher jobLauncher, Job importDatasourceJob) {
+      JobLauncher jobLauncher, Job importDatasourceJob, Job importVertexJob) {
 
     this.jobExplorer = jobExplorer;
     this.jobRepository = jobRepository;
     this.jobLauncher = jobLauncher;
     this.importDatasourceJob = importDatasourceJob;
+    this.importVertexJob = importVertexJob;
   }
 
   @GetMapping("{id}")
@@ -145,6 +150,20 @@ public class BatchJobController {
         .addLong("id", id, false)
         .addString("username", username, false)
         .addString("group_id", uuid, false)
+        .addString("instance_id", UUID.randomUUID().toString(), true)
+        .toJobParameters());
+
+    return jobExecution2OperationResponse(jobExecution);
+  }
+
+  @Operation(summary = "导入实体")
+  @PostMapping("vertex:import")
+  @SneakyThrows
+  public OperationResponse launchImportVertexJob(
+      @RequestBody ImportVertexRequest importVertexRequest) {
+
+    final var jobExecution = jobLauncher.run(importVertexJob, new JobParametersBuilder()
+        .addString("url", importVertexRequest.getUrl(), false)
         .addString("instance_id", UUID.randomUUID().toString(), true)
         .toJobParameters());
 

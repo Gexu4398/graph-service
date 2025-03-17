@@ -1,8 +1,10 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.request.ImportVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
@@ -16,9 +18,11 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.helper.JwtHelper;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.model.reponse.OperationResponse;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
+import com.singhand.sr.graphservice.bizservice.client.feign.BizBatchServiceClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,12 +30,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,16 +70,19 @@ public class VertexController {
 
   private final PropertyRepository propertyRepository;
 
+  private final BizBatchServiceClient bizBatchServiceClient;
+
   @Autowired
   public VertexController(VertexService vertexService, VertexRepository vertexRepository,
       OntologyRepository ontologyRepository, OntologyService ontologyService,
-      PropertyRepository propertyRepository) {
+      PropertyRepository propertyRepository, BizBatchServiceClient bizBatchServiceClient) {
 
     this.vertexService = vertexService;
     this.vertexRepository = vertexRepository;
     this.ontologyRepository = ontologyRepository;
     this.ontologyService = ontologyService;
     this.propertyRepository = propertyRepository;
+    this.bizBatchServiceClient = bizBatchServiceClient;
   }
 
   @Operation(summary = "获取实体详情")
@@ -150,6 +162,14 @@ public class VertexController {
   public void deleteVertex(@PathVariable String id) {
 
     vertexService.deleteVertex(id);
+  }
+
+  @Operation(summary = "批量删除实体")
+  @DeleteMapping("batch")
+  @Transactional("bizTransactionManager")
+  public void deleteVertices(@RequestBody List<String> vertexIds) {
+
+    vertexService.deleteVertices(vertexIds);
   }
 
   @Operation(summary = "添加实体属性")
@@ -465,5 +485,26 @@ public class VertexController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     newEvidenceRequest.setCreator(JwtHelper.getUsername());
     vertexService.addEvidence(edge, newEvidenceRequest);
+  }
+
+  @Operation(summary = "获取导入模板")
+  @PostMapping("import/template")
+  public ResponseEntity<InputStreamResource> getImportTemplate() {
+
+    @Cleanup final var inputStream = ResourceUtil.getStream("importer/example.json");
+    final var inputStreamResource = new InputStreamResource(inputStream);
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=template.json")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(inputStreamResource);
+  }
+
+  @Operation(summary = "导入实体")
+  @PostMapping("import")
+  @SneakyThrows
+  public OperationResponse importVertex(@RequestBody ImportVertexRequest importVertexRequest) {
+
+    return bizBatchServiceClient.launchImportVertexJob(importVertexRequest);
   }
 }

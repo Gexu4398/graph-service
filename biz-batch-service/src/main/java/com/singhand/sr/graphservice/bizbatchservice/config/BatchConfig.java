@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.bizbatchservice.config;
 
 import com.singhand.sr.graphservice.bizbatchservice.model.MyStepExecutionListener;
 import com.singhand.sr.graphservice.bizbatchservice.tasklet.ImportDatasourceTasklet;
+import com.singhand.sr.graphservice.bizbatchservice.tasklet.ImportVertexTasklet;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -33,15 +34,18 @@ public class BatchConfig {
 
   private final ImportDatasourceTasklet importDatasourceTasklet;
 
+  private final ImportVertexTasklet importVertexTasklet;
+
   @Autowired
   public BatchConfig(JobRepository jobRepository, PlatformTransactionManager transactionManager,
       TaskExecutorProperties taskExecutorProperties,
-      ImportDatasourceTasklet importDatasourceTasklet) {
+      ImportDatasourceTasklet importDatasourceTasklet, ImportVertexTasklet importVertexTasklet) {
 
     this.transactionManager = transactionManager;
     this.jobRepository = jobRepository;
     this.taskExecutorProperties = taskExecutorProperties;
     this.importDatasourceTasklet = importDatasourceTasklet;
+    this.importVertexTasklet = importVertexTasklet;
   }
 
   private JobRepository jobRepository() {
@@ -75,6 +79,22 @@ public class BatchConfig {
     return new StepBuilder("importDatasourceTaskletStep", jobRepository())
         .tasklet(importDatasourceTasklet, transactionManager)
         .listener(new MyStepExecutionListener(86400))
+        .build();
+  }
+
+  @Bean
+  public Job importVertexJob() {
+
+    return new JobBuilder("importVertexJob", jobRepository())
+        .start(importVertexTaskletStep())
+        .build();
+  }
+
+  @Bean
+  public Step importVertexTaskletStep() {
+
+    return new StepBuilder("importVertexTaskletStep", jobRepository())
+        .tasklet(importVertexTasklet, transactionManager)
         .build();
   }
 

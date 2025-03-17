@@ -46,6 +46,7 @@ public interface VertexService {
    *
    * @param keyword  关键字
    * @param types    顶点类型集合
+   * @param useEs    是否使用ES
    * @param pageable 分页信息
    * @return 顶点分页对象
    */
