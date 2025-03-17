@@ -507,4 +507,11 @@ public class VertexController {
 
     return bizBatchServiceClient.launchImportVertexJob(importVertexRequest);
   }
+
+  @Operation(summary = "统计实体关系")
+  @GetMapping("statistics/edge")
+  public Long getStatisticsEdge() {
+
+    return vertexService.countEdges();
+  }
 }

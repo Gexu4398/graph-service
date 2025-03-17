@@ -4,35 +4,13 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizgraph.helper.VertexServiceHelper;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
-import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.*;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge_;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Evidence;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Feature;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Property;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.PropertyValue;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
-import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex_;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.EvidenceRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.FeatureRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
-import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
+import com.singhand.sr.graphservice.bizmodel.model.jpa.*;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.*;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.search.mapper.orm.Search;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +22,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -608,6 +589,12 @@ public class JpaVertexService implements VertexService {
 
     return edgeRepository.findAll(Specification.where(vertexNameLike(keyword)
         .and(edgeNameLike(name))), pageable);
+  }
+
+  @Override
+  public Long countEdges() {
+
+    return edgeRepository.count();
   }
 
   private static @Nonnull Specification<Edge> edgeNameLike(String name) {

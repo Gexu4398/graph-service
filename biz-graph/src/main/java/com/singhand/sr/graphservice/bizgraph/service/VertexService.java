@@ -359,4 +359,10 @@ public interface VertexService {
    * @return 关系分页对象
    */
   Page<Edge> getEdges(String keyword, String name, Pageable pageable);
+
+  /**
+   * 获取边的数量
+   * @return 边的数量
+   */
+  Long countEdges();
 }
