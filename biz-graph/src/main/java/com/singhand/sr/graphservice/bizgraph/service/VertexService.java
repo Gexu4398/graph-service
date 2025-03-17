@@ -365,4 +365,11 @@ public interface VertexService {
    * @return 边的数量
    */
   Long countEdges();
+
+  /**
+   * 获取顶点的数量
+   * @param level 顶点层次
+   * @return 顶点的数量
+   */
+  Long countVertices(String level);
 }

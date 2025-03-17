@@ -616,6 +616,22 @@ public class JpaVertexService implements VertexService {
     return edgeRepository.count();
   }
 
+  @Override
+  public Long countVertices(String level) {
+
+    return vertexRepository.count(Specification.where(levelIs(level)));
+  }
+
+  private static @Nonnull Specification<Vertex> levelIs(String level) {
+
+    return (root, query, criteriaBuilder) -> {
+      if (StrUtil.isBlank(level)) {
+        return criteriaBuilder.and();
+      }
+      return criteriaBuilder.equal(root.get(Vertex_.HIERARCHY_LEVEL), level);
+    };
+  }
+
   private static @Nonnull Specification<Edge> edgeNameLike(String name) {
 
     return (root, query, criteriaBuilder) -> {

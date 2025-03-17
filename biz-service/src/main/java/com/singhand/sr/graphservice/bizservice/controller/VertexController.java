@@ -515,4 +515,11 @@ public class VertexController {
 
     return vertexService.countEdges();
   }
+
+  @Operation(summary = "统计实体")
+  @GetMapping("statistics/level")
+  public Long getStatistics(@RequestParam(required = false, defaultValue = "") String level) {
+
+    return vertexService.countVertices(level);
+  }
 }
