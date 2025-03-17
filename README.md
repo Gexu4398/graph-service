@@ -63,7 +63,6 @@ graph-service/
 
 ### API文档
 - SpringDoc OpenAPI 2.8.5
-- Knife4j 4.5.0
 
 ### 辅助工具
 - Hutool 5.8.36 (工具库)

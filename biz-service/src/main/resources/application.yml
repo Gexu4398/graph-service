@@ -81,9 +81,6 @@ management:
       default: unrestricted
 
 springdoc:
-  api-docs:
-    enabled: true
-    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
     tags-sorter: alpha

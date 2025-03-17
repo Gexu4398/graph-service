@@ -78,7 +78,7 @@
     <jai-imageio-jpeg2000.version>1.4.0</jai-imageio-jpeg2000.version>
     <jbig2-imageio.version>3.0.4</jbig2-imageio.version>
     <jsoup-version>1.19.1</jsoup-version>
-    <knife4j-openapi3-jakarta-spring-boot-starter.version>4.5.0</knife4j-openapi3-jakarta-spring-boot-starter.version>
+    <springfox-core.version>3.0.0</springfox-core.version>
     <maven.build.timestamp.format>yyyMMddHHmmss</maven.build.timestamp.format>
   </properties>
 
@@ -348,9 +348,9 @@
         <version>${jsoup-version}</version>
       </dependency>
       <dependency>
-        <groupId>com.github.xiaoymin</groupId>
-        <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
-        <version>${knife4j-openapi3-jakarta-spring-boot-starter.version}</version>
+        <groupId>io.springfox</groupId>
+        <artifactId>springfox-core</artifactId>
+        <version>${springfox-core.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -385,7 +385,6 @@
       <groupId>com.github.xiaoymin</groupId>
       <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
     </dependency>
-
   </dependencies>
 
   <build>

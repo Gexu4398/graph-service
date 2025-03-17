@@ -47,6 +47,7 @@
       <column name="type" type="VARCHAR(255)">
         <constraints nullable="false"/>
       </column>
+      <column name="hierarchylevel" type="varchar(255)" defaultValue="概念实体层"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>

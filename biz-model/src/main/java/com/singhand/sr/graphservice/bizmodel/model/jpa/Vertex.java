@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizmodel.model.jpa;
 import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.singhand.sr.graphservice.bizmodel.validator.In;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -59,6 +60,12 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordFie
 @Indexed(index = "vertex_00001")
 public class Vertex {
 
+  public static final String LEVEL_CONCEPT = "概念实体层";
+
+  public static final String LEVEL_EVENT = "事件动向层";
+
+  public static final String LEVEL_SCENE = "领域场景层";
+
   @Id
   @UuidGenerator(style = UuidGenerator.Style.RANDOM)
   @JsonProperty("id")
@@ -73,6 +80,11 @@ public class Vertex {
   @Column(nullable = false)
   @KeywordField(name = "type_keyword")
   private String type;
+
+  @Column
+  @In(set = {LEVEL_CONCEPT, LEVEL_EVENT, LEVEL_SCENE})
+  @Default
+  private String hierarchyLevel = LEVEL_CONCEPT;
 
   @Default
   @ElementCollection(fetch = FetchType.EAGER)

@@ -70,7 +70,7 @@ public class Neo4jVertexService {
     vertexNode.setId(vertex.getID());
     vertexNode.setName(vertex.getName());
     vertexNode.setType(vertex.getType());
-
+    vertexNode.setHierarchyLevel(vertex.getHierarchyLevel());
     final var managedvertexNode = vertexNodeRepository.save(vertexNode);
     addVertexToVectorStore(managedvertexNode);
 

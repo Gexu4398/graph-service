@@ -310,6 +310,7 @@ public class ImportDatasourceTasklet implements Tasklet {
                 final var request = new NewVertexRequest();
                 request.setName(eventName);
                 request.setType("事件");
+                request.setHierarchyLevel(Vertex.LEVEL_EVENT);
                 final var vertex = vertexService.newVertex(request);
 
                 properties.forEach((k, v) ->

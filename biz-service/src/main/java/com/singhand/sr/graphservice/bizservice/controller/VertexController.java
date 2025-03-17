@@ -489,6 +489,7 @@ public class VertexController {
 
   @Operation(summary = "获取导入模板")
   @PostMapping("import/template")
+  @SneakyThrows
   public ResponseEntity<InputStreamResource> getImportTemplate() {
 
     @Cleanup final var inputStream = ResourceUtil.getStream("importer/example.json");

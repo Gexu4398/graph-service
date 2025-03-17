@@ -3,6 +3,7 @@ package com.singhand.sr.graphservice.bizmodel.model.jpa;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
+import com.singhand.sr.graphservice.bizmodel.validator.In;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.CascadeType;
@@ -82,6 +83,7 @@ public class Datasource {
   private String url;
 
   @Column(nullable = false)
+  @In(set = {"pending", "processing", "success", "failure"})
   @Default
   private String status = STATUS_PENDING;
 

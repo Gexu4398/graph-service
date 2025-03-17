@@ -42,6 +42,9 @@ public class VertexNode {
   @Property
   private String type;
 
+  @Property
+  private String hierarchyLevel;
+
   @Version
   private Long version;
 

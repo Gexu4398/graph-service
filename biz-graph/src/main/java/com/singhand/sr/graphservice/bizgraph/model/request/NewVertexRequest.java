@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.model.request;
 
+import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import java.util.HashMap;
@@ -26,6 +27,10 @@ public class NewVertexRequest extends NewEvidenceRequest {
   @Schema(description = "实体类型")
   @NotBlank(message = "实体类型为空")
   private String type;
+
+  @Schema(description = "实体层次")
+  @Default
+  private String hierarchyLevel = Vertex.LEVEL_CONCEPT;
 
   @Default
   private Map<String, String> props = new HashMap<>();
