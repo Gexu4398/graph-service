@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.singhand.sr.graphservice.bizkeycloakmodel.helper.JwtHelper;
+import com.singhand.sr.graphservice.bizkeycloakmodel.helper.LocaleHelper;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.Group;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.KeycloakGroup;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.KeycloakRole;
@@ -194,6 +195,7 @@ public class KeycloakUserService {
     ur.setEnabled(true);
     ur.singleAttribute("phoneNumber", request.getPhoneNumber());
     ur.singleAttribute("picture", request.getPicture());
+    ur.singleAttribute("locale", LocaleHelper.ZH_CN);
     setCredential(request.getPassword(), ur);
     final var userResource = keycloakService.newUserResource(ur);
     if (StrUtil.isNotBlank(request.getGroupId())) {
