@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.StrUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.singhand.sr.graphservice.bizbatchservice.importer.vertex.VertexImporter;
 import com.singhand.sr.graphservice.bizbatchservice.model.ImportVertexItem;
 import com.singhand.sr.graphservice.bizbatchservice.model.ImportVertexItem.PropertyItem;
 import com.singhand.sr.graphservice.bizbatchservice.model.ImportVertexItem.VertexItem;
@@ -21,7 +21,6 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
 import jakarta.annotation.Nonnull;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -57,11 +56,13 @@ public class ImportVertexTasklet implements Tasklet {
 
   private final RelationModelRepository relationModelRepository;
 
+  private final List<VertexImporter> vertexImporters;
+
   public ImportVertexTasklet(@Value("${minio.bucket}") String bucket, MinioClient minioClient,
       VertexRepository vertexRepository, VertexService vertexService,
       OntologyRepository ontologyRepository,
       OntologyPropertyRepository ontologyPropertyRepository,
-      RelationModelRepository relationModelRepository) {
+      RelationModelRepository relationModelRepository, List<VertexImporter> vertexImporters) {
 
     this.bucket = bucket;
     this.minioClient = minioClient;
@@ -70,6 +71,7 @@ public class ImportVertexTasklet implements Tasklet {
     this.ontologyRepository = ontologyRepository;
     this.ontologyPropertyRepository = ontologyPropertyRepository;
     this.relationModelRepository = relationModelRepository;
+    this.vertexImporters = vertexImporters;
   }
 
   @Override
@@ -98,14 +100,13 @@ public class ImportVertexTasklet implements Tasklet {
 
     final var extName = FileNameUtil.extName(tempFilename).toLowerCase();
 
-    if (!StrUtil.equals(extName, "json")) {
-      throw new RuntimeException("文件格式错误");
-    }
-
-    final var objectMapper = new ObjectMapper();
-    final var importData = objectMapper.readValue(new File(tempFilename), ImportVertexItem.class);
+    final var importer = vertexImporters.stream()
+        .filter(it -> it.supports(tempFilename))
+        .findFirst()
+        .orElseThrow(() -> new RuntimeException("不支持的文件格式：" + extName));
 
     try {
+      final var importData = importer.importFromFile(tempFilename);
       final var vertexMap = importVertices(importData);
       log.info("已成功导入 {} 个实体", vertexMap.size());
       final var edges = importRelations(importData);

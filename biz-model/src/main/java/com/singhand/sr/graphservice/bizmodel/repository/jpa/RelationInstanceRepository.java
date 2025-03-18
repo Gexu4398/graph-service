@@ -15,6 +15,9 @@ public interface RelationInstanceRepository extends BaseRepository<RelationInsta
   Optional<RelationInstance> findByNameAndInOntologyAndOutOntology(String name, Ontology inOntology,
       Ontology outOntology);
 
+  boolean existsByNameAndInOntology_NameAndOutOntology_Name(String name, String inName,
+      String outName);
+
   boolean existsByNameAndInOntologyAndOutOntology(String name, Ontology inOntology,
       Ontology outOntology);
 }

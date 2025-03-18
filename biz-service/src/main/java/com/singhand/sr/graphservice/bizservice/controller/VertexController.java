@@ -27,13 +27,11 @@ import com.singhand.sr.graphservice.bizservice.client.feign.BizBatchServiceClien
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -513,13 +511,12 @@ public class VertexController {
   @SneakyThrows
   public ResponseEntity<InputStreamResource> getImportTemplate() {
 
-    @Cleanup final var inputStream = ResourceUtil.getStream("importer/example.json");
-    final var inputStreamResource = new InputStreamResource(inputStream);
+    @Cleanup final var inputStream = ResourceUtil.getStream("importer/template.xlsx");
 
-    return ResponseEntity.ok()
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=template.json")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(inputStreamResource);
+    final var headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+    headers.setContentDispositionFormData("attachment", "filename=template.xlsx");
+    return new ResponseEntity<>(new InputStreamResource(inputStream), headers, HttpStatus.OK);
   }
 
   @Operation(summary = "导入实体")
