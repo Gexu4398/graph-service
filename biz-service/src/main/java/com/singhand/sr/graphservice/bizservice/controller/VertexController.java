@@ -87,6 +87,12 @@ public class VertexController {
     this.bizBatchServiceClient = bizBatchServiceClient;
   }
 
+  /**
+   * 获取实体详情
+   *
+   * @param id 实体ID
+   * @return 实体详情
+   */
   @Operation(summary = "获取实体详情")
   @GetMapping(path = "{id}")
   public Vertex getVertex(@PathVariable String id) {
@@ -95,6 +101,16 @@ public class VertexController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
   }
 
+  /**
+   * 查询实体
+   *
+   * @param keyword   关键词
+   * @param types     实体类型
+   * @param useEs     是否使用ES
+   * @param recursive 是否递归查询
+   * @param pageable  分页
+   * @return 实体列表
+   */
   @Operation(summary = "查询实体")
   @GetMapping
   public Page<GetVerticesResponseItem> getVertices(
@@ -116,6 +132,14 @@ public class VertexController {
     return new PageImpl<>(content, pageable, page.getTotalElements());
   }
 
+  /**
+   * 查询关系
+   *
+   * @param keyword  关键词
+   * @param name     关系名
+   * @param pageable 分页
+   * @return 关系列表
+   */
   @Operation(summary = "查询关系")
   @GetMapping("edge")
   public Page<Edge> getEdges(
@@ -126,28 +150,41 @@ public class VertexController {
     return vertexService.getEdges(keyword, name, pageable);
   }
 
+  /**
+   * 新增实体
+   *
+   * @param newVertexRequest 新增实体请求
+   * @return 实体
+   */
   @Operation(summary = "新增实体")
   @PostMapping
   @SneakyThrows
   @Transactional("bizTransactionManager")
-  public Vertex newVertex(@Valid @RequestBody NewVertexRequest request) {
+  public Vertex newVertex(@Valid @RequestBody NewVertexRequest newVertexRequest) {
 
-    request.setName(StrUtil.trim(request.getName()));
+    newVertexRequest.setName(StrUtil.trim(newVertexRequest.getName()));
 
-    final var existsOntology = ontologyRepository.existsByName(request.getType());
+    final var existsOntology = ontologyRepository.existsByName(newVertexRequest.getType());
     if (!existsOntology) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在");
     }
 
     final var existsVertex = vertexRepository
-        .existsByNameAndType(request.getName(), request.getType());
+        .existsByNameAndType(newVertexRequest.getName(), newVertexRequest.getType());
     if (existsVertex) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "实体已存在");
     }
 
-    return vertexService.newVertex(request);
+    return vertexService.newVertex(newVertexRequest);
   }
 
+  /**
+   * 修改实体
+   *
+   * @param id   实体ID
+   * @param name 实体名称
+   * @return 实体
+   */
   @Operation(summary = "修改实体")
   @PutMapping("{id}")
   @SneakyThrows
@@ -157,6 +194,11 @@ public class VertexController {
     return vertexService.updateVertex(id, name);
   }
 
+  /**
+   * 删除实体
+   *
+   * @param id 实体ID
+   */
   @Operation(summary = "删除实体")
   @DeleteMapping("{id}")
   @SneakyThrows
@@ -166,6 +208,11 @@ public class VertexController {
     vertexService.deleteVertex(id);
   }
 
+  /**
+   * 批量删除实体
+   *
+   * @param vertexIds 实体ID列表
+   */
   @Operation(summary = "批量删除实体")
   @DeleteMapping("batch")
   @Transactional("bizTransactionManager")
@@ -174,6 +221,12 @@ public class VertexController {
     vertexService.deleteVertices(vertexIds);
   }
 
+  /**
+   * 获取实体属性
+   *
+   * @param id 实体ID
+   * @return 实体属性
+   */
   @Operation(summary = "获取实体属性")
   @GetMapping("/{id}/property")
   public Collection<Property> getVertexProperties(@PathVariable String id) {
@@ -191,6 +244,13 @@ public class VertexController {
     return properties.values();
   }
 
+  /**
+   * 新增实体属性
+   *
+   * @param id                 实体ID
+   * @param key                属性键
+   * @param newPropertyRequest 新增属性请求
+   */
   @Operation(summary = "添加实体属性")
   @PostMapping(path = "{id}/property")
   @SneakyThrows
@@ -230,12 +290,18 @@ public class VertexController {
     vertexService.newProperty(vertex, newPropertyRequest);
   }
 
+  /**
+   * 批量修改属性
+   *
+   * @param id                     实体ID
+   * @param updatePropertyRequests 属性修改请求
+   */
   @Operation(summary = "批量修改属性")
   @PutMapping("{id}/property")
   @SneakyThrows
   @Transactional("bizTransactionManager")
   public void updateProperties(@PathVariable String id,
-      @Valid @RequestBody List<UpdatePropertyRequest> requests) {
+      @Valid @RequestBody List<UpdatePropertyRequest> updatePropertyRequests) {
 
     final var vertex = vertexService.getVertex(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
@@ -246,7 +312,7 @@ public class VertexController {
     final var username = JwtHelper.getUsername();
 
     final var ontologyProperties = new HashMap<String, Boolean>();
-    requests.forEach(request -> {
+    updatePropertyRequests.forEach(request -> {
       if (null == ontologyProperties.get(request.getKey())) {
         ontologyService.getProperty(ontology, request.getKey())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体属性不存在"));
@@ -260,9 +326,17 @@ public class VertexController {
       request.setCreator(username);
     });
 
-    requests.forEach(request -> vertexService.updateProperty(vertex, request));
+    updatePropertyRequests.forEach(request -> vertexService.updateProperty(vertex, request));
   }
 
+  /**
+   * 删除实体属性
+   *
+   * @param id    实体ID
+   * @param key   属性键
+   * @param value 属性值
+   * @param mode  模式
+   */
   @Operation(summary = "删除实体属性")
   @DeleteMapping("{id}/property")
   @Transactional("bizTransactionManager")
@@ -281,12 +355,19 @@ public class VertexController {
     vertexService.deletePropertyValue(vertex, key, value, mode);
   }
 
+  /**
+   * 新增关系
+   *
+   * @param id              主语ID
+   * @param outId           宾语ID
+   * @param newEdgeRequests 新增关系请求
+   */
   @Operation(summary = "插入关系")
   @PostMapping("{id}/edge/{outId}")
   @SneakyThrows
   @Transactional("bizTransactionManager")
   public void newEdge(@PathVariable String id, @PathVariable String outId,
-      @Valid @RequestBody List<NewEdgeRequest> requests) {
+      @Valid @RequestBody List<NewEdgeRequest> newEdgeRequests) {
 
     if (id.equals(outId)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自身建立关系");
@@ -300,18 +381,25 @@ public class VertexController {
 
     final var username = JwtHelper.getUsername();
 
-    requests.forEach(request -> {
+    newEdgeRequests.forEach(request -> {
       request.setCreator(username);
       vertexService.newEdge(inVertex, outVertex, request);
     });
   }
 
+  /**
+   * 修改关系
+   *
+   * @param id                主语ID
+   * @param outId             宾语ID
+   * @param updateEdgeRequest 修改关系请求
+   */
   @Operation(summary = "修改关系")
   @PutMapping("{id}/edge/{outId}")
   @SneakyThrows
   @Transactional("bizTransactionManager")
   public void updateEdge(@PathVariable String id, @PathVariable String outId,
-      @Valid @RequestBody UpdateEdgeRequest request) {
+      @Valid @RequestBody UpdateEdgeRequest updateEdgeRequest) {
 
     if (id.equals(outId)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "实体不能和自己建立关系");
@@ -324,38 +412,48 @@ public class VertexController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
 
     Edge oldEdge;
-    if (StrUtil.isNotBlank(request.getOldId())) {
-      final var oldOutVertex = vertexService.getVertex(request.getOldId())
+    if (StrUtil.isNotBlank(updateEdgeRequest.getOldId())) {
+      final var oldOutVertex = vertexService.getVertex(updateEdgeRequest.getOldId())
           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
       oldEdge = vertexService
-          .getEdge(request.getOldName(), inVertex, oldOutVertex, request.getScope())
+          .getEdge(updateEdgeRequest.getOldName(), inVertex, oldOutVertex,
+              updateEdgeRequest.getScope())
           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     } else {
       oldEdge = vertexService
-          .getEdge(request.getOldName(), inVertex, outVertex, request.getScope())
+          .getEdge(updateEdgeRequest.getOldName(), inVertex, outVertex,
+              updateEdgeRequest.getScope())
           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
     }
 
     final var newEdge = vertexService
-        .getEdge(request.getNewName(), inVertex, outVertex, request.getScope())
+        .getEdge(updateEdgeRequest.getNewName(), inVertex, outVertex, updateEdgeRequest.getScope())
         .orElse(null);
 
     if (null != newEdge && newEdge.equals(oldEdge)) {
-      request.setCreator(JwtHelper.getUsername());
-      vertexService.updateEdge(oldEdge, request);
+      updateEdgeRequest.setCreator(JwtHelper.getUsername());
+      vertexService.updateEdge(oldEdge, updateEdgeRequest);
     } else {
       vertexService.deleteEdge(oldEdge);
       final var newEdgeRequest = new NewEdgeRequest();
       newEdgeRequest.setCreator(JwtHelper.getUsername());
-      newEdgeRequest.setName(request.getNewName());
-      newEdgeRequest.setContent(request.getContent());
-      newEdgeRequest.setDatasourceId(request.getDatasourceId());
-      newEdgeRequest.setFeatures(request.getFeatures());
-      newEdgeRequest.setScope(request.getScope());
+      newEdgeRequest.setName(updateEdgeRequest.getNewName());
+      newEdgeRequest.setContent(updateEdgeRequest.getContent());
+      newEdgeRequest.setDatasourceId(updateEdgeRequest.getDatasourceId());
+      newEdgeRequest.setFeatures(updateEdgeRequest.getFeatures());
+      newEdgeRequest.setScope(updateEdgeRequest.getScope());
       vertexService.newEdge(inVertex, outVertex, newEdgeRequest);
     }
   }
 
+  /**
+   * 删除关系
+   *
+   * @param id    主语ID
+   * @param outId 宾语ID
+   * @param name  关系名
+   * @param scope 作用域
+   */
   @Operation(summary = "删除关系")
   @DeleteMapping("{id}/edge/{outId}")
   @Transactional("bizTransactionManager")
@@ -373,6 +471,16 @@ public class VertexController {
         });
   }
 
+  /**
+   * 新增关系属性
+   *
+   * @param id                 主语ID
+   * @param outId              宾语ID
+   * @param name               关系名
+   * @param scope              作用域
+   * @param key                属性键
+   * @param newPropertyRequest 新增属性请求
+   */
   @Operation(summary = "新增关系属性")
   @PostMapping(path = "{id}/edge/{outId}/property")
   @SneakyThrows
@@ -392,13 +500,22 @@ public class VertexController {
     vertexService.newProperty(edge, newPropertyRequest);
   }
 
+  /**
+   * 修改关系属性
+   *
+   * @param id                     主语ID
+   * @param outId                  宾语ID
+   * @param scope                  作用域
+   * @param name                   关系名
+   * @param updatePropertyRequests 修改属性请求
+   */
   @Operation(summary = "修改关系属性")
   @PutMapping("{id}/edge/{outId}/property")
   @SneakyThrows
   @Transactional("bizTransactionManager")
   public void updateEdgeProperties(@PathVariable String id, @PathVariable String outId,
       @RequestParam(defaultValue = "default") String scope, @RequestParam String name,
-      @Valid @RequestBody List<UpdatePropertyRequest> requests) {
+      @Valid @RequestBody List<UpdatePropertyRequest> updatePropertyRequests) {
 
     final var inVertex = vertexService.getVertex(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
@@ -408,12 +525,23 @@ public class VertexController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在"));
 
     final var username = JwtHelper.getUsername();
-    requests.forEach(updatePropertyRequest -> {
+    updatePropertyRequests.forEach(updatePropertyRequest -> {
       updatePropertyRequest.setCreator(username);
       vertexService.updateProperty(edge, updatePropertyRequest);
     });
   }
 
+  /**
+   * 删除关系属性
+   *
+   * @param id    主语ID
+   * @param outId 宾语ID
+   * @param key   属性键
+   * @param value 属性值
+   * @param name  关系名
+   * @param scope 作用域
+   * @param mode  模式
+   */
   @Operation(summary = "删除关系属性")
   @DeleteMapping("{id}/edge/{outId}/property")
   @Transactional("bizTransactionManager")
@@ -434,6 +562,16 @@ public class VertexController {
     vertexService.deleteProperty(edge, key, value, mode);
   }
 
+  /**
+   * 根据实体属性知识查询属性证据
+   *
+   * @param id       实体ID
+   * @param key      属性键
+   * @param value    属性值
+   * @param mode     模式
+   * @param pageable 分页
+   * @return 属性证据
+   */
   @Operation(summary = "根据实体属性知识查询属性证据")
   @GetMapping("/{id}/property/evidence")
   public Page<Evidence> getEvidenceByPropertyValue(@PathVariable String id,
@@ -450,6 +588,19 @@ public class VertexController {
     return vertexService.getEvidences(vertex, key, value, mode, pageable);
   }
 
+  /**
+   * 根据关系属性知识查询属性证据
+   *
+   * @param id       主语ID
+   * @param outId    宾语ID
+   * @param name     关系名
+   * @param key      属性键
+   * @param value    属性值
+   * @param scope    作用域
+   * @param mode     模式
+   * @param pageable 分页
+   * @return 属性证据
+   */
   @Operation(summary = "根据关系属性知识查询属性证据")
   @GetMapping("{id}/edge/{outId}/property/evidence")
   public Page<Evidence> getEvidenceByEdgePropertyValue(@PathVariable String id,
@@ -471,6 +622,14 @@ public class VertexController {
     return vertexService.getEvidences(edge, key, value, mode, pageable);
   }
 
+  /**
+   * 为属性值添加证据
+   *
+   * @param id                 实体ID
+   * @param key                属性键
+   * @param value              属性值
+   * @param newEvidenceRequest 新增证据请求
+   */
   @Operation(summary = "为属性值添加证据")
   @PostMapping("{id}/property/evidence")
   @SneakyThrows
@@ -488,6 +647,15 @@ public class VertexController {
     vertexService.addEvidence(propertyValue, newEvidenceRequest);
   }
 
+  /**
+   * 为关系添加证据
+   *
+   * @param id                 主语ID
+   * @param outId              宾语ID
+   * @param name               关系名
+   * @param scope              作用域
+   * @param newEvidenceRequest 新增证据请求
+   */
   @Operation(summary = "为关系添加证据")
   @PostMapping("{id}/edge/{outId}/evidence")
   @SneakyThrows
@@ -506,6 +674,11 @@ public class VertexController {
     vertexService.addEvidence(edge, newEvidenceRequest);
   }
 
+  /**
+   * 获取导入模板
+   *
+   * @return 模板文件
+   */
   @Operation(summary = "获取导入模板")
   @PostMapping("import/template")
   @SneakyThrows
@@ -519,6 +692,12 @@ public class VertexController {
     return new ResponseEntity<>(new InputStreamResource(inputStream), headers, HttpStatus.OK);
   }
 
+  /**
+   * 导入实体
+   *
+   * @param importVertexRequest 导入实体请求
+   * @return 操作响应
+   */
   @Operation(summary = "导入实体")
   @PostMapping("import")
   @SneakyThrows
@@ -527,6 +706,11 @@ public class VertexController {
     return bizBatchServiceClient.launchImportVertexJob(importVertexRequest);
   }
 
+  /**
+   * 统计实体关系
+   *
+   * @return 实体关系数量
+   */
   @Operation(summary = "统计实体关系")
   @GetMapping("statistics/edge")
   public Long getStatisticsEdge() {
@@ -534,6 +718,12 @@ public class VertexController {
     return vertexService.countEdges();
   }
 
+  /**
+   * 统计实体
+   *
+   * @param level 所属层次
+   * @return 实体数量
+   */
   @Operation(summary = "统计实体")
   @GetMapping("statistics/level")
   public Long getStatistics(@RequestParam(required = false, defaultValue = "") String level) {

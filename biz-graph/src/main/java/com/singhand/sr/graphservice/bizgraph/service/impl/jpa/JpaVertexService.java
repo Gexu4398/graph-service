@@ -152,32 +152,32 @@ public class JpaVertexService implements VertexService {
   }
 
   @Override
-  public Vertex newVertex(@Nonnull NewVertexRequest request) {
+  public Vertex newVertex(@Nonnull NewVertexRequest newVertexRequest) {
 
-    final var name = StrUtil.trim(request.getName());
+    final var name = StrUtil.trim(newVertexRequest.getName());
 
     final var vertex = new Vertex();
     vertex.setName(name);
-    vertex.setType(request.getType());
-    vertex.setHierarchyLevel(request.getHierarchyLevel());
+    vertex.setType(newVertexRequest.getType());
+    vertex.setHierarchyLevel(newVertexRequest.getHierarchyLevel());
     final var managedVertex = vertexRepository.save(vertex);
 
     neo4jVertexService.newVertex(managedVertex);
 
     Datasource datasource;
-    if (null != request.getDatasourceId()) {
-      datasource = getDatasource(request);
+    if (null != newVertexRequest.getDatasourceId()) {
+      datasource = getDatasource(newVertexRequest);
     } else {
       datasource = null;
     }
 
-    request.getProps().forEach((k, v) -> {
+    newVertexRequest.getProps().forEach((k, v) -> {
       final var newPropertyRequest = new NewPropertyRequest();
       newPropertyRequest.setKey(k);
       newPropertyRequest.setValue(v);
-      newPropertyRequest.setContent(request.getContent());
+      newPropertyRequest.setContent(newVertexRequest.getContent());
       newPropertyRequest.setDatasourceId(null == datasource ? null : datasource.getID());
-      newPropertyRequest.setCreator(request.getCreator());
+      newPropertyRequest.setCreator(newVertexRequest.getCreator());
       newProperty(managedVertex, newPropertyRequest);
     });
 

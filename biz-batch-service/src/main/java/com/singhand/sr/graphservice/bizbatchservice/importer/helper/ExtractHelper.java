@@ -29,6 +29,14 @@ public class ExtractHelper {
     this.pdfConverter = new PdfConverter(s3PictureManager);
   }
 
+  /**
+   * 提取文件内容
+   *
+   * @param tempFilename      临时文件名
+   * @param datasourceContent 数据源内容
+   * @return 文件内容
+   * @throws Exception 异常
+   */
   public List<String> extractFile(String tempFilename, DatasourceContent datasourceContent)
       throws Exception {
 

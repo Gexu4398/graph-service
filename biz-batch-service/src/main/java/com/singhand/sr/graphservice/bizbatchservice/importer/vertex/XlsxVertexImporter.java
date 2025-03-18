@@ -13,6 +13,7 @@ import com.singhand.sr.graphservice.bizbatchservice.model.ImportVertexItem.Verte
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
@@ -42,15 +43,19 @@ public class XlsxVertexImporter implements VertexImporter {
 
   private final RelationInstanceRepository relationInstanceRepository;
 
+  private final OntologyPropertyRepository ontologyPropertyRepository;
+
   public XlsxVertexImporter(VertexService vertexService, VertexRepository vertexRepository,
       OntologyRepository ontologyRepository, RelationModelRepository relationModelRepository,
-      RelationInstanceRepository relationInstanceRepository) {
+      RelationInstanceRepository relationInstanceRepository,
+      OntologyPropertyRepository ontologyPropertyRepository) {
 
     this.vertexService = vertexService;
     this.vertexRepository = vertexRepository;
     this.ontologyRepository = ontologyRepository;
     this.relationModelRepository = relationModelRepository;
     this.relationInstanceRepository = relationInstanceRepository;
+    this.ontologyPropertyRepository = ontologyPropertyRepository;
   }
 
   @Override
@@ -82,6 +87,13 @@ public class XlsxVertexImporter implements VertexImporter {
     return vertexItem;
   }
 
+  /**
+   * 处理实体工作表
+   *
+   * @param workbook 工作簿
+   * @param sheet    工作表
+   * @param vertices 顶点列表
+   */
   private void processEntitySheet(@Nonnull Workbook workbook, @Nonnull XSSFSheet sheet,
       List<VertexItem> vertices) {
 
@@ -130,9 +142,15 @@ public class XlsxVertexImporter implements VertexImporter {
         if (null == cell) {
           continue;
         }
-        final var header = headers.get(i);
+        final var key = headers.get(i);
         final var value = getCellValue(workbook, cell);
         if (StrUtil.isBlank(value)) {
+          continue;
+        }
+
+        final var exists = ontologyPropertyRepository.existsByOntology_NameAndName(type, key);
+        if (!exists) {
+          log.warn("实体 {} 的属性 {} 不存在, 已跳过", type, key);
           continue;
         }
 
@@ -140,7 +158,7 @@ public class XlsxVertexImporter implements VertexImporter {
         final var values = Arrays.stream(strings).map(String::trim).toList();
 
         final var propertyItem = new PropertyItem();
-        propertyItem.setKey(header);
+        propertyItem.setKey(key);
         propertyItem.setValue(values);
         vertexItem.getProperties().add(propertyItem);
       }
@@ -148,6 +166,13 @@ public class XlsxVertexImporter implements VertexImporter {
     }
   }
 
+  /**
+   * 处理关系工作表
+   *
+   * @param workbook  工作簿
+   * @param sheet     工作表
+   * @param relations 关系列表
+   */
   private void processRelationSheet(@Nonnull Workbook workbook, @Nonnull XSSFSheet sheet,
       List<RelationItem> relations) {
 
@@ -250,6 +275,13 @@ public class XlsxVertexImporter implements VertexImporter {
     }
   }
 
+  /**
+   * 获取实体
+   *
+   * @param name 名称
+   * @param type 类型
+   * @return 实体
+   */
   private Vertex getVertex(String name, String type) {
 
     if (!ontologyRepository.existsByName(type)) {

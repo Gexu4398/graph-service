@@ -120,6 +120,12 @@ public class ImportVertexTasklet implements Tasklet {
     return RepeatStatus.FINISHED;
   }
 
+  /**
+   * 导入关系
+   *
+   * @param importData 导入数据
+   * @return 关系
+   */
   private @Nonnull List<Edge> importRelations(@Nonnull ImportVertexItem importData) {
 
     final var edges = new LinkedList<Edge>();
@@ -150,6 +156,12 @@ public class ImportVertexTasklet implements Tasklet {
     return edges;
   }
 
+  /**
+   * 导入实体
+   *
+   * @param importData 导入数据
+   * @return 实体
+   */
   private @Nonnull Map<String, Vertex> importVertices(@Nonnull ImportVertexItem importData) {
 
     final var vertexMap = new HashMap<String, Vertex>();
@@ -196,6 +208,12 @@ public class ImportVertexTasklet implements Tasklet {
     return vertexMap;
   }
 
+  /**
+   * 获取实体
+   *
+   * @param vertexItem 实体
+   * @return 实体
+   */
   private Vertex getVertex(@Nonnull VertexItem vertexItem) {
 
     final var name = vertexItem.getName();

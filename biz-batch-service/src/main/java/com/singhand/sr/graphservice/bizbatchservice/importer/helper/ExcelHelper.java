@@ -30,6 +30,12 @@ public interface ExcelHelper {
     };
   }
 
+  /**
+   * 获取标题
+   * @param workbook 工作簿
+   * @param row 行
+   * @return 标题
+   */
   static @Nonnull Map<Integer, String> getHeaders(@Nonnull Workbook workbook, @Nonnull Row row) {
 
     final var headers = new HashMap<Integer, String>();

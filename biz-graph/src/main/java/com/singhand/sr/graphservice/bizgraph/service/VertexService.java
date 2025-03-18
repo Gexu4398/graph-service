@@ -28,10 +28,10 @@ public interface VertexService {
   /**
    * 创建一个新的顶点。
    *
-   * @param request 新顶点请求对象
+   * @param newVertexRequest 新顶点请求对象
    * @return 创建的顶点对象
    */
-  Vertex newVertex(NewVertexRequest request);
+  Vertex newVertex(NewVertexRequest newVertexRequest);
 
   /**
    * 根据ID获取顶点。
