@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizservice.service;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.ChatClient;
@@ -52,7 +53,7 @@ public class GraphRagService {
     final var promptText = String.format(
         """
             你是一个知识图谱问答助手。基于以下上下文信息回答用户问题。
-    
+            
             回答规则：
             1. 如果是查询某个节点的属性或基本信息，直接提供相关信息
             2. 如果上下文中没有直接相关信息，尝试通过已知关系进行推理
@@ -62,15 +63,16 @@ public class GraphRagService {
             4. 如果确实无法回答，请明确说明"根据已有信息无法回答该问题"
             5. 回答要简洁清晰，突出重点
             6. 对于关键实体，请在回答中包含其ID和类型，便于用户进一步查询
-    
+            
             上下文信息:
             %s
-    
+            
             用户问题: %s""",
         contextContent, userQuery);
 
     final var prompt = new Prompt(new UserMessage(promptText));
 
-    return chatClient.prompt(prompt).call().content();
+    final var flux = chatClient.prompt(prompt).stream().content();
+    return String.join("", Objects.requireNonNull(flux.collectList().block()));
   }
 }
