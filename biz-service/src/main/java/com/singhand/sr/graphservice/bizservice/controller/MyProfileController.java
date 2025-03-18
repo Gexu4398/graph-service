@@ -28,6 +28,12 @@ public class MyProfileController {
     this.keycloakUserService = keycloakUserService;
   }
 
+  /**
+   * 修改用户信息
+   *
+   * @param user 用户信息
+   * @return 用户信息
+   */
   @PutMapping
   @Operation(summary = "修改用户信息")
   @PreAuthorize("isAuthenticated()")
@@ -36,6 +42,11 @@ public class MyProfileController {
     return keycloakUserService.updateProfile(user);
   }
 
+  /**
+   * 修改密码
+   *
+   * @param request 修改密码请求
+   */
   @PostMapping("reset-password")
   @Operation(summary = "修改密码")
   @PreAuthorize("isAuthenticated()")

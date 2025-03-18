@@ -63,6 +63,13 @@ public class DatasourceController {
     this.vertexRepository = vertexRepository;
   }
 
+  /**
+   * 查看数据源
+   *
+   * @param id       数据源ID
+   * @param hideHtml 是否隐藏HTML内容
+   * @return 数据源
+   */
   @GetMapping("/{id}")
   @Operation(summary = "查看数据源")
   public DatasourceResponse getDatasource(@PathVariable Long id,
@@ -81,6 +88,14 @@ public class DatasourceController {
     return datasourceService.updateImageElements(datasourceResponse);
   }
 
+  /**
+   * 查询数据源列表
+   *
+   * @param keyword  关键字
+   * @param hideHtml 是否隐藏HTML内容
+   * @param pageable 分页
+   * @return 数据源列表
+   */
   @GetMapping
   @Operation(summary = "查询数据源列表")
   @SneakyThrows
@@ -113,6 +128,12 @@ public class DatasourceController {
     return new PageImpl<>(content, pageable, page.getTotalElements());
   }
 
+  /**
+   * 导入数据源
+   *
+   * @param datasources 数据源集合
+   * @return 操作结果
+   */
   @PostMapping
   @Operation(summary = "导入数据源")
   @SneakyThrows
@@ -134,6 +155,13 @@ public class DatasourceController {
     throw new ResponseStatusException(HttpStatus.CONFLICT, "已经有数据源正在上传中");
   }
 
+  /**
+   * 建立实体与数据源关联
+   *
+   * @param id       数据源ID
+   * @param vertexId 实体ID
+   * @return 数据源
+   */
   @PostMapping("{id}/vertex/{vertexId}")
   @Operation(summary = "建立实体与数据源关联")
   @Transactional("bizTransactionManager")
@@ -146,6 +174,13 @@ public class DatasourceController {
     return datasourceService.attachVertex(datasource, vertex);
   }
 
+  /**
+   * 解除实体与数据源关联
+   *
+   * @param id       数据源ID
+   * @param vertexId 实体ID
+   * @return 数据源
+   */
   @DeleteMapping("{id}/vertex/{vertexId}")
   @Operation(summary = "解除实体与数据源关联")
   @Transactional("bizTransactionManager")
@@ -160,6 +195,11 @@ public class DatasourceController {
     return datasourceService.detachVertex(datasource, vertex);
   }
 
+  /**
+   * 删除数据源
+   *
+   * @param id 数据源ID
+   */
   @DeleteMapping("{id}")
   @Operation(summary = "删除数据源")
   @Transactional("bizTransactionManager")
@@ -168,6 +208,13 @@ public class DatasourceController {
     datasourceService.deleteDatasource(id);
   }
 
+  /**
+   * 数据源关联实体列表
+   *
+   * @param id       数据源ID
+   * @param pageable 分页
+   * @return 实体列表
+   */
   @GetMapping("{id}/vertex")
   @Operation(summary = "数据源关联实体列表")
   public Page<Vertex> getVertices(@PathVariable Long id, Pageable pageable) {
@@ -178,6 +225,11 @@ public class DatasourceController {
     return vertexRepository.findByDatasources_ID(datasource.getID(), pageable);
   }
 
+  /**
+   * 查询正在导入的数据源
+   *
+   * @return 任务集合
+   */
   @GetMapping("importing")
   @Operation(summary = "查询正在导入的数据源")
   @SneakyThrows

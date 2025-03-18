@@ -62,6 +62,12 @@ public class OntologyController {
     this.ontologyPropertyRepository = ontologyPropertyRepository;
   }
 
+  /**
+   * 获取本体详情
+   *
+   * @param id 本体ID
+   * @return 本体
+   */
   @Operation(summary = "获取本体详情")
   @GetMapping(path = "{id}")
   public Ontology getOntology(@PathVariable Long id) {
@@ -70,6 +76,13 @@ public class OntologyController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
   }
 
+  /**
+   * 查询本体
+   *
+   * @param keyword  关键字
+   * @param pageable 分页
+   * @return 本体列表
+   */
   @Operation(summary = "查询本体")
   @GetMapping
   public Page<Ontology> getOntologies(
@@ -79,6 +92,13 @@ public class OntologyController {
     return ontologyService.getOntologies(keyword, pageable);
   }
 
+  /**
+   * 新增本体
+   *
+   * @param name     本体名称
+   * @param parentId 父本体ID
+   * @return 本体
+   */
   @Operation(summary = "新增本体")
   @PostMapping
   @SneakyThrows
@@ -89,6 +109,13 @@ public class OntologyController {
     return ontologyService.newOntology(name, parentId);
   }
 
+  /**
+   * 修改本体
+   *
+   * @param id   本体ID
+   * @param name 本体名称
+   * @return 本体
+   */
   @Operation(summary = "修改本体")
   @PutMapping("{id}")
   @SneakyThrows
@@ -109,6 +136,11 @@ public class OntologyController {
     return managedOntology;
   }
 
+  /**
+   * 删除本体
+   *
+   * @param id 本体ID
+   */
   @Operation(summary = "删除本体")
   @DeleteMapping("{id}")
   @SneakyThrows
@@ -125,6 +157,13 @@ public class OntologyController {
     vertexService.batchDeleteVertex(ontologyNames);
   }
 
+  /**
+   * 获取本体属性
+   *
+   * @param id       本体ID
+   * @param pageable 分页
+   * @return 本体属性
+   */
   @Operation(summary = "获取本体属性")
   @GetMapping("{id}/property")
   @SneakyThrows
@@ -136,6 +175,12 @@ public class OntologyController {
     return ontologyService.getProperties(ontology, pageable);
   }
 
+  /**
+   * 新增本体属性
+   *
+   * @param id      本体ID
+   * @param request 新增本体属性请求
+   */
   @Operation(summary = "新增本体属性")
   @PostMapping("{id}/property")
   @SneakyThrows
@@ -149,6 +194,12 @@ public class OntologyController {
     ontologyService.newOntologyProperty(ontology, request);
   }
 
+  /**
+   * 修改本体属性
+   *
+   * @param id      本体ID
+   * @param request 修改本体属性请求
+   */
   @Operation(summary = "修改本体属性")
   @PutMapping("{id}/property")
   @SneakyThrows
@@ -165,6 +216,12 @@ public class OntologyController {
         request.getNewName());
   }
 
+  /**
+   * 删除本体属性
+   *
+   * @param id      本体ID
+   * @param request 删除本体属性请求
+   */
   @Operation(summary = "删除本体属性")
   @DeleteMapping("{id}/property")
   @SneakyThrows
@@ -185,6 +242,12 @@ public class OntologyController {
     keys.forEach(it -> vertexService.batchDeleteVertexProperty(ontology.getName(), it));
   }
 
+  /**
+   * 获取本体树
+   *
+   * @param id 本体ID
+   * @return 本体树
+   */
   @Operation(summary = "获取本体树")
   @GetMapping(path = "tree")
   @SneakyThrows
@@ -193,6 +256,13 @@ public class OntologyController {
     return ontologyService.getTree(id);
   }
 
+  /**
+   * 获取本体关系
+   *
+   * @param id       本体ID
+   * @param pageable 分页
+   * @return 本体关系
+   */
   @Operation(summary = "获取本体关系")
   @GetMapping("{id}/relation")
   @SneakyThrows
@@ -204,6 +274,14 @@ public class OntologyController {
     return ontologyService.getRelations(ontology, pageable);
   }
 
+  /**
+   * 新增本体关系
+   *
+   * @param id    主语本体ID
+   * @param outId 宾语本体ID
+   * @param name  关系名称
+   * @return 本体关系
+   */
   @Operation(summary = "新增本体关系")
   @PostMapping("{id}/relation/{outId}")
   @SneakyThrows
@@ -223,6 +301,15 @@ public class OntologyController {
     return ontologyService.newRelation(relationModel.getName(), inOntology, outOntology);
   }
 
+  /**
+   * 修改本体关系
+   *
+   * @param id      主语本体ID
+   * @param outId   宾语本体ID
+   * @param name    旧关系名称
+   * @param newName 新关系名称
+   * @return 本体关系
+   */
   @Operation(summary = "修改本体关系")
   @PutMapping("{id}/relation/{outId}")
   @SneakyThrows
@@ -250,6 +337,13 @@ public class OntologyController {
     return relationInstance;
   }
 
+  /**
+   * 删除本体关系
+   *
+   * @param id    主语本体ID
+   * @param outId 宾语本体ID
+   * @param name  关系名称
+   */
   @Operation(summary = "删除本体关系")
   @DeleteMapping("{id}/relation/{outId}")
   @SneakyThrows

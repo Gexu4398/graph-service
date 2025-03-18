@@ -25,6 +25,13 @@ public class OperationController {
     this.bizBatchServiceClient = bizBatchServiceClient;
   }
 
+  /**
+   * 根据id获取任务执行状态
+   *
+   * @param id 任务id
+   * @return 任务执行状态
+   */
+  @Operation(summary = "根据id获取任务执行状态")
   @GetMapping("{id}")
   @PreAuthorize("isAuthenticated()")
   public OperationResponse getJobExecution(@PathVariable Long id) {
@@ -32,6 +39,14 @@ public class OperationController {
     return bizBatchServiceClient.getExecutionStatus(id);
   }
 
+  /**
+   * 根据任务名称和uuid获取任务执行状态
+   *
+   * @param name 任务名称
+   * @param uuid uuid
+   * @return 任务执行状态
+   */
+  @Operation(summary = "根据任务名称和uuid获取任务执行状态")
   @GetMapping("{name}/uuid/{uuid}")
   @PreAuthorize("isAuthenticated()")
   public OperationResponse getJobExecutionByJobNameAndUuid(@PathVariable String name,
@@ -40,6 +55,11 @@ public class OperationController {
     return bizBatchServiceClient.getExecutionStatusByJobNameAndUuid(name, uuid);
   }
 
+  /**
+   * 停止并移除任务
+   *
+   * @param id 任务id
+   */
   @Operation(summary = "停止并移除任务")
   @PostMapping("{id}/stop:remove")
   @PreAuthorize("isAuthenticated()")

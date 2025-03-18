@@ -39,6 +39,12 @@ public class RelationModelController {
     this.vertexService = vertexService;
   }
 
+  /**
+   * 获取关系模型详情
+   *
+   * @param id 关系模型ID
+   * @return 关系模型
+   */
   @Operation(summary = "获取关系模型详情")
   @GetMapping(path = "{id}")
   public RelationModel getRelationModel(@PathVariable Long id) {
@@ -47,6 +53,12 @@ public class RelationModelController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "关系模型不存在"));
   }
 
+  /**
+   * 查询关系模型
+   *
+   * @param keyword 关系模型名称
+   * @return 关系模型列表
+   */
   @Operation(summary = "查询关系模型")
   @GetMapping
   public List<RelationModel> getRelationModels(
@@ -55,6 +67,12 @@ public class RelationModelController {
     return relationModelService.getRelationModels(keyword);
   }
 
+  /**
+   * 新增关系模型
+   *
+   * @param name 关系模型名称
+   * @return 关系模型
+   */
   @Operation(summary = "新增关系模型")
   @PostMapping
   @SneakyThrows
@@ -64,6 +82,13 @@ public class RelationModelController {
     return relationModelService.newRelationModel(name);
   }
 
+  /**
+   * 修改关系模型
+   *
+   * @param id   关系模型ID
+   * @param name 关系模型名称
+   * @return 关系模型
+   */
   @Operation(summary = "修改关系模型")
   @PutMapping("{id}")
   @SneakyThrows
@@ -80,6 +105,11 @@ public class RelationModelController {
     return managedRelationModel;
   }
 
+  /**
+   * 删除关系模型
+   *
+   * @param id 关系模型ID
+   */
   @Operation(summary = "删除关系模型")
   @DeleteMapping("{id}")
   @SneakyThrows
