@@ -98,19 +98,21 @@ public class ImportVertexTasklet implements Tasklet {
         .filename(tempFilename)
         .build());
 
-    final var extName = FileNameUtil.extName(tempFilename).toLowerCase();
-
-    final var importer = vertexImporters.stream()
-        .filter(it -> it.supports(tempFilename))
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException("不支持的文件格式：" + extName));
-
     try {
+      final var extName = FileNameUtil.extName(tempFilename).toLowerCase();
+
+      final var importer = vertexImporters.stream()
+          .filter(it -> it.supports(tempFilename))
+          .findFirst()
+          .orElseThrow(() -> new RuntimeException("不支持的文件格式：" + extName));
+
       final var importData = importer.importFromFile(tempFilename);
       final var vertexMap = importVertices(importData);
       log.info("已成功导入 {} 个实体", vertexMap.size());
       final var edges = importRelations(importData);
       log.info("已成功导入 {} 条关系", edges.size());
+    } catch (Exception e) {
+      log.error("导入数据出现异常", e);
     } finally {
       FileUtil.del(tempFilename);
     }
