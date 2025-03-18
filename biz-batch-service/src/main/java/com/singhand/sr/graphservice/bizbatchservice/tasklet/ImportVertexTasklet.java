@@ -120,7 +120,7 @@ public class ImportVertexTasklet implements Tasklet {
     return RepeatStatus.FINISHED;
   }
 
-  private List<Edge> importRelations(@Nonnull ImportVertexItem importData) {
+  private @Nonnull List<Edge> importRelations(@Nonnull ImportVertexItem importData) {
 
     final var edges = new LinkedList<Edge>();
 
@@ -150,7 +150,7 @@ public class ImportVertexTasklet implements Tasklet {
     return edges;
   }
 
-  private Map<String, Vertex> importVertices(@Nonnull ImportVertexItem importData) {
+  private @Nonnull Map<String, Vertex> importVertices(@Nonnull ImportVertexItem importData) {
 
     final var vertexMap = new HashMap<String, Vertex>();
 
