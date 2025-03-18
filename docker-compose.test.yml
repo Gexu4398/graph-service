@@ -67,6 +67,7 @@ services:
   keycloak:
     image: keycloak/keycloak:26.1.4
     environment:
+      - JAVA_OPTS_KC_HEAP=-XX:MaxHeapFreeRatio=40 -XX:MaxRAMPercentage=70
       - BASE_URL=http://localhost/
       - APP_NAME=xxxx平台
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
