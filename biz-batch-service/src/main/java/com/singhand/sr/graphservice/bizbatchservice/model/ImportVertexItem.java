@@ -60,6 +60,7 @@ public class ImportVertexItem {
 
     private VertexItem outVertex;
 
+    @Default
     private List<PropertyItem> properties = new LinkedList<>();
   }
 }
