@@ -16,8 +16,10 @@ import lombok.Setter;
 @Builder
 public class ImportVertexItem {
 
+  @Default
   private List<VertexItem> entities = new LinkedList<>();
 
+  @Default
   private List<RelationItem> relations = new LinkedList<>();
 
   @Setter
@@ -44,6 +46,7 @@ public class ImportVertexItem {
 
     private String key;
 
+    @Default
     private List<String> value = new LinkedList<>();
   }
 
