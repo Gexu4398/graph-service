@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,6 +15,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Exclude;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.neo4j.core.schema.CompositeProperty;
 import org.springframework.data.neo4j.core.schema.Id;
@@ -51,12 +54,18 @@ public class VertexNode {
   @CompositeProperty
   @Default
   @Exclude
-  private Map<String,Set<String>> properties = new HashMap<>();
+  private Map<String, Set<String>> properties = new HashMap<>();
 
   @Relationship(type = "CONNECTED_TO", direction = Relationship.Direction.OUTGOING)
   @Default
   @Exclude
   private Set<EdgeRelation> edges = new HashSet<>();
+
+  @CreatedDate
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
   @Override
   public boolean equals(Object o) {

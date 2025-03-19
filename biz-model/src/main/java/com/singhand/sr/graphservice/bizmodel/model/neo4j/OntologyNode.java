@@ -1,6 +1,8 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Version;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -12,6 +14,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Exclude;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
@@ -38,12 +42,20 @@ public class OntologyNode {
 
   @Relationship(type = "CHILD_OF", direction = Direction.OUTGOING)
   @Default
+  @Exclude
   private Set<OntologyNode> children = new HashSet<>();
 
   @Relationship(type = "CONNECTED_TO", direction = Relationship.Direction.OUTGOING)
   @Default
   @Exclude
+  @JsonIgnore
   private Set<OntologyRelation> relations = new HashSet<>();
+
+  @CreatedDate
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
   @Override
   public boolean equals(Object o) {

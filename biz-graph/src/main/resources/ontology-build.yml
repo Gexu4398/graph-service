@@ -1,0 +1,123 @@
+ontology-build:
+  types:
+    - name: 装备
+      attributes:
+        - 作战半径
+        - 打击范围
+        - 用途
+        - 搭载代表武器
+      children:
+        - name: 舰船
+          attributes:
+            - 作战半径
+            - 打击范围
+            - 用途
+            - 搭载代表武器
+          children:
+            - name: 航空母舰
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 巡洋舰
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 驱逐舰
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 两栖战舰
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 潜艇
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 辅助舰
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+        - name: 飞机
+          attributes:
+            - 作战半径
+            - 打击范围
+            - 用途
+            - 搭载代表武器
+          children:
+            - name: 轰炸机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 战斗机/攻击机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 侦察机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 预警机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 电子作战飞机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 加油机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 运输机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 无人机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+            - name: 直升机
+              attributes:
+                - 作战半径
+                - 打击范围
+                - 用途
+                - 搭载代表武器
+    - name: 人物
+      attributes:
+        - 国籍
+        - 职务
+        - 任职单位
+    - name: 地点
+      attributes:
+        - 坐标
+        - 归属
+        - 是否重点区域

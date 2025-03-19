@@ -7,6 +7,11 @@
         <option name="name" value="app.show-sql" />
         <option name="value" value="true" />
       </param>
+      <param>
+        <option name="enabled" value="true" />
+        <option name="name" value="app.reset-with-demo-data" />
+        <option name="value" value="always" />
+      </param>
     </additionalParameters>
     <output_file path="$PROJECT_DIR$/local.log" is_save="true" />
     <module name="biz-service" />
