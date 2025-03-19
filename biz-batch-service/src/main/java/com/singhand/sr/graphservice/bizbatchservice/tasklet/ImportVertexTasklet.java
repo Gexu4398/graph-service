@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizbatchservice.importer.vertex.VertexImporter;
 import com.singhand.sr.graphservice.bizbatchservice.model.ImportVertexItem;
 import com.singhand.sr.graphservice.bizbatchservice.model.ImportVertexItem.PropertyItem;
@@ -16,6 +17,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import io.minio.DownloadObjectArgs;
@@ -58,11 +60,14 @@ public class ImportVertexTasklet implements Tasklet {
 
   private final List<VertexImporter> vertexImporters;
 
+  private final PropertyValueRepository propertyValueRepository;
+
   public ImportVertexTasklet(@Value("${minio.bucket}") String bucket, MinioClient minioClient,
       VertexRepository vertexRepository, VertexService vertexService,
       OntologyRepository ontologyRepository,
       OntologyPropertyRepository ontologyPropertyRepository,
-      RelationModelRepository relationModelRepository, List<VertexImporter> vertexImporters) {
+      RelationModelRepository relationModelRepository, List<VertexImporter> vertexImporters,
+      PropertyValueRepository propertyValueRepository) {
 
     this.bucket = bucket;
     this.minioClient = minioClient;
@@ -72,6 +77,7 @@ public class ImportVertexTasklet implements Tasklet {
     this.ontologyPropertyRepository = ontologyPropertyRepository;
     this.relationModelRepository = relationModelRepository;
     this.vertexImporters = vertexImporters;
+    this.propertyValueRepository = propertyValueRepository;
   }
 
   @Override
@@ -79,6 +85,7 @@ public class ImportVertexTasklet implements Tasklet {
       @Nonnull ChunkContext chunkContext) throws Exception {
 
     final var stepContext = stepContribution.getStepExecution();
+    final var executionContext = stepContext.getJobExecution().getExecutionContext();
     final var url = stepContext.getJobParameters().getString("url", "");
     final var object = StrUtil.subAfter(url, bucket, true);
 
@@ -107,6 +114,7 @@ public class ImportVertexTasklet implements Tasklet {
           .orElseThrow(() -> new RuntimeException("不支持的文件格式：" + extName));
 
       final var importData = importer.importFromFile(tempFilename);
+      log.info("文件读取完成，开始导入数据......");
       final var vertexMap = importVertices(importData);
       log.info("已成功导入 {} 个实体", vertexMap.size());
       final var edges = importRelations(importData);
@@ -116,6 +124,8 @@ public class ImportVertexTasklet implements Tasklet {
     } finally {
       FileUtil.del(tempFilename);
     }
+
+    executionContext.putString("message", "已成功导入实体数据");
 
     return RepeatStatus.FINISHED;
   }
@@ -149,6 +159,8 @@ public class ImportVertexTasklet implements Tasklet {
 
       final var request = new NewEdgeRequest();
       request.setName(relation.getName());
+      log.info("正在导入关系：name={}, inVertex={}, outVertex={}", relation.getName(),
+          inVertex.getName(), outVertex.getName());
       final var edge = vertexService.newEdge(inVertex, outVertex, request);
       edges.add(edge);
     });
@@ -196,9 +208,19 @@ public class ImportVertexTasklet implements Tasklet {
               }
 
               it.getValue().forEach(value -> {
+                final var md5 = MD5.create().digestHex(value);
+                final var existsValue = propertyValueRepository
+                    .findByProperty_Vertex_IDAndProperty_KeyAndMd5(
+                        vertex.getID(), it.getKey(), md5);
+
+                if (existsValue.isPresent()) {
+                  return;
+                }
                 final var request = new NewPropertyRequest();
                 request.setKey(it.getKey());
                 request.setValue(value);
+                log.info("正在导入实体属性：name={} type={}, key={}", vertex.getName(),
+                    vertex.getType(), it.getKey());
                 vertexService.newProperty(vertex, request);
               });
             });
@@ -240,6 +262,7 @@ public class ImportVertexTasklet implements Tasklet {
           final var request = new NewVertexRequest();
           request.setName(name);
           request.setType(type);
+          log.info("实体不存在，正在创建：name={}, type={}", name, type);
           return vertexService.newVertex(request);
         });
   }

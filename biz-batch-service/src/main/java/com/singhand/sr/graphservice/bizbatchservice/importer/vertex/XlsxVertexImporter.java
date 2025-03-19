@@ -81,6 +81,8 @@ public class XlsxVertexImporter implements VertexImporter {
       }
     }
 
+    workbook.close();
+
     final var vertexItem = new ImportVertexItem();
     vertexItem.setEntities(vertices);
     vertexItem.setRelations(relations);
