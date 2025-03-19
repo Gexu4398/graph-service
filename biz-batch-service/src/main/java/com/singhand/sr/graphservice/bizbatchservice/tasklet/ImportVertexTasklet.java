@@ -115,8 +115,12 @@ public class ImportVertexTasklet implements Tasklet {
 
       final var importData = importer.importFromFile(tempFilename);
       log.info("文件读取完成，开始导入数据......");
+
+      log.info("开始导入实体......实体总数：{}", CollUtil.size(importData.getEntities()));
       final var vertexMap = importVertices(importData);
       log.info("已成功导入 {} 个实体", vertexMap.size());
+
+      log.info("开始导入关系......关系总数：{}", CollUtil.size(importData.getRelations()));
       final var edges = importRelations(importData);
       log.info("已成功导入 {} 条关系", edges.size());
     } catch (Exception e) {

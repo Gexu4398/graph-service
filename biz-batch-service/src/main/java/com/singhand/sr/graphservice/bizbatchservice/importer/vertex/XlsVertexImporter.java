@@ -254,13 +254,14 @@ public class XlsVertexImporter implements VertexImporter {
       }
 
       if (!relationModelRepository.existsByName(relationName)) {
+        log.warn("关系模型不存在...{}", relationName);
         continue;
       }
 
       final var exists = relationInstanceRepository
           .existsByNameAndInOntology_NameAndOutOntology_Name(relationName, sourceType, targetType);
 
-      if (!exists) {
+      if (exists) {
         continue;
       }
 

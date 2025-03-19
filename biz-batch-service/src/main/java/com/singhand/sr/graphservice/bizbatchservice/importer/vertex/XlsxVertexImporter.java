@@ -260,7 +260,7 @@ public class XlsxVertexImporter implements VertexImporter {
       final var exists = relationInstanceRepository
           .existsByNameAndInOntology_NameAndOutOntology_Name(relationName, sourceType, targetType);
 
-      if (!exists) {
+      if (exists) {
         continue;
       }
 
