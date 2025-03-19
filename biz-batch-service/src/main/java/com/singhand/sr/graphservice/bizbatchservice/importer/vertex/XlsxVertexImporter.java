@@ -253,6 +253,7 @@ public class XlsxVertexImporter implements VertexImporter {
       }
 
       if (!relationModelRepository.existsByName(relationName)) {
+        log.warn("关系模型不存在...{}", relationName);
         continue;
       }
 
