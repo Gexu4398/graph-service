@@ -29,7 +29,7 @@ import org.springframework.data.neo4j.core.schema.TargetNode;
 public class EdgeRelation {
 
   @RelationshipId
-  private Long id;
+  private String id;
 
   @NotBlank
   @Property
