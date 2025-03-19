@@ -134,6 +134,9 @@ public class BatchJobController {
         jobRepository.deleteStepExecution(stepExecution);
       });
 
+      log.info("删除 JobExecution {}", jobExecution.getId());
+      jobRepository.deleteJobExecution(jobExecution);
+
       jobRepository.deleteJobInstance(jobInstance);
     } catch (Exception e) {
       log.error("停止或移除作业时发生错误: {}", id, e);
