@@ -1,5 +1,7 @@
 logging:
   level:
+    # 一定要配置为ERROR，因为neo4j改用了elementId，使用id会打印大量warn日志
+    org.springframework.data.neo4j.cypher: ERROR
     root: info
 app:
   ddl-auto: none

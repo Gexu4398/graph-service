@@ -2,4 +2,6 @@ logging:
   level:
     org.springframework.orm.jpa: warn
     org.springframework.transaction: warn
+    # 一定要配置为ERROR，因为neo4j改用了elementId，使用id会打印大量warn日志
+    org.springframework.data.neo4j.cypher: ERROR
     root: info
