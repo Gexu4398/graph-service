@@ -126,7 +126,9 @@ public class ImportVertexTasklet implements Tasklet {
     } catch (Exception e) {
       log.error("导入数据出现异常", e);
     } finally {
+      log.info("清除临时目录和文件，{} ...", tempFilename);
       FileUtil.del(tempFilename);
+      log.info("清除临时目录和文件成功！");
     }
 
     executionContext.putString("message", "已成功导入实体数据");
