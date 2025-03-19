@@ -8,10 +8,6 @@ import com.singhand.sr.graphservice.bizmodel.model.neo4j.EdgeRelation;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import jakarta.annotation.Nonnull;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
@@ -20,6 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Neo4jVertexService类提供了对Neo4j数据库中VertexNode的操作服务。
@@ -89,29 +90,52 @@ public class Neo4jVertexService {
    */
   public void addVertexToVectorStore(@Nonnull VertexNode vertexNode) {
 
-    StringBuilder relationsInfo = new StringBuilder();
-    for (EdgeRelation edge : vertexNode.getEdges()) {
-      relationsInfo.append("关系类型: ").append(edge.getName())
-          .append(", 目标节点: ").append(edge.getVertexNode().getName())
-          .append(", 属性: ").append(edge.getProperties().toString())
-          .append("; ");
-    }
-
-    final var document = new Document(
-        vertexNode.getId(),
-        vertexNode.getName(),
-        Map.of(
-            "name", vertexNode.getName(),
-            "type", vertexNode.getType(),
-            "properties", vertexNode.getProperties().toString(),
-            "relations", relationsInfo.toString()
-        )
-    );
     try {
       vectorStore.delete(List.of(vertexNode.getId()));
     } catch (Exception e) {
       log.error(e.getMessage());
     }
+
+    final var relationsInfo = new StringBuilder();
+    for (EdgeRelation edge : vertexNode.getEdges()) {
+      relationsInfo.append("关系类型: ").append(edge.getName())
+          .append(", 目标节点id: ").append(edge.getVertexNode().getId())
+          .append(", 目标节点名称: ").append(edge.getVertexNode().getName())
+          .append(", 目标节点关系: ").append(edge.getVertexNode().getType())
+          .append(", 属性: ").append(edge.getProperties().toString())
+          .append("; ");
+    }
+
+    final var propertiesStr = vertexNode.getProperties().entrySet().stream()
+        .map(e -> e.getKey() + "=" + e.getValue())
+        .collect(Collectors.joining(", "));
+
+    final var textBuilder = new StringBuilder();
+    textBuilder.append("【id】：").append(vertexNode.getId()).append("; ")
+        .append(" 【名称】：").append(vertexNode.getName()).append("; ")
+        .append(" 【类型】：").append(vertexNode.getType()).append("; ");
+
+    if (CollUtil.isNotEmpty(vertexNode.getProperties())) {
+      textBuilder.append(" 【属性】：").append(propertiesStr).append("; ");
+    }
+
+    if (CollUtil.isNotEmpty(vertexNode.getEdges())) {
+      textBuilder.append(" 【关系】：").append(relationsInfo);
+    }
+
+    final var text = textBuilder.toString();
+
+    final var document = new Document(
+        vertexNode.getId(),
+        text,
+        Map.of(
+            "name", vertexNode.getName(),
+            "type", vertexNode.getType(),
+            "properties", propertiesStr,
+            "relations", relationsInfo.toString()
+        )
+    );
+
     vectorStore.add(List.of(document));
   }
 
