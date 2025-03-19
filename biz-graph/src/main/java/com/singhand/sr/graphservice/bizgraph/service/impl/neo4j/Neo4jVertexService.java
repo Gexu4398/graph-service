@@ -66,6 +66,11 @@ public class Neo4jVertexService {
    */
   public VertexNode newVertex(@Nonnull Vertex vertex) {
 
+    final var exists = vertexNodeRepository.findById(vertex.getID());
+    if (exists.isPresent()) {
+      return exists.get();
+    }
+
     final var vertexNode = new VertexNode();
     vertexNode.setId(vertex.getID());
     vertexNode.setName(vertex.getName());

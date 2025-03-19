@@ -35,6 +35,11 @@ public class Neo4jOntologyService {
 
   public void newOntology(@Nonnull Ontology ontology, Long parentId) {
 
+    final var exists = ontologyNodeRepository.findById(ontology.getID());
+    if (exists.isPresent()) {
+      return;
+    }
+
     final var ontologyNode = new OntologyNode();
     ontologyNode.setId(ontology.getID());
     ontologyNode.setName(ontology.getName());
