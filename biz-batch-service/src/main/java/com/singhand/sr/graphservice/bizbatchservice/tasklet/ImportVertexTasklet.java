@@ -15,6 +15,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.EdgeRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyPropertyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.PropertyValueRepository;
@@ -24,6 +25,7 @@ import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
 import jakarta.annotation.Nonnull;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,13 +70,16 @@ public class ImportVertexTasklet implements Tasklet {
 
   private final PlatformTransactionManager bizTransactionManager;
 
+  private final EdgeRepository edgeRepository;
+
   public ImportVertexTasklet(@Value("${minio.bucket}") String bucket, MinioClient minioClient,
       VertexRepository vertexRepository, VertexService vertexService,
       OntologyRepository ontologyRepository,
       OntologyPropertyRepository ontologyPropertyRepository,
       RelationModelRepository relationModelRepository, List<VertexImporter> vertexImporters,
       PropertyValueRepository propertyValueRepository,
-      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager) {
+      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
+      EdgeRepository edgeRepository) {
 
     this.bucket = bucket;
     this.minioClient = minioClient;
@@ -86,6 +91,7 @@ public class ImportVertexTasklet implements Tasklet {
     this.vertexImporters = vertexImporters;
     this.propertyValueRepository = propertyValueRepository;
     this.bizTransactionManager = bizTransactionManager;
+    this.edgeRepository = edgeRepository;
   }
 
   @Override
@@ -171,15 +177,31 @@ public class ImportVertexTasklet implements Tasklet {
         return;
       }
 
+      final var existsEdge = edgeRepository
+          .existsByNameAndInVertexAndOutVertexAndScope(
+              relation.getName(), inVertex, outVertex, "default");
+
+      if (existsEdge) {
+        return;
+      }
+
       final var request = new NewEdgeRequest();
       request.setName(relation.getName());
       log.info("正在导入关系：name={}, inVertex={}, outVertex={}", relation.getName(),
           inVertex.getName(), outVertex.getName());
       final var transaction = new TransactionTemplate(bizTransactionManager);
       transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      final var edge = transaction.execute(status ->
-          vertexService.newEdge(inVertex, outVertex, request));
-      edges.add(edge);
+      final var edge = transaction.execute(status -> {
+        final var in = vertexService.getVertex(inVertex.getID());
+        final var out = vertexService.getVertex(outVertex.getID());
+        if (in.isEmpty() || out.isEmpty()) {
+          return null;
+        }
+        return vertexService.newEdge(in.get(), out.get(), request);
+      });
+      if (null != edge) {
+        edges.add(edge);
+      }
     });
 
     return edges;
@@ -224,6 +246,7 @@ public class ImportVertexTasklet implements Tasklet {
                 return;
               }
 
+              final var batchRequests = new ArrayList<NewPropertyRequest>();
               it.getValue().forEach(value -> {
                 final var md5 = MD5.create().digestHex(value);
                 final var existsValue = propertyValueRepository
@@ -236,16 +259,22 @@ public class ImportVertexTasklet implements Tasklet {
                 final var request = new NewPropertyRequest();
                 request.setKey(it.getKey());
                 request.setValue(value);
-                log.info("正在导入实体属性：name={} type={}, key={}", vertex.getName(),
-                    vertex.getType(), it.getKey());
+                batchRequests.add(request);
+              });
+
+              if (CollUtil.isNotEmpty(batchRequests)) {
                 final var transaction = new TransactionTemplate(bizTransactionManager);
                 transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 transaction.execute(status -> {
                   vertexService.getVertex(vertex.getID()).ifPresent(v ->
-                      vertexService.newProperty(v, request));
+                      batchRequests.forEach(request -> {
+                        log.info("正在导入实体属性：name={}, key={}",
+                            vertex.getName(), request.getKey());
+                        vertexService.newProperty(v, request);
+                      }));
                   return true;
                 });
-              });
+              }
             });
       }
     });
