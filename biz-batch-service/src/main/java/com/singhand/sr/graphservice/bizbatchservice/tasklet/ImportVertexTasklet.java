@@ -36,8 +36,12 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 @StepScope
@@ -62,12 +66,15 @@ public class ImportVertexTasklet implements Tasklet {
 
   private final PropertyValueRepository propertyValueRepository;
 
+  private final PlatformTransactionManager bizTransactionManager;
+
   public ImportVertexTasklet(@Value("${minio.bucket}") String bucket, MinioClient minioClient,
       VertexRepository vertexRepository, VertexService vertexService,
       OntologyRepository ontologyRepository,
       OntologyPropertyRepository ontologyPropertyRepository,
       RelationModelRepository relationModelRepository, List<VertexImporter> vertexImporters,
-      PropertyValueRepository propertyValueRepository) {
+      PropertyValueRepository propertyValueRepository,
+      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager) {
 
     this.bucket = bucket;
     this.minioClient = minioClient;
@@ -78,6 +85,7 @@ public class ImportVertexTasklet implements Tasklet {
     this.relationModelRepository = relationModelRepository;
     this.vertexImporters = vertexImporters;
     this.propertyValueRepository = propertyValueRepository;
+    this.bizTransactionManager = bizTransactionManager;
   }
 
   @Override
@@ -167,7 +175,10 @@ public class ImportVertexTasklet implements Tasklet {
       request.setName(relation.getName());
       log.info("正在导入关系：name={}, inVertex={}, outVertex={}", relation.getName(),
           inVertex.getName(), outVertex.getName());
-      final var edge = vertexService.newEdge(inVertex, outVertex, request);
+      final var transaction = new TransactionTemplate(bizTransactionManager);
+      transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      final var edge = transaction.execute(status ->
+          vertexService.newEdge(inVertex, outVertex, request));
       edges.add(edge);
     });
 
@@ -227,7 +238,13 @@ public class ImportVertexTasklet implements Tasklet {
                 request.setValue(value);
                 log.info("正在导入实体属性：name={} type={}, key={}", vertex.getName(),
                     vertex.getType(), it.getKey());
-                vertexService.newProperty(vertex, request);
+                final var transaction = new TransactionTemplate(bizTransactionManager);
+                transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                transaction.execute(status -> {
+                  vertexService.getVertex(vertex.getID()).ifPresent(v ->
+                      vertexService.newProperty(v, request));
+                  return true;
+                });
               });
             });
       }
@@ -265,11 +282,15 @@ public class ImportVertexTasklet implements Tasklet {
 
     return vertexRepository.findByNameAndType(name, type)
         .orElseGet(() -> {
-          final var request = new NewVertexRequest();
-          request.setName(name);
-          request.setType(type);
-          log.info("实体不存在，正在创建：name={}, type={}", name, type);
-          return vertexService.newVertex(request);
+          final var transaction = new TransactionTemplate(bizTransactionManager);
+          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+          return transaction.execute(status -> {
+            final var request = new NewVertexRequest();
+            request.setName(name);
+            request.setType(type);
+            log.info("实体不存在，正在创建：name={}, type={}", name, type);
+            return vertexService.newVertex(request);
+          });
         });
   }
 }
