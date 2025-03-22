@@ -38,12 +38,8 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 @StepScope
@@ -68,8 +64,6 @@ public class ImportVertexTasklet implements Tasklet {
 
   private final PropertyValueRepository propertyValueRepository;
 
-  private final PlatformTransactionManager bizTransactionManager;
-
   private final EdgeRepository edgeRepository;
 
   public ImportVertexTasklet(@Value("${minio.bucket}") String bucket, MinioClient minioClient,
@@ -78,7 +72,6 @@ public class ImportVertexTasklet implements Tasklet {
       OntologyPropertyRepository ontologyPropertyRepository,
       RelationModelRepository relationModelRepository, List<VertexImporter> vertexImporters,
       PropertyValueRepository propertyValueRepository,
-      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
       EdgeRepository edgeRepository) {
 
     this.bucket = bucket;
@@ -90,7 +83,6 @@ public class ImportVertexTasklet implements Tasklet {
     this.relationModelRepository = relationModelRepository;
     this.vertexImporters = vertexImporters;
     this.propertyValueRepository = propertyValueRepository;
-    this.bizTransactionManager = bizTransactionManager;
     this.edgeRepository = edgeRepository;
   }
 
@@ -189,19 +181,14 @@ public class ImportVertexTasklet implements Tasklet {
       request.setName(relation.getName());
       log.info("正在导入关系：name={}, inVertex={}, outVertex={}", relation.getName(),
           inVertex.getName(), outVertex.getName());
-      final var transaction = new TransactionTemplate(bizTransactionManager);
-      transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      final var edge = transaction.execute(status -> {
-        final var in = vertexService.getVertex(inVertex.getID());
-        final var out = vertexService.getVertex(outVertex.getID());
-        if (in.isEmpty() || out.isEmpty()) {
-          return null;
-        }
-        return vertexService.newEdge(in.get(), out.get(), request);
-      });
-      if (null != edge) {
-        edges.add(edge);
+
+      final var in = vertexService.getVertex(inVertex.getID());
+      final var out = vertexService.getVertex(outVertex.getID());
+      if (in.isEmpty() || out.isEmpty()) {
+        return;
       }
+      final var edge = vertexService.newEdge(in.get(), out.get(), request);
+      edges.add(edge);
     });
 
     return edges;
@@ -263,17 +250,12 @@ public class ImportVertexTasklet implements Tasklet {
               });
 
               if (CollUtil.isNotEmpty(batchRequests)) {
-                final var transaction = new TransactionTemplate(bizTransactionManager);
-                transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                transaction.execute(status -> {
-                  vertexService.getVertex(vertex.getID()).ifPresent(v ->
-                      batchRequests.forEach(request -> {
-                        log.info("正在导入实体属性：name={}, key={}",
-                            vertex.getName(), request.getKey());
-                        vertexService.newProperty(v, request);
-                      }));
-                  return true;
-                });
+                vertexService.getVertex(vertex.getID()).ifPresent(v ->
+                    batchRequests.forEach(request -> {
+                      log.info("正在导入实体属性：name={}, key={}",
+                          vertex.getName(), request.getKey());
+                      vertexService.newProperty(v, request);
+                    }));
               }
             });
       }
@@ -311,15 +293,11 @@ public class ImportVertexTasklet implements Tasklet {
 
     return vertexRepository.findByNameAndType(name, type)
         .orElseGet(() -> {
-          final var transaction = new TransactionTemplate(bizTransactionManager);
-          transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          return transaction.execute(status -> {
-            final var request = new NewVertexRequest();
-            request.setName(name);
-            request.setType(type);
-            log.info("实体不存在，正在创建：name={}, type={}", name, type);
-            return vertexService.newVertex(request);
-          });
+          final var request = new NewVertexRequest();
+          request.setName(name);
+          request.setType(type);
+          log.info("实体不存在，正在创建：name={}, type={}", name, type);
+          return vertexService.newVertex(request);
         });
   }
 }

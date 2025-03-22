@@ -8,26 +8,24 @@ import com.singhand.sr.graphservice.bizmodel.model.neo4j.EdgeRelation;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
 import jakarta.annotation.Nonnull;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Neo4jVertexService类提供了对Neo4j数据库中VertexNode的操作服务。
  */
 @Service
 @Slf4j
-@Transactional(transactionManager = "bizNeo4jTransactionManager")
 public class Neo4jVertexService {
 
   private final VertexNodeRepository vertexNodeRepository;
@@ -152,16 +150,6 @@ public class Neo4jVertexService {
   }
 
   /**
-   * 更新向量存储中的VertexNode。
-   *
-   * @param vertexNode VertexNode对象
-   */
-  public void updateVectorStore(@Nonnull VertexNode vertexNode) {
-
-    addVertexToVectorStore(vertexNode);
-  }
-
-  /**
    * 删除VertexNode。
    *
    * @param vertexId VertexNode的ID
@@ -188,7 +176,7 @@ public class Neo4jVertexService {
     managedVertexNodes.forEach(it -> {
       it.setType(newType);
       final var managedVertexNode = vertexNodeRepository.save(it);
-      updateVectorStore(managedVertexNode);
+      updateVectorStore(managedVertexNode.getId());
     });
   }
 
@@ -203,7 +191,7 @@ public class Neo4jVertexService {
     getVertex(id).ifPresent(it -> {
       it.setName(name);
       final var managedVertexNode = vertexNodeRepository.save(it);
-      updateVectorStore(managedVertexNode);
+      updateVectorStore(managedVertexNode.getId());
     });
   }
 
@@ -224,7 +212,7 @@ public class Neo4jVertexService {
     values.add(request.getValue());
 
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode);
+    updateVectorStore(managedVertexNode.getId());
   }
 
   /**
@@ -242,7 +230,7 @@ public class Neo4jVertexService {
     vertexNode.getProperties().get(request.getKey()).add(request.getNewValue());
 
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode);
+    updateVectorStore(managedVertexNode.getId());
   }
 
   /**
@@ -265,7 +253,7 @@ public class Neo4jVertexService {
     }
 
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode);
+    updateVectorStore(managedVertexNode.getId());
   }
 
   /**
@@ -290,7 +278,7 @@ public class Neo4jVertexService {
     inVertexNode.getEdges().add(edgeRelation);
 
     final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
-    updateVectorStore(managedInVertexNode);
+    updateVectorStore(managedInVertexNode.getId());
   }
 
   /**
@@ -323,7 +311,7 @@ public class Neo4jVertexService {
     vertexNodeRepository.deleteRelation(inVertexNode.getId(), outVertexNode.getId(), name);
 
     final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
-    updateVectorStore(managedInVertexNode);
+    updateVectorStore(managedInVertexNode.getId());
   }
 
   /**
@@ -350,7 +338,7 @@ public class Neo4jVertexService {
         .ifPresentOrElse(it -> {
           it.setName(newName);
           final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
-          updateVectorStore(managedInVertexNode);
+          updateVectorStore(managedInVertexNode.getId());
         }, () -> {
           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
         });
@@ -368,7 +356,7 @@ public class Neo4jVertexService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
     vertexNode.getProperties().remove(key);
     final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode);
+    updateVectorStore(managedVertexNode.getId());
   }
 
   /**
@@ -399,7 +387,7 @@ public class Neo4jVertexService {
           values.add(value);
           final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
 
-          updateVectorStore(managedInVertexNode);
+          updateVectorStore(managedInVertexNode.getId());
         }, () -> {
           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
         });
