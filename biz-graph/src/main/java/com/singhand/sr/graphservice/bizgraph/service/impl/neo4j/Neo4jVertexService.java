@@ -17,9 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Neo4jVertexService类提供了对Neo4j数据库中VertexNode的操作服务。
@@ -144,9 +142,8 @@ public class Neo4jVertexService {
    */
   public void updateVectorStore(@Nonnull String id) {
 
-    final var vertexNode = getVertex(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
-    addVertexToVectorStore(vertexNode);
+    getVertex(id).ifPresentOrElse(this::addVertexToVectorStore,
+        () -> log.error("图数据库实体不存在：id={}", id));
   }
 
   /**
@@ -156,10 +153,10 @@ public class Neo4jVertexService {
    */
   public void deleteVertex(String vertexId) {
 
-    getVertex(vertexId).ifPresent(it -> {
+    getVertex(vertexId).ifPresentOrElse(it -> {
       vertexNodeRepository.delete(it);
       vectorStore.delete(List.of(it.getId()));
-    });
+    }, () -> log.error("图数据库实体不存在：id={}", vertexId));
   }
 
   /**
@@ -188,11 +185,11 @@ public class Neo4jVertexService {
    */
   public void updateVertex(String id, String name) {
 
-    getVertex(id).ifPresent(it -> {
+    getVertex(id).ifPresentOrElse(it -> {
       it.setName(name);
       final var managedVertexNode = vertexNodeRepository.save(it);
       updateVectorStore(managedVertexNode.getId());
-    });
+    }, () -> log.error("图数据库实体不存在：id={}", id));
   }
 
   /**
@@ -203,16 +200,15 @@ public class Neo4jVertexService {
    */
   public void newProperty(@Nonnull Vertex vertex, @Nonnull NewPropertyRequest request) {
 
-    final var vertexNode = getVertex(vertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    getVertex(vertex.getID()).ifPresentOrElse(vertexNode -> {
+      final var values = vertexNode.getProperties()
+          .computeIfAbsent(request.getKey(), v -> new HashSet<>());
 
-    final var values = vertexNode.getProperties()
-        .computeIfAbsent(request.getKey(), v -> new HashSet<>());
+      values.add(request.getValue());
 
-    values.add(request.getValue());
-
-    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode.getId());
+      final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+      updateVectorStore(managedVertexNode.getId());
+    }, () -> log.error("图数据库实体不存在：id={}", vertex.getID()));
   }
 
   /**
@@ -223,14 +219,13 @@ public class Neo4jVertexService {
    */
   public void updateProperty(@Nonnull Vertex vertex, @Nonnull UpdatePropertyRequest request) {
 
-    final var vertexNode = getVertex(vertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    getVertex(vertex.getID()).ifPresentOrElse(vertexNode -> {
+      vertexNode.getProperties().get(request.getKey()).remove(request.getOldValue());
+      vertexNode.getProperties().get(request.getKey()).add(request.getNewValue());
 
-    vertexNode.getProperties().get(request.getKey()).remove(request.getOldValue());
-    vertexNode.getProperties().get(request.getKey()).add(request.getNewValue());
-
-    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode.getId());
+      final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+      updateVectorStore(managedVertexNode.getId());
+    }, () -> log.error("图数据库实体不存在：id={}", vertex.getID()));
   }
 
   /**
@@ -243,17 +238,16 @@ public class Neo4jVertexService {
   public void deletePropertyValue(@Nonnull Vertex vertex, @Nonnull String key,
       @Nonnull String value) {
 
-    final var vertexNode = getVertex(vertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    getVertex(vertex.getID()).ifPresentOrElse(vertexNode -> {
+      vertexNode.getProperties().get(key).remove(value);
 
-    vertexNode.getProperties().get(key).remove(value);
+      if (CollUtil.isEmpty(vertexNode.getProperties().get(key))) {
+        vertexNode.getProperties().remove(key);
+      }
 
-    if (CollUtil.isEmpty(vertexNode.getProperties().get(key))) {
-      vertexNode.getProperties().remove(key);
-    }
-
-    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode.getId());
+      final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+      updateVectorStore(managedVertexNode.getId());
+    }, () -> log.error("图数据库实体不存在：id={}", vertex.getID()));
   }
 
   /**
@@ -265,11 +259,15 @@ public class Neo4jVertexService {
    */
   public void newEdge(@Nonnull String name, @Nonnull Vertex inVertex, @Nonnull Vertex outVertex) {
 
-    final var inVertexNode = getVertex(inVertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var inVertexNode = getVertex(inVertex.getID()).orElse(null);
 
-    final var outVertexNode = getVertex(outVertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertexNode = getVertex(outVertex.getID()).orElse(null);
+
+    if (null == inVertexNode || null == outVertexNode) {
+      log.error("图数据库实体不存在：inVertexId={}, outVertexId={}", inVertex.getID(),
+          outVertex.getID());
+      return;
+    }
 
     final var edgeRelation = new EdgeRelation();
     edgeRelation.setName(name);
@@ -291,27 +289,27 @@ public class Neo4jVertexService {
   public void deleteEdge(@Nonnull String name, @Nonnull String inVertexId,
       @Nonnull String outVertexId) {
 
-    final var inVertexNode = getVertex(inVertexId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var inVertexNode = getVertex(inVertexId).orElse(null);
 
-    final var outVertexNode = getVertex(outVertexId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertexNode = getVertex(outVertexId).orElse(null);
 
-    final var edge = inVertexNode.getEdges().stream()
+    if (null == inVertexNode || null == outVertexNode) {
+      log.error("图数据库实体不存在：inVertexId={}, outVertexId={}", inVertexId, outVertexId);
+      return;
+    }
+
+    inVertexNode.getEdges().stream()
         .filter(it -> it.getName().equals(name)
             && it.getVertexNode().equals(outVertexNode))
         .findFirst()
-        .orElse(null);
+        .ifPresentOrElse(edge -> {
+          inVertexNode.getEdges().remove(edge);
+          vertexNodeRepository.deleteRelation(inVertexNode.getId(), outVertexNode.getId(), name);
 
-    if (null == edge) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
-    }
-
-    inVertexNode.getEdges().remove(edge);
-    vertexNodeRepository.deleteRelation(inVertexNode.getId(), outVertexNode.getId(), name);
-
-    final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
-    updateVectorStore(managedInVertexNode.getId());
+          final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
+          updateVectorStore(managedInVertexNode.getId());
+        }, () -> log.error("图数据库关系不存在：name={}, inVertexId={}, outVertexId={}",
+            name, inVertexId, outVertexId));
   }
 
   /**
@@ -325,11 +323,15 @@ public class Neo4jVertexService {
   public void updateEdge(@Nonnull String oldName, @Nonnull String newName, @Nonnull Vertex inVertex,
       @Nonnull Vertex outVertex) {
 
-    final var inVertexNode = getVertex(inVertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var inVertexNode = getVertex(inVertex.getID()).orElse(null);
 
-    final var outVertexNode = getVertex(outVertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertexNode = getVertex(outVertex.getID()).orElse(null);
+
+    if (null == inVertexNode || null == outVertexNode) {
+      log.error("图数据库实体不存在：inVertexId={}, outVertexId={}", inVertex.getID(),
+          outVertex.getID());
+      return;
+    }
 
     inVertexNode.getEdges().stream()
         .filter(it -> it.getName().equals(oldName)
@@ -339,9 +341,9 @@ public class Neo4jVertexService {
           it.setName(newName);
           final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
           updateVectorStore(managedInVertexNode.getId());
-        }, () -> {
-          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
-        });
+        }, () -> log.error(
+            "图数据库关系不存在：oldName={}, newName={}, inVertexId={}, outVertexId={}",
+            oldName, newName, inVertex.getID(), outVertex.getID()));
   }
 
   /**
@@ -352,11 +354,11 @@ public class Neo4jVertexService {
    */
   public void deleteProperty(@Nonnull Vertex vertex, String key) {
 
-    final var vertexNode = getVertex(vertex.getID())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
-    vertexNode.getProperties().remove(key);
-    final var managedVertexNode = vertexNodeRepository.save(vertexNode);
-    updateVectorStore(managedVertexNode.getId());
+    getVertex(vertex.getID()).ifPresentOrElse(vertexNode -> {
+      vertexNode.getProperties().remove(key);
+      final var managedVertexNode = vertexNodeRepository.save(vertexNode);
+      updateVectorStore(managedVertexNode.getId());
+    }, () -> log.error("图数据库实体不存在：id={}", vertex.getID()));
   }
 
   /**
@@ -371,11 +373,14 @@ public class Neo4jVertexService {
   public void newEdgeProperty(String name, String inVertexId, String outVertexId, String key,
       String value) {
 
-    final var inVertexNode = getVertex(inVertexId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var inVertexNode = getVertex(inVertexId).orElse(null);
 
-    final var outVertexNode = getVertex(outVertexId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在"));
+    final var outVertexNode = getVertex(outVertexId).orElse(null);
+
+    if (null == inVertexNode || null == outVertexNode) {
+      log.error("图数据库实体不存在：inVertexId={}, outVertexId={}", inVertexId, outVertexId);
+      return;
+    }
 
     inVertexNode.getEdges()
         .stream()
@@ -388,8 +393,7 @@ public class Neo4jVertexService {
           final var managedInVertexNode = vertexNodeRepository.save(inVertexNode);
 
           updateVectorStore(managedInVertexNode.getId());
-        }, () -> {
-          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
-        });
+        }, () -> log.error("图数据库关系不存在：name={}, inVertexId={}, outVertexId={}",
+            name, inVertexId, outVertexId));
   }
 }
