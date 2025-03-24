@@ -4,12 +4,14 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.singhand.sr.graphservice.bizgraph.helper.VertexServiceHelper;
+import com.singhand.sr.graphservice.bizgraph.model.EventItem;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
 import com.singhand.sr.graphservice.bizmodel.config.TxSynchronizationManager;
@@ -32,6 +34,7 @@ import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -73,6 +76,8 @@ public class JpaVertexService implements VertexService {
 
   private final TxSynchronizationManager txSyncManager;
 
+  private final OntologyService ontologyService;
+
   @Autowired
   public JpaVertexService(VertexRepository vertexRepository,
       Neo4jVertexService neo4jVertexService,
@@ -81,7 +86,7 @@ public class JpaVertexService implements VertexService {
       EvidenceRepository evidenceRepository, EdgeRepository edgeRepository,
       VertexServiceHelper vertexServiceHelper,
       @Qualifier("bizEntityManager") EntityManager entityManager,
-      TxSynchronizationManager txSyncManager) {
+      TxSynchronizationManager txSyncManager, OntologyService ontologyService) {
 
     this.vertexRepository = vertexRepository;
     this.neo4jVertexService = neo4jVertexService;
@@ -94,6 +99,7 @@ public class JpaVertexService implements VertexService {
     this.vertexServiceHelper = vertexServiceHelper;
     this.entityManager = entityManager;
     this.txSyncManager = txSyncManager;
+    this.ontologyService = ontologyService;
   }
 
   @Override
@@ -636,6 +642,30 @@ public class JpaVertexService implements VertexService {
   public Collection<PropertyValue> getPropertyValues(Vertex vertex) {
 
     return propertyValueRepository.findDistinctByProperty_Vertex(vertex);
+  }
+
+  @Override
+  public Page<EventItem> getEventTrend(String id, Pageable pageable) {
+
+    final var vertex = getVertex(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "实体不存在！"));
+
+    final var eventTypes = ontologyService.getAllSubOntologies(Set.of("事件"));
+    final var edges = edgeRepository
+        .findByInVertex_IDAndOutVertex_TypeIn(vertex.getID(), eventTypes);
+
+    if (CollUtil.isEmpty(edges)) {
+      return new PageImpl<>(List.of(), pageable, 0);
+    }
+
+    final var eventItems = edges.stream()
+        .map(it -> new EventItem(it.getOutVertex()))
+        .sorted(Comparator.comparing(EventItem::getTime))
+        .skip(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .toList();
+
+    return new PageImpl<>(eventItems, pageable, edges.size());
   }
 
   private static @Nonnull Specification<Vertex> levelIs(String level) {

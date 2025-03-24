@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -87,12 +88,11 @@ public class Property {
   }
 
   @JsonIgnore
-  public PropertyValue getVerifiedOrFirstOrBlankValue() {
+  public PropertyValue getMaxConfidenceOrBlankValue() {
 
     return values.stream()
-        .filter(PropertyValue::isVerified)
-        .findFirst()
-        .orElseGet(() -> values.stream().findFirst().orElse(new PropertyValue()));
+        .max(Comparator.comparing(PropertyValue::getConfidence))
+        .orElse(new PropertyValue());
   }
 
   public void addValue(@Nonnull PropertyValue propertyValue) {

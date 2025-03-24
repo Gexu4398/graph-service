@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizservice.demo;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.config.OntologyBuildProperties;
 import com.singhand.sr.graphservice.bizgraph.config.RelationModelBuildProperties;
 import com.singhand.sr.graphservice.bizgraph.datastructure.TreeNode;
@@ -135,9 +136,22 @@ public class OntologyDemoService implements DemoService {
         final var request = new NewOntologyPropertyRequest();
         request.setName(attribute);
         request.setType("文本");
-        request.setMultiValue(true);
+        final var singleValue = isSingleValue(ontology, attribute);
+        request.setMultiValue(!singleValue);
         ontologyService.newOntologyProperty(ontology, request);
       }
     });
+  }
+
+  /**
+   * 判断是否是单值属性
+   *
+   * @param ontology  本体
+   * @param attribute 属性
+   * @return 是否是单值属性
+   */
+  private boolean isSingleValue(@Nonnull Ontology ontology, String attribute) {
+
+    return ontology.getName().equals("事件") && StrUtil.equalsAny(attribute, "时间", "地点");
   }
 }

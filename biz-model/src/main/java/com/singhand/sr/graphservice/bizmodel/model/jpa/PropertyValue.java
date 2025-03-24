@@ -3,7 +3,6 @@ package com.singhand.sr.graphservice.bizmodel.model.jpa;
 import cn.hutool.crypto.digest.MD5;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -107,19 +106,6 @@ public class PropertyValue {
   public int hashCode() {
 
     return getClass().hashCode();
-  }
-
-  public boolean isVerified() {
-
-    final var feature = features.get("verified");
-    return feature != null && "true".equals(feature.getValue());
-  }
-
-  @JsonProperty(value = "checked", access = Access.READ_ONLY)
-  public boolean isChecked() {
-
-    final var feature = features.get("checked");
-    return feature != null && "true".equals(feature.getValue());
   }
 
   public void setValue(String value) {

@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.EventItem;
 import com.singhand.sr.graphservice.bizgraph.model.request.ImportVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
@@ -11,7 +12,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewVertexRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest;
-import com.singhand.sr.graphservice.bizgraph.model.response.GetVerticesResponseItem;
+import com.singhand.sr.graphservice.bizgraph.model.GetVerticesResponseItem;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizkeycloakmodel.helper.JwtHelper;
@@ -729,5 +730,13 @@ public class VertexController {
   public Long getStatistics(@RequestParam(required = false, defaultValue = "") String level) {
 
     return vertexService.countVertices(level);
+  }
+
+  @Operation(summary = "获取实体事件动向")
+  @GetMapping("{id}/event:trend")
+  @Transactional("bizTransactionManager")
+  public Page<EventItem> getEventTrend(@PathVariable String id, Pageable pageable) {
+
+    return vertexService.getEventTrend(id, pageable);
   }
 }

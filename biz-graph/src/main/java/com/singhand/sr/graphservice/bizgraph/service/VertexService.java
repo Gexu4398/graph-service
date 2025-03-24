@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.bizgraph.service;
 
 import cn.hutool.crypto.digest.MD5;
+import com.singhand.sr.graphservice.bizgraph.model.EventItem;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEdgeRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewEvidenceRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewPropertyRequest;
@@ -381,4 +382,12 @@ public interface VertexService {
    * @return 顶点的数量
    */
   Collection<PropertyValue> getPropertyValues(Vertex vertex);
+
+  /**
+   * 获取事件趋势
+   *
+   * @param id 事件id
+   * @return 事件趋势
+   */
+  Page<EventItem> getEventTrend(String id, Pageable pageable);
 }

@@ -1,4 +1,4 @@
-package com.singhand.sr.graphservice.bizgraph.model.response;
+package com.singhand.sr.graphservice.bizgraph.model;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;

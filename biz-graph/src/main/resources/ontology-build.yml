@@ -169,3 +169,8 @@ ontology-build:
         - 坐标
         - 归属
         - 是否重点区域
+    - name: 事件
+      attributes:
+        - 时间
+        - 地点
+        - 触发词
