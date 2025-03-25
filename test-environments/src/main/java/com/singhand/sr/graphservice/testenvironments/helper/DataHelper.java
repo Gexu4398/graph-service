@@ -24,6 +24,7 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
+import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceContentRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.DatasourceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import java.util.List;
@@ -64,12 +65,15 @@ public class DataHelper {
 
   private final VertexService vertexService;
 
+  private final DatasourceContentRepository datasourceContentRepository;
+
   @Autowired
   public DataHelper(KeycloakUserService keycloakUserService,
       KeycloakGroupService keycloakGroupService, KeycloakRoleService keycloakRoleService,
       UserEntityRepository userEntityRepository, OntologyService ontologyService,
       OntologyRepository ontologyRepository, RelationModelService relationModelService,
-      DatasourceRepository datasourceRepository, VertexService vertexService) {
+      DatasourceRepository datasourceRepository, VertexService vertexService,
+      DatasourceContentRepository datasourceContentRepository) {
 
     this.keycloakUserService = keycloakUserService;
     this.keycloakGroupService = keycloakGroupService;
@@ -80,6 +84,7 @@ public class DataHelper {
     this.relationModelService = relationModelService;
     this.datasourceRepository = datasourceRepository;
     this.vertexService = vertexService;
+    this.datasourceContentRepository = datasourceContentRepository;
   }
 
   public Optional<UserEntity> getUser(String username) {
@@ -185,13 +190,15 @@ public class DataHelper {
     datasource.setUrl(url);
     datasource.setCreator("admin");
 
+    final var managedDatasource = datasourceRepository.save(datasource);
+
     final var datasourceContent = new DatasourceContent();
+    datasourceContent.setID(managedDatasource.getID());
     datasourceContent.setText(text);
     datasourceContent.setHtml(html);
+    datasourceContentRepository.save(datasourceContent);
 
-    datasource.attachContent(datasourceContent);
-
-    return datasourceRepository.save(datasource);
+    return managedDatasource;
   }
 
   public Datasource newDatasource(String name, String text) {
@@ -200,12 +207,14 @@ public class DataHelper {
     datasource.setTitle(NAME_PREFIX + name);
     datasource.setCreator("admin");
 
+    final var managedDatasource = datasourceRepository.save(datasource);
+
     final var datasourceContent = new DatasourceContent();
+    datasourceContent.setID(managedDatasource.getID());
     datasourceContent.setText(text);
+    datasourceContentRepository.save(datasourceContent);
 
-    datasource.attachContent(datasourceContent);
-
-    return datasourceRepository.save(datasource);
+    return datasource;
   }
 
   @SneakyThrows
@@ -232,8 +241,7 @@ public class DataHelper {
   }
 
   @Transactional("bizTransactionManager")
-  public void newProperty(Vertex vertex, String key, String value, String evidence,
-      boolean verified, Datasource datasource) {
+  public void newProperty(Vertex vertex, String key, String value, String evidence, Datasource datasource) {
 
     final var newPropertyRequest = new NewPropertyRequest();
     newPropertyRequest.setKey(key);

@@ -1,4 +1,4 @@
-package com.singhand.sr.graphservice.bizservice.model.request;
+package com.singhand.sr.graphservice.bizgraph.model.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

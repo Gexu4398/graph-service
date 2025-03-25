@@ -14,7 +14,6 @@ import com.singhand.sr.graphservice.bizgraph.model.request.UpdatePropertyRequest
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jVertexService;
-import com.singhand.sr.graphservice.bizmodel.config.TxSynchronizationManager;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Edge_;
@@ -74,8 +73,6 @@ public class JpaVertexService implements VertexService {
 
   private final EntityManager entityManager;
 
-  private final TxSynchronizationManager txSyncManager;
-
   private final OntologyService ontologyService;
 
   @Autowired
@@ -85,8 +82,7 @@ public class JpaVertexService implements VertexService {
       FeatureRepository featureRepository, DatasourceRepository datasourceRepository,
       EvidenceRepository evidenceRepository, EdgeRepository edgeRepository,
       VertexServiceHelper vertexServiceHelper,
-      @Qualifier("bizEntityManager") EntityManager entityManager,
-      TxSynchronizationManager txSyncManager, OntologyService ontologyService) {
+      @Qualifier("bizEntityManager") EntityManager entityManager, OntologyService ontologyService) {
 
     this.vertexRepository = vertexRepository;
     this.neo4jVertexService = neo4jVertexService;
@@ -98,7 +94,6 @@ public class JpaVertexService implements VertexService {
     this.edgeRepository = edgeRepository;
     this.vertexServiceHelper = vertexServiceHelper;
     this.entityManager = entityManager;
-    this.txSyncManager = txSyncManager;
     this.ontologyService = ontologyService;
   }
 
@@ -180,7 +175,7 @@ public class JpaVertexService implements VertexService {
       datasource = null;
     }
 
-    txSyncManager.executeAfterCommit(() -> neo4jVertexService.newVertex(managedVertex));
+    neo4jVertexService.newVertex(managedVertex);
 
     newVertexRequest.getProps().forEach((k, v) -> {
       final var newPropertyRequest = new NewPropertyRequest();
@@ -205,7 +200,7 @@ public class JpaVertexService implements VertexService {
 
     final var managedVertex = vertexRepository.save(vertex);
 
-    txSyncManager.executeAfterCommit(() -> neo4jVertexService.updateVertex(id, name));
+    neo4jVertexService.updateVertex(id, name);
 
     return managedVertex;
   }
@@ -237,7 +232,7 @@ public class JpaVertexService implements VertexService {
 
     addEvidence(managedPropertyValue, request);
 
-    txSyncManager.executeAfterCommit(() -> neo4jVertexService.newProperty(vertex, request));
+    neo4jVertexService.newProperty(vertex, request);
   }
 
   @Override
@@ -267,10 +262,8 @@ public class JpaVertexService implements VertexService {
 
     addEvidence(managedPropertyValue, newPropertyRequest);
 
-    txSyncManager.executeAfterCommit(() ->
-        neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
-            edge.getOutVertex().getID(), newPropertyRequest.getKey(),
-            newPropertyRequest.getValue()));
+    neo4jVertexService.newEdgeProperty(edge.getName(), edge.getInVertex().getID(),
+        edge.getOutVertex().getID(), newPropertyRequest.getKey(), newPropertyRequest.getValue());
   }
 
   @Override
@@ -308,7 +301,7 @@ public class JpaVertexService implements VertexService {
       managedOldPropertyValue.setValue(request.getNewValue());
       final var propertyValue = propertyValueRepository.save(managedOldPropertyValue);
       addEvidence(propertyValue, request);
-      txSyncManager.executeAfterCommit(() -> neo4jVertexService.updateProperty(vertex, request));
+      neo4jVertexService.updateProperty(vertex, request);
     }
   }
 
@@ -374,8 +367,7 @@ public class JpaVertexService implements VertexService {
       vertexRepository.save(vertex);
     }
 
-    txSyncManager.executeAfterCommit(() ->
-        neo4jVertexService.deletePropertyValue(vertex, key, dbPropertyValue.getValue()));
+    neo4jVertexService.deletePropertyValue(vertex, key, dbPropertyValue.getValue());
   }
 
   @Override
@@ -441,8 +433,7 @@ public class JpaVertexService implements VertexService {
     request.getFeatures().forEach((k, v) -> setFeature(edge, k, v));
     final var managedEdge = edgeRepository.save(edge);
 
-    txSyncManager.executeAfterCommit(() ->
-        neo4jVertexService.newEdge(request.getName(), inVertex, outVertex));
+    neo4jVertexService.newEdge(request.getName(), inVertex, outVertex);
 
     request.getProps().forEach((k, v) -> {
       final var newPropertyRequest = new NewPropertyRequest();
@@ -547,9 +538,8 @@ public class JpaVertexService implements VertexService {
     managedNewEdge.clearEvidences();
     addEvidence(edge, request);
 
-    txSyncManager.executeAfterCommit(() ->
-        neo4jVertexService.updateEdge(request.getOldName(), request.getNewName(),
-            edge.getInVertex(), edge.getOutVertex()));
+    neo4jVertexService.updateEdge(request.getOldName(), request.getNewName(),
+        edge.getInVertex(), edge.getOutVertex());
   }
 
   @Override

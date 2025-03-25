@@ -256,8 +256,6 @@
   </changeSet>
 
   <changeSet id="1741241403866-1" author="gexu">
-    <createSequence sequenceName="datasourcecontent_seq" cacheSize="1" dataType="bigint"
-                    maxValue="9223372036854775807" minValue="1" startValue="1" incrementBy="1"/>
     <createTable tableName="datasourcecontent">
       <column name="id" type="BIGINT">
         <constraints nullable="false" primaryKey="true" primaryKeyName="pk_datasourcecontent"/>
@@ -289,15 +287,9 @@
       <column name="confidence" type="double" defaultValue="0.0">
         <constraints nullable="false"/>
       </column>
-      <column name="datasourcecontent_id" type="bigint"/>
       <column name="createdat" type="TIMESTAMP WITHOUT TIME ZONE"/>
       <column name="updatedat" type="TIMESTAMP WITHOUT TIME ZONE"/>
     </createTable>
-    <addForeignKeyConstraint baseColumnNames="datasourcecontent_id" baseTableName="datasource"
-                             constraintName="FK_DATASOURCE_ON_DATASOURCECONTENT" deferrable="false"
-                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
-                             referencedColumnNames="id" referencedTableName="datasourcecontent"
-                             validate="true"/>
   </changeSet>
 
   <changeSet id="1741233297043-1" author="gexu">

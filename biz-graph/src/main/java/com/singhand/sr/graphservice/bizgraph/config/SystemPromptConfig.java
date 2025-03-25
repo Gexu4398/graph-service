@@ -1,4 +1,4 @@
-package com.singhand.sr.graphservice.bizservice.config;
+package com.singhand.sr.graphservice.bizgraph.config;
 
 import jakarta.annotation.PostConstruct;
 import java.io.BufferedReader;

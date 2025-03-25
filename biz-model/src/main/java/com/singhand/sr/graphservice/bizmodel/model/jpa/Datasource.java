@@ -16,7 +16,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
@@ -91,11 +90,6 @@ public class Datasource {
   @Default
   private Double confidence = 0.0;
 
-  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-  @Exclude
-  @JsonIgnore
-  private DatasourceContent datasourceContent;
-
   @Column(nullable = false)
   private String creator;
 
@@ -140,20 +134,6 @@ public class Datasource {
   public int hashCode() {
 
     return getClass().hashCode();
-  }
-
-  public void attachContent(@Nonnull DatasourceContent datasourceContent) {
-
-    datasourceContent.setDatasource(this);
-    setDatasourceContent(datasourceContent);
-  }
-
-  public void detachContent() {
-
-    if (null != getDatasourceContent()) {
-      getDatasourceContent().setDatasource(null);
-      setDatasourceContent(null);
-    }
   }
 
   public void addEvidence(@Nonnull Evidence evidence) {

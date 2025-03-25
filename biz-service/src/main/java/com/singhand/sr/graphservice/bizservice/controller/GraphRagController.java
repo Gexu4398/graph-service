@@ -1,7 +1,7 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
-import com.singhand.sr.graphservice.bizservice.model.request.RagRequest;
-import com.singhand.sr.graphservice.bizservice.service.GraphRagService;
+import com.singhand.sr.graphservice.bizgraph.model.request.RagRequest;
+import com.singhand.sr.graphservice.bizgraph.service.impl.GraphRagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

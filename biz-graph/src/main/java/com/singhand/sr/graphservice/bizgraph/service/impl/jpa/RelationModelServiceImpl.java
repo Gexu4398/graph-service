@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.bizgraph.service.impl.jpa;
 
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizgraph.service.RelationModelService;
+import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jRelationModelService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.RelationModel_;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationModelRepository;
@@ -19,10 +20,14 @@ public class RelationModelServiceImpl implements RelationModelService {
 
   private final RelationModelRepository relationModelRepository;
 
+  private final Neo4jRelationModelService neo4jRelationModelService;
+
   @Autowired
-  public RelationModelServiceImpl(RelationModelRepository relationModelRepository) {
+  public RelationModelServiceImpl(RelationModelRepository relationModelRepository,
+      Neo4jRelationModelService neo4jRelationModelService) {
 
     this.relationModelRepository = relationModelRepository;
+    this.neo4jRelationModelService = neo4jRelationModelService;
   }
 
   @Override
@@ -49,7 +54,9 @@ public class RelationModelServiceImpl implements RelationModelService {
     final var relationModel = new RelationModel();
     relationModel.setName(name);
 
-    return relationModelRepository.save(relationModel);
+    final var managedRelationModel = relationModelRepository.save(relationModel);
+    neo4jRelationModelService.newRelationModel(managedRelationModel);
+    return managedRelationModel;
   }
 
   @Override
@@ -70,7 +77,9 @@ public class RelationModelServiceImpl implements RelationModelService {
 
     relationModel.setName(name);
 
-    return relationModelRepository.save(relationModel);
+    final var managedRelationModel = relationModelRepository.save(relationModel);
+    neo4jRelationModelService.updateRelationModel(managedRelationModel);
+    return managedRelationModel;
   }
 
   @Override
@@ -80,6 +89,7 @@ public class RelationModelServiceImpl implements RelationModelService {
         .orElseThrow(() -> new RuntimeException("关系模型不存在"));
 
     relationModelRepository.delete(relationModel);
+    neo4jRelationModelService.deleteRelationModel(id);
   }
 
   private static @Nonnull Specification<RelationModel> nameLike(String keyword) {

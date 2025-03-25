@@ -1,5 +1,7 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl.neo4j;
 
+import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyNode;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.OntologyRelation;
@@ -110,7 +112,7 @@ public class Neo4jOntologyService {
     final var outOntologyNode = getOntology(outOntology.getID())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
-     inOntologyNode.getRelations().stream()
+    inOntologyNode.getRelations().stream()
         .filter(it -> it.getName().equals(oldName) &&
             it.getOntologyNode().equals(outOntologyNode))
         .findFirst()
@@ -144,5 +146,38 @@ public class Neo4jOntologyService {
     ontologyNodeRepository.deleteRelation(inOntology.getID(), outOntology.getID(), name);
 
     ontologyNodeRepository.save(inOntologyNode);
+  }
+
+  public void newOntologyProperty(@Nonnull Ontology ontology,
+      @Nonnull NewOntologyPropertyRequest request) {
+
+    final var ontologyNode = getOntology(ontology.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyNode.getProperties().add(request.getName());
+
+    ontologyNodeRepository.save(ontologyNode);
+  }
+
+  public void updateOntologyProperty(@Nonnull Ontology ontology,
+      @Nonnull UpdateOntologyPropertyRequest request) {
+
+    final var ontologyNode = getOntology(ontology.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyNode.getProperties().remove(request.getOldName());
+    ontologyNode.getProperties().add(request.getNewName());
+
+    ontologyNodeRepository.save(ontologyNode);
+  }
+
+  public void deleteOntologyProperty(@Nonnull Ontology ontology, @Nonnull String propertyName) {
+
+    final var ontologyNode = getOntology(ontology.getID())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
+
+    ontologyNode.getProperties().remove(propertyName);
+
+    ontologyNodeRepository.save(ontologyNode);
   }
 }

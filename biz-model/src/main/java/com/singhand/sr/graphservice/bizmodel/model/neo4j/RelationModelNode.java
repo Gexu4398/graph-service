@@ -1,6 +1,5 @@
 package com.singhand.sr.graphservice.bizmodel.model.neo4j;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -19,8 +18,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
-import org.springframework.data.neo4j.core.schema.Relationship;
-import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
 @Getter
 @Setter
@@ -28,8 +25,8 @@ import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Node("Ontology")
-public class OntologyNode {
+@Node("RelationModel")
+public class RelationModelNode {
 
   @Id
   private Long id;
@@ -44,17 +41,6 @@ public class OntologyNode {
   @Default
   @Exclude
   private Set<String> properties = new HashSet<>();
-
-  @Relationship(type = "CHILD_OF", direction = Direction.OUTGOING)
-  @Default
-  @Exclude
-  private Set<OntologyNode> children = new HashSet<>();
-
-  @Relationship(type = "CONNECTED_TO", direction = Relationship.Direction.OUTGOING)
-  @Default
-  @Exclude
-  @JsonIgnore
-  private Set<OntologyRelation> relations = new HashSet<>();
 
   @CreatedDate
   private LocalDateTime createdAt;
@@ -71,7 +57,7 @@ public class OntologyNode {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OntologyNode v = (OntologyNode) o;
+    RelationModelNode v = (RelationModelNode) o;
     return id != null && Objects.equals(id, v.id);
   }
 

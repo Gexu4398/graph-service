@@ -326,7 +326,7 @@ public class VertexControllerTest extends BaseTestEnvironment {
     final var value = faker.dog().age();
     final var evidence = faker.lorem().sentence();
     final var datasource = dataHelper.newDatasource("testDeleteProperty");
-    dataHelper.newProperty(vertex, "age", value, evidence, false, datasource);
+    dataHelper.newProperty(vertex, "age", value, evidence, datasource);
 
     mockMvc.perform(delete("/vertex/" + vertex.getID() + "/property")
             .param("key", "age")

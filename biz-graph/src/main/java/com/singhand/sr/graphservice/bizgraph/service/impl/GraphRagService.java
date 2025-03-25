@@ -1,7 +1,7 @@
-package com.singhand.sr.graphservice.bizservice.service;
+package com.singhand.sr.graphservice.bizgraph.service.impl;
 
-import com.singhand.sr.graphservice.bizservice.config.SystemPromptConfig;
-import com.singhand.sr.graphservice.bizservice.model.request.RagRequest;
+import com.singhand.sr.graphservice.bizgraph.config.SystemPromptConfig;
+import com.singhand.sr.graphservice.bizgraph.model.request.RagRequest;
 import jakarta.annotation.Nonnull;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.RetrievalAugmentationAdvisor;

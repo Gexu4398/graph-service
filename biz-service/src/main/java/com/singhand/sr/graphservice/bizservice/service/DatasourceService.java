@@ -115,7 +115,8 @@ public class DatasourceService {
   public DatasourceResponse updateImageElements(@Nonnull DatasourceResponse datasourceResponse) {
 
     final var datasourceContent = datasourceContentRepository
-        .findByDatasource_ID(datasourceResponse.getID()).orElse(null);
+        .findById(datasourceResponse.getID())
+        .orElse(null);
 
     if (null != datasourceContent) {
       datasourceResponse.setText(datasourceContent.getText());
@@ -166,8 +167,9 @@ public class DatasourceService {
 
     datasourceRepository.findById(id).ifPresentOrElse(datasource -> {
       datasource.clearEvidences();
-      datasource.detachContent();
       detachAllVertex(datasource);
+      datasourceContentRepository.findById(datasource.getID())
+          .ifPresent(datasourceContentRepository::delete);
       datasourceRepository.delete(datasource);
     }, () -> {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "数据源不存在");

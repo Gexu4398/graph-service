@@ -7,7 +7,6 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRe
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologyService;
-import com.singhand.sr.graphservice.bizmodel.config.TxSynchronizationManager;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology_;
@@ -54,23 +53,19 @@ public class JpaOntologyService implements OntologyService {
 
   private final PlatformTransactionManager bizTransactionManager;
 
-  private final TxSynchronizationManager txSyncManager;
-
   private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
   public JpaOntologyService(OntologyRepository ontologyRepository,
       Neo4jOntologyService neo4jOntologyService,
       OntologyPropertyRepository ontologyPropertyRepository,
       RelationInstanceRepository relationInstanceRepository,
-      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
-      TxSynchronizationManager txSyncManager) {
+      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager) {
 
     this.ontologyRepository = ontologyRepository;
     this.neo4jOntologyService = neo4jOntologyService;
     this.ontologyPropertyRepository = ontologyPropertyRepository;
     this.relationInstanceRepository = relationInstanceRepository;
     this.bizTransactionManager = bizTransactionManager;
-    this.txSyncManager = txSyncManager;
   }
 
   @Override
@@ -105,17 +100,17 @@ public class JpaOntologyService implements OntologyService {
 
     final var ontology = new Ontology();
     ontology.setName(name);
+    final var managedOntology = ontologyRepository.save(ontology);
+    neo4jOntologyService.newOntology(managedOntology, parentId);
     if (null != parentId) {
       final var parent = ontologyRepository.findById(parentId)
           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "父本体不存在"));
       parent.addChild(ontology);
-
-      inheritPropertiesFromParent(parent, ontology);
+      inheritPropertiesFromParent(parent, managedOntology);
     }
-    final var managedOntology = ontologyRepository.save(ontology);
-    txSyncManager.executeAfterCommit(
-        () -> neo4jOntologyService.newOntology(managedOntology, parentId));
-    return managedOntology;
+    final var saved = ontologyRepository.save(managedOntology);
+    neo4jOntologyService.updateOntology(saved);
+    return saved;
   }
 
   @Override
@@ -162,6 +157,7 @@ public class JpaOntologyService implements OntologyService {
     property.setInherited(request.isInherited());
     ontology.addProperty(property);
     ontologyPropertyRepository.save(property);
+    neo4jOntologyService.newOntologyProperty(ontology, request);
   }
 
   @Override
@@ -189,7 +185,7 @@ public class JpaOntologyService implements OntologyService {
 
     final var managedOntology = ontologyRepository.save(ontology);
 
-    txSyncManager.executeAfterCommit(() -> neo4jOntologyService.updateOntology(managedOntology));
+    neo4jOntologyService.updateOntology(managedOntology);
 
     return managedOntology;
   }
@@ -206,7 +202,7 @@ public class JpaOntologyService implements OntologyService {
 
       ontologyRepository.delete(it);
 
-      txSyncManager.executeAfterCommit(() -> neo4jOntologyService.deleteOntology(id));
+      neo4jOntologyService.deleteOntology(id);
     });
   }
 
@@ -235,6 +231,8 @@ public class JpaOntologyService implements OntologyService {
 
     ontologyPropertyRepository.save(ontologyProperty);
 
+    neo4jOntologyService.updateOntologyProperty(ontology, request);
+
     CompletableFuture.runAsync(() ->
             cascadeUpdatePropertyFromChildren(ontology, request.getOldName(),
                 request.getNewName(), request.getType(), request.isMultiValue()), VIRTUAL_EXECUTOR)
@@ -262,6 +260,8 @@ public class JpaOntologyService implements OntologyService {
     ontology.removeProperty(ontologyProperty);
     ontologyPropertyRepository.delete(ontologyProperty);
     ontologyRepository.save(ontology);
+
+    neo4jOntologyService.deleteOntologyProperty(ontology, propertyName);
 
     CompletableFuture.runAsync(() ->
             cascadeDeletePropertyFromChildren(ontology, propertyName), VIRTUAL_EXECUTOR)
@@ -302,8 +302,7 @@ public class JpaOntologyService implements OntologyService {
     inOntology.getActiveRelations().add(managedRelationInstance);
     outOntology.getPassiveRelations().add(managedRelationInstance);
 
-    txSyncManager.executeAfterCommit(
-        () -> neo4jOntologyService.newRelation(name, inOntology, outOntology));
+    neo4jOntologyService.newRelation(name, inOntology, outOntology);
 
     return managedRelationInstance;
   }
@@ -325,8 +324,7 @@ public class JpaOntologyService implements OntologyService {
 
     relationInstance.setName(newName);
 
-    txSyncManager.executeAfterCommit(
-        () -> neo4jOntologyService.updateRelation(oldName, newName, inOntology, outOntology));
+    neo4jOntologyService.updateRelation(oldName, newName, inOntology, outOntology);
 
     return relationInstanceRepository.save(relationInstance);
   }
@@ -342,8 +340,7 @@ public class JpaOntologyService implements OntologyService {
 
     relationInstanceRepository.delete(relationInstance);
 
-    txSyncManager.executeAfterCommit(
-        () -> neo4jOntologyService.deleteRelation(name, inOntology, outOntology));
+    neo4jOntologyService.deleteRelation(name, inOntology, outOntology);
   }
 
   @Override
