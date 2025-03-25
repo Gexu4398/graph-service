@@ -12,12 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Slf4j
-@Transactional(transactionManager = "bizNeo4jTransactionManager")
 public class Neo4jOntologyService {
 
   private final OntologyNodeRepository ontologyNodeRepository;
@@ -112,16 +110,14 @@ public class Neo4jOntologyService {
     final var outOntologyNode = getOntology(outOntology.getID())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体不存在"));
 
-    inOntologyNode.getRelations().stream()
+     inOntologyNode.getRelations().stream()
         .filter(it -> it.getName().equals(oldName) &&
             it.getOntologyNode().equals(outOntologyNode))
         .findFirst()
-        .ifPresentOrElse(it -> {
-          it.setName(newName);
-          ontologyNodeRepository.save(inOntologyNode);
-        }, () -> {
-          throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
-        });
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "本体关系不存在"));
+
+    deleteRelation(oldName, inOntology, outOntology);
+    newRelation(newName, inOntology, outOntology);
   }
 
   public void deleteRelation(@Nonnull String name, @Nonnull Ontology inOntology,
@@ -140,7 +136,7 @@ public class Neo4jOntologyService {
         .orElse(null);
 
     if (null == relation) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "关系不存在");
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "本体关系不存在");
     }
 
     inOntologyNode.getRelations().remove(relation);

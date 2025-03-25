@@ -59,9 +59,12 @@
       <groupId>com.github.javafaker</groupId>
       <artifactId>javafaker</artifactId>
     </dependency>
+    <!-- 不要引入biz-graph，它引入了spring-ai-openai，包含spring-webflux，会影响shell的使用
+         如果需要使用biz-graph的内，请在此模块内重写
+    -->
     <dependency>
       <groupId>com.singhand.sr.graphservice</groupId>
-      <artifactId>biz-graph</artifactId>
+      <artifactId>biz-model</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

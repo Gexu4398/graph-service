@@ -1,4 +1,4 @@
-package com.singhand.sr.graphservice.bizmodel.datasource;
+package com.singhand.sr.graphservice.bizgraph.config;
 
 import lombok.Getter;
 import lombok.Setter;

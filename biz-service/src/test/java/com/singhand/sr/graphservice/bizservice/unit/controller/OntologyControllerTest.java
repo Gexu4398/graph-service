@@ -13,6 +13,7 @@ import cn.hutool.json.JSONUtil;
 import com.singhand.sr.graphservice.bizgraph.model.request.DeletePropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
+import com.singhand.sr.graphservice.bizmodel.model.neo4j.EdgeRelation;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.OntologyRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.RelationInstanceRepository;
 import com.singhand.sr.graphservice.bizmodel.repository.jpa.VertexRepository;

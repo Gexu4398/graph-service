@@ -1,12 +1,18 @@
 package com.singhand.sr.graphservice.bizshell.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.singhand.sr.graphservice.bizshell.model.xts.EvidenceTriple_v3;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.neo4j.driver.Driver;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,5 +111,37 @@ public class VertexCommandService {
     }
 
     log.info("导出成功，文件路径：{}", outputDirectory);
+  }
+
+  @SneakyThrows
+  public void fileVertexToJson(String inputDirectory) {
+
+    final var kbFile = new File(inputDirectory);
+    final var triples = new ArrayList<EvidenceTriple_v3>();
+    try (final var lineIterator = FileUtils.lineIterator(kbFile, "UTF-8")) {
+      while (lineIterator.hasNext()) {
+        final var line = lineIterator.nextLine();
+        // 解析JSON行
+        try {
+          final var objectMapper = new ObjectMapper();
+          final var tripleData = objectMapper.readValue(line, EvidenceTriple_v3.class);
+          // 处理每一行数据
+          if (StrUtil.equals(tripleData.getKnowledgeType().toString(), "relation")) {
+            triples.add(tripleData);
+          }
+        } catch (Exception e) {
+          log.error("解析行失败: {}", e.getMessage());
+          log.error("问题行: {}", line);
+        }
+      }
+    } catch (IOException e) {
+      log.error("读取文件异常: {}", e.getMessage());
+    }
+
+    log.info("解析完成，共 {} 条数据", triples.size());
+    final var objectMapper = new ObjectMapper();
+
+    objectMapper.writerWithDefaultPrettyPrinter()
+        .writeValue(Files.newBufferedWriter(Path.of("./entities.json")), triples);
   }
 }

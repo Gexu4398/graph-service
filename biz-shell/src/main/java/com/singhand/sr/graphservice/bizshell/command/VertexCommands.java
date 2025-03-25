@@ -25,7 +25,6 @@ public class VertexCommands {
           value = {"-o", "--output-directory"},
           help = "The directory where output files to place") String outputDirectory) {
 
-    // "D:\\singhand\\Desktop\\战例.json"
     vertexCommandService.outputVertex(type, outputDirectory);
   }
 
@@ -37,7 +36,14 @@ public class VertexCommands {
           value = {"-o", "--output-directory"},
           help = "The directory where output files to place") String outputDirectory) {
 
-    // "D:\\singhand\\Desktop\\战例.xlsx"
     vertexCommandService.outputVertexToExcel(type, outputDirectory);
+  }
+
+  @ShellMethod(key = "file-vertex-to-json", value = "File vertex to json", group = "Output resources")
+  public void fileVertexToJson(@ShellOption(
+      value = {"-o", "--output-directory"},
+      help = "The directory where input files to place") String inputDirectory) {
+
+    vertexCommandService.fileVertexToJson(inputDirectory);
   }
 }
