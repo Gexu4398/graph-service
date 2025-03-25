@@ -16,15 +16,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class RelationModelServiceImpl implements RelationModelService {
+public class JpaRelationModelServiceImpl implements RelationModelService {
 
   private final RelationModelRepository relationModelRepository;
 
   private final Neo4jRelationModelService neo4jRelationModelService;
 
   @Autowired
-  public RelationModelServiceImpl(RelationModelRepository relationModelRepository,
-      Neo4jRelationModelService neo4jRelationModelService) {
+  public JpaRelationModelServiceImpl(RelationModelRepository relationModelRepository,
+                                     Neo4jRelationModelService neo4jRelationModelService) {
 
     this.relationModelRepository = relationModelRepository;
     this.neo4jRelationModelService = neo4jRelationModelService;
