@@ -7,6 +7,7 @@ import com.singhand.sr.graphservice.bizgraph.model.request.NewOntologyPropertyRe
 import com.singhand.sr.graphservice.bizgraph.model.request.UpdateOntologyPropertyRequest;
 import com.singhand.sr.graphservice.bizgraph.service.OntologyService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.neo4j.Neo4jOntologyService;
+import com.singhand.sr.graphservice.bizmodel.config.TxSynchronizationManager;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.OntologyProperty;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Ontology_;
@@ -53,19 +54,23 @@ public class JpaOntologyService implements OntologyService {
 
   private final PlatformTransactionManager bizTransactionManager;
 
+  private final TxSynchronizationManager txSyncManager;
+
   private static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
   public JpaOntologyService(OntologyRepository ontologyRepository,
       Neo4jOntologyService neo4jOntologyService,
       OntologyPropertyRepository ontologyPropertyRepository,
       RelationInstanceRepository relationInstanceRepository,
-      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager) {
+      @Qualifier("bizTransactionManager") PlatformTransactionManager bizTransactionManager,
+      TxSynchronizationManager txSyncManager) {
 
     this.ontologyRepository = ontologyRepository;
     this.neo4jOntologyService = neo4jOntologyService;
     this.ontologyPropertyRepository = ontologyPropertyRepository;
     this.relationInstanceRepository = relationInstanceRepository;
     this.bizTransactionManager = bizTransactionManager;
+    this.txSyncManager = txSyncManager;
   }
 
   @Override
@@ -108,7 +113,8 @@ public class JpaOntologyService implements OntologyService {
       inheritPropertiesFromParent(parent, ontology);
     }
     final var managedOntology = ontologyRepository.save(ontology);
-    neo4jOntologyService.newOntology(managedOntology, parentId);
+    txSyncManager.executeAfterCommit(
+        () -> neo4jOntologyService.newOntology(managedOntology, parentId));
     return managedOntology;
   }
 
@@ -183,7 +189,7 @@ public class JpaOntologyService implements OntologyService {
 
     final var managedOntology = ontologyRepository.save(ontology);
 
-    neo4jOntologyService.updateOntology(managedOntology);
+    txSyncManager.executeAfterCommit(() -> neo4jOntologyService.updateOntology(managedOntology));
 
     return managedOntology;
   }
@@ -200,7 +206,7 @@ public class JpaOntologyService implements OntologyService {
 
       ontologyRepository.delete(it);
 
-      neo4jOntologyService.deleteOntology(id);
+      txSyncManager.executeAfterCommit(() -> neo4jOntologyService.deleteOntology(id));
     });
   }
 
@@ -296,7 +302,8 @@ public class JpaOntologyService implements OntologyService {
     inOntology.getActiveRelations().add(managedRelationInstance);
     outOntology.getPassiveRelations().add(managedRelationInstance);
 
-    neo4jOntologyService.newRelation(name, inOntology, outOntology);
+    txSyncManager.executeAfterCommit(
+        () -> neo4jOntologyService.newRelation(name, inOntology, outOntology));
 
     return managedRelationInstance;
   }
@@ -318,7 +325,8 @@ public class JpaOntologyService implements OntologyService {
 
     relationInstance.setName(newName);
 
-    neo4jOntologyService.updateRelation(oldName, newName, inOntology, outOntology);
+    txSyncManager.executeAfterCommit(
+        () -> neo4jOntologyService.updateRelation(oldName, newName, inOntology, outOntology));
 
     return relationInstanceRepository.save(relationInstance);
   }
@@ -334,7 +342,8 @@ public class JpaOntologyService implements OntologyService {
 
     relationInstanceRepository.delete(relationInstance);
 
-    neo4jOntologyService.deleteRelation(name, inOntology, outOntology);
+    txSyncManager.executeAfterCommit(
+        () -> neo4jOntologyService.deleteRelation(name, inOntology, outOntology));
   }
 
   @Override
@@ -395,18 +404,17 @@ public class JpaOntologyService implements OntologyService {
         final var parentId = queue.poll();
         final var children = ontologyRepository.findByParent_ID(parentId);
 
-        for (final var child : children) {
-          ontologyPropertyRepository.findByOntologyAndName(child, oldName)
-              .ifPresent(property -> {
-                if (property.isInherited()) {
-                  property.setName(newName);
-                  property.setType(type);
-                  property.setMultiValue(multiValue);
-                  ontologyPropertyRepository.save(property);
-                  queue.add(child.getID());
-                }
-              });
-        }
+        children.forEach(child ->
+            ontologyPropertyRepository.findByOntologyAndName(child, oldName)
+                .ifPresent(property -> {
+                  if (property.isInherited()) {
+                    property.setName(newName);
+                    property.setType(type);
+                    property.setMultiValue(multiValue);
+                    ontologyPropertyRepository.save(property);
+                    queue.add(child.getID());
+                  }
+                }));
       }
       return true;
     });
@@ -430,17 +438,16 @@ public class JpaOntologyService implements OntologyService {
         final var parentId = queue.poll();
         final var children = ontologyRepository.findByParent_ID(parentId);
 
-        for (final var child : children) {
-          ontologyPropertyRepository.findByOntologyAndName(child, propertyName)
-              .ifPresent(property -> {
-                if (property.isInherited()) {
-                  child.removeProperty(property);
-                  ontologyPropertyRepository.delete(property);
-                  ontologyRepository.save(child);
-                  queue.add(child.getID());
-                }
-              });
-        }
+        children.forEach(child ->
+            ontologyPropertyRepository.findByOntologyAndName(child, propertyName)
+                .ifPresent(property -> {
+                  if (property.isInherited()) {
+                    child.removeProperty(property);
+                    ontologyPropertyRepository.delete(property);
+                    ontologyRepository.save(child);
+                    queue.add(child.getID());
+                  }
+                }));
       }
       return true;
     });
