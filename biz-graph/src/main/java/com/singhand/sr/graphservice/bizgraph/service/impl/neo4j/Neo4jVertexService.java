@@ -7,15 +7,15 @@ import com.singhand.sr.graphservice.bizmodel.model.jpa.Vertex;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.EdgeRelation;
 import com.singhand.sr.graphservice.bizmodel.model.neo4j.VertexNode;
 import com.singhand.sr.graphservice.bizmodel.repository.neo4j.VertexNodeRepository;
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.store.embedding.EmbeddingStore;
 import jakarta.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,20 +30,17 @@ public class Neo4jVertexService {
 
   private final VertexNodeRepository vertexNodeRepository;
 
-  private final Neo4jVectorStore vectorStore;
+  private final EmbeddingModel embeddingModel;
 
-  /**
-   * 构造函数，初始化VertexNodeRepository和Neo4jVectorStore。
-   *
-   * @param vertexNodeRepository VertexNode的仓库
-   * @param vectorStore          Neo4j的向量存储
-   */
+  private final EmbeddingStore<TextSegment> embeddingStore;
+
   @Autowired
   public Neo4jVertexService(VertexNodeRepository vertexNodeRepository,
-      Neo4jVectorStore vectorStore) {
+      EmbeddingModel embeddingModel, EmbeddingStore<TextSegment> embeddingStore) {
 
     this.vertexNodeRepository = vertexNodeRepository;
-    this.vectorStore = vectorStore;
+    this.embeddingModel = embeddingModel;
+    this.embeddingStore = embeddingStore;
   }
 
   /**
@@ -89,9 +86,9 @@ public class Neo4jVertexService {
   public void addVertexToVectorStore(@Nonnull VertexNode vertexNode) {
 
     try {
-      vectorStore.delete(List.of(vertexNode.getId()));
+      embeddingStore.remove(vertexNode.getId());
     } catch (Exception e) {
-      log.error("删除向量存储中的节点失败，id={}", vertexNode.getId(), e);
+      log.error("删除向量存储中的节点失败，id={}", vertexNode.getId());
     }
 
     final var relationsInfo = new StringBuilder();
@@ -123,18 +120,10 @@ public class Neo4jVertexService {
 
     final var text = textBuilder.toString();
 
-    final var document = new Document(
-        vertexNode.getId(),
-        text,
-        Map.of(
-            "name", vertexNode.getName(),
-            "type", vertexNode.getType(),
-            "properties", propertiesStr,
-            "relations", relationsInfo.toString()
-        )
-    );
+    final var embedding = embeddingModel.embed(text).content();
+    final var textSegment = TextSegment.from(text);
 
-    vectorStore.add(List.of(document));
+    embeddingStore.addAll(List.of(vertexNode.getId()), List.of(embedding), List.of(textSegment));
   }
 
   /**
@@ -160,7 +149,7 @@ public class Neo4jVertexService {
 
     getVertex(vertexId).ifPresentOrElse(it -> {
       vertexNodeRepository.delete(it);
-      vectorStore.delete(List.of(it.getId()));
+      embeddingStore.remove(it.getId());
     }, () -> {
       log.error("图数据库实体不存在，id={}", vertexId);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "图数据库实体不存在");

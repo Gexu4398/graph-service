@@ -79,6 +79,7 @@
     <jbig2-imageio.version>3.0.4</jbig2-imageio.version>
     <jsoup-version>1.19.1</jsoup-version>
     <springfox-core.version>3.0.0</springfox-core.version>
+    <langchain4j.version>1.0.0-beta2</langchain4j.version>
     <maven.build.timestamp.format>yyyMMddHHmmss</maven.build.timestamp.format>
   </properties>
 
@@ -368,11 +369,21 @@
         <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
         <version>${spring-ai.version}</version>
       </dependency>
-<!--      <dependency>-->
-<!--        <groupId>dev.langchain4j</groupId>-->
-<!--        <artifactId>langchain4j-neo4j</artifactId>-->
-<!--        <version>1.0.0-beta2</version>-->
-<!--      </dependency>-->
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-neo4j</artifactId>
+        <version>${langchain4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
+        <version>${langchain4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-easy-rag</artifactId>
+        <version>${langchain4j.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
