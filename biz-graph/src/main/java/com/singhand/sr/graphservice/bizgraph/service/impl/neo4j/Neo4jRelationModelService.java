@@ -9,12 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Slf4j
-@Transactional(transactionManager = "bizNeo4jTransactionManager")
 public class Neo4jRelationModelService {
 
   private final RelationModelNodeRepository relationModelNodeRepository;
