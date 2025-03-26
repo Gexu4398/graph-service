@@ -91,7 +91,7 @@ public class Neo4jVertexService {
     try {
       vectorStore.delete(List.of(vertexNode.getId()));
     } catch (Exception e) {
-      log.error("删除向量存储中的节点失败，id={}", vertexNode.getId(), e);
+      log.error("删除向量存储中的节点失败，id={}", vertexNode.getId());
     }
 
     final var relationsInfo = new StringBuilder();
