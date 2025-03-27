@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizgraph.service.impl;
 
+import com.singhand.sr.graphservice.bizgraph.config.SystemPromptConfig;
 import com.singhand.sr.graphservice.bizgraph.model.request.RagRequest;
 import com.singhand.sr.graphservice.bizgraph.service.Assistant;
 import dev.langchain4j.data.segment.TextSegment;
@@ -24,13 +25,16 @@ public class GraphRagService {
 
   private final EmbeddingStore<TextSegment> embeddingStore;
 
+  private final SystemPromptConfig systemPromptConfig;
+
   @Autowired
   public GraphRagService(EmbeddingModel embeddingModel, ChatLanguageModel chatLanguageModel,
-      EmbeddingStore<TextSegment> embeddingStore) {
+      EmbeddingStore<TextSegment> embeddingStore, SystemPromptConfig systemPromptConfig) {
 
     this.embeddingModel = embeddingModel;
     this.chatLanguageModel = chatLanguageModel;
     this.embeddingStore = embeddingStore;
+    this.systemPromptConfig = systemPromptConfig;
   }
 
   public String query(@Nonnull RagRequest ragRequest) {
@@ -54,6 +58,7 @@ public class GraphRagService {
         .chatLanguageModel(chatLanguageModel)
         .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
         .retrievalAugmentor(retrievalAugmentor)
+        .systemMessageProvider(memoryId -> systemPromptConfig.getSystemPrompt())
         .build();
 
     return assistant.chat(ragRequest.getQuestion());

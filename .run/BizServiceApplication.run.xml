@@ -15,6 +15,7 @@
     </additionalParameters>
     <output_file path="$PROJECT_DIR$/local.log" is_save="true" />
     <module name="biz-service" />
+    <option name="SHORTEN_COMMAND_LINE" value="ARGS_FILE" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.singhand.sr.graphservice.bizservice.BizServiceApplication" />
     <extension name="coverage">
       <pattern>

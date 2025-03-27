@@ -200,14 +200,7 @@ public class ImportDatasourceTasklet implements Tasklet {
     }
 
     paragraphs.forEach(paragraph -> {
-      System.out.println(paragraph);
-      final var query = String.format(
-          "%s，中的事件内容以及实体数据三元组，结合我定义的本体数据，以json结构化数据给我，以便于我存储到数据库",
-          paragraph);
-      final var request = new RagRequest();
-      request.setQuestion(query);
-      final var response = graphRagService.query(request);
-      System.out.println(response);
+
     });
   }
 
