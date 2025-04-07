@@ -28,6 +28,7 @@
     <module>testcontainers-minio</module>
     <module>biz-graph</module>
     <module>testcontainers-elasticsearch</module>
+    <module>testcontainers-neo4j</module>
   </modules>
 
   <profiles>
@@ -71,7 +72,8 @@
     <commons-io.version>2.16.1</commons-io.version>
     <commons-text.version>1.12.0</commons-text.version>
     <testcontainers-neo4j.version>1.20.6</testcontainers-neo4j.version>
-    <spring-ai.version>1.0.0-SNAPSHOT</spring-ai.version>
+    <testcontainers-elasticsearch.version>1.20.6</testcontainers-elasticsearch.version>
+    <spring-ai.version>1.0.0-M6</spring-ai.version>
     <apache.poi-version>5.4.0</apache.poi-version>
     <docx4j-version>11.5.2</docx4j-version>
     <pdfbox-version>3.0.4</pdfbox-version>
@@ -82,36 +84,6 @@
     <springfox-core.version>3.0.0</springfox-core.version>
     <maven.build.timestamp.format>yyyMMddHHmmss</maven.build.timestamp.format>
   </properties>
-
-  <repositories>
-    <repository>
-      <id>spring-milestones</id>
-      <name>Spring Milestones</name>
-      <url>https://repo.spring.io/milestone</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-    <repository>
-      <name>Central Portal Snapshots</name>
-      <id>central-portal-snapshots</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <dependencyManagement>
     <dependencies>
@@ -372,7 +344,7 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>elasticsearch</artifactId>
-        <version>1.20.6</version>
+        <version>${testcontainers-elasticsearch.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

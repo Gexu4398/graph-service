@@ -2,6 +2,7 @@ package com.singhand.sr.graphservice.testenvironments;
 
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakService;
 import com.singhand.sr.graphservice.testcontainerselasticsearch.ElasticsearchContainer;
+import com.singhand.sr.graphservice.testcontainersneo4j.Neo4jContainer;
 import jakarta.annotation.Nonnull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +66,10 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
     final var graphJdbcUrl = postgres.getJdbcUrl().replace("test", "graph");
     final var keycloakJdbcUrl = postgres.getJdbcUrl().replace("test", "keycloak");
 
+    final var neo4j = new Neo4jContainer();
+    neo4j.start();
+    final var neo4jHost = neo4j.getHostAddress();
+
     final var elasticsearch = new ElasticsearchContainer();
     elasticsearch.start();
     final var elasticsearchHost = elasticsearch.getHostAddress();
@@ -93,6 +98,9 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
     registry.add("app.datasource.keycloak.driver-class-name", () -> "org.postgresql.Driver");
     registry.add("app.datasource.keycloak.dialect",
         () -> "org.hibernate.dialect.PostgreSQLDialect");
+
+    // neo4j 数据源配置
+    registry.add("app.neo4j.uri", () -> neo4jHost);
 
     // elasticsearch 数据源配置
     registry.add("app.hibernate.search.backend.hosts", () -> elasticsearchHost);
