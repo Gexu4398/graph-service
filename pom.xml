@@ -27,6 +27,7 @@
     <module>test-environments</module>
     <module>testcontainers-minio</module>
     <module>biz-graph</module>
+    <module>testcontainers-elasticsearch</module>
   </modules>
 
   <profiles>
@@ -54,12 +55,12 @@
     <spring-shell.version>3.4.0</spring-shell.version>
     <keycloak.version>26.0.4</keycloak.version>
     <hutool.version>5.8.36</hutool.version>
-    <testcontainers.version>1.20.5</testcontainers.version>
+    <testcontainers.version>1.20.6</testcontainers.version>
     <testcontainers-keycloak.version>3.6.0</testcontainers-keycloak.version>
     <minio-sdk.version>8.5.17</minio-sdk.version>
     <springdoc-openapi-ui.version>2.8.5</springdoc-openapi-ui.version>
     <javafaker.version>1.0.2</javafaker.version>
-    <testcontainers-postgres.version>1.20.5</testcontainers-postgres.version>
+    <testcontainers-postgres.version>1.20.6</testcontainers-postgres.version>
     <joda-time.version>2.13.1</joda-time.version>
     <junit-suite.version>1.11.4</junit-suite.version>
     <rome-opml.version>2.1.0</rome-opml.version>
@@ -69,7 +70,7 @@
     <jandex.version>3.2.7</jandex.version>
     <commons-io.version>2.16.1</commons-io.version>
     <commons-text.version>1.12.0</commons-text.version>
-    <testcontainers-neo4j.version>1.20.5</testcontainers-neo4j.version>
+    <testcontainers-neo4j.version>1.20.6</testcontainers-neo4j.version>
     <spring-ai.version>1.0.0-SNAPSHOT</spring-ai.version>
     <apache.poi-version>5.4.0</apache.poi-version>
     <docx4j-version>11.5.2</docx4j-version>
@@ -367,6 +368,11 @@
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
         <version>${spring-ai.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>1.20.6</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

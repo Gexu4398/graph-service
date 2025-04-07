@@ -27,6 +27,12 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>com.singhand.sr.graphservice</groupId>
+      <artifactId>testcontainers-elasticsearch</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
     </dependency>

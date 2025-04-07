@@ -1,4 +1,8 @@
 app:
+  hibernate:
+    search:
+      backend:
+        hosts: ${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
   neo4j:
     uri: bolt://localhost:7687
     username: neo4j

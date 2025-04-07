@@ -1,6 +1,7 @@
 package com.singhand.sr.graphservice.testenvironments;
 
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakService;
+import com.singhand.sr.graphservice.testcontainerselasticsearch.ElasticsearchContainer;
 import jakarta.annotation.Nonnull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,11 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
     postgres.withNetwork(network).withNetworkAliases("postgres").start();
     final var graphJdbcUrl = postgres.getJdbcUrl().replace("test", "graph");
     final var keycloakJdbcUrl = postgres.getJdbcUrl().replace("test", "keycloak");
+
+    final var elasticsearch = new ElasticsearchContainer();
+    elasticsearch.start();
+    final var elasticsearchHost = elasticsearch.getHostAddress();
+
     keycloak.withNetwork(network).withNetworkAliases("keycloak").start();
     registry.add("keycloak.auth-server-url", () -> String.format("http://%s:%d/auth",
         keycloak.getHost(), keycloak.getMappedPort(8080)));
@@ -87,6 +93,9 @@ public abstract class KeycloakIntegrationTestEnvironment extends TestEnvironment
     registry.add("app.datasource.keycloak.driver-class-name", () -> "org.postgresql.Driver");
     registry.add("app.datasource.keycloak.dialect",
         () -> "org.hibernate.dialect.PostgreSQLDialect");
+
+    // elasticsearch 数据源配置
+    registry.add("app.hibernate.search.backend.hosts", () -> elasticsearchHost);
   }
 
   @AfterEach

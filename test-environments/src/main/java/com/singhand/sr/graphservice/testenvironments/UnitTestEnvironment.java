@@ -4,6 +4,7 @@ import com.singhand.sr.graphservice.bizkeycloakmodel.model.KeycloakRole;
 import com.singhand.sr.graphservice.bizkeycloakmodel.model.UserEntity;
 import com.singhand.sr.graphservice.bizkeycloakmodel.repository.UserEntityRepository;
 import com.singhand.sr.graphservice.bizkeycloakmodel.service.KeycloakService;
+import com.singhand.sr.graphservice.testcontainerselasticsearch.ElasticsearchContainer;
 import io.minio.MinioClient;
 import jakarta.annotation.Nonnull;
 import java.util.Optional;
@@ -45,11 +46,15 @@ public class UnitTestEnvironment extends TestEnvironment {
     final var network = Network.newNetwork();
 
     neo4j.withNetwork(network).withNetworkAliases("neo4j").start();
+    final var elasticsearch = new ElasticsearchContainer();
+    elasticsearch.start();
+    final var elasticsearchHost = elasticsearch.getHostAddress();
 
     // 单元测试不依赖于外部环境，所以此处禁用 Zookeeper
     registry.add("spring.cloud.zookeeper.enabled", () -> false);
     final var neo4jHost = String.format("bolt://%s:%s", neo4j.getHost(), neo4j.getMappedPort(7687));
     registry.add("app.neo4j.uri", () -> neo4jHost);
+    registry.add("app.hibernate.search.backend.hosts", () -> elasticsearchHost);
   }
 
   @BeforeAll
