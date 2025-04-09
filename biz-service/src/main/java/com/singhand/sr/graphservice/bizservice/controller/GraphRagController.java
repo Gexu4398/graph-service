@@ -1,5 +1,6 @@
 package com.singhand.sr.graphservice.bizservice.controller;
 
+import com.singhand.sr.graphservice.bizgraph.model.GraphItem;
 import com.singhand.sr.graphservice.bizgraph.model.request.RagRequest;
 import com.singhand.sr.graphservice.bizgraph.service.impl.GraphRagService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,5 +38,12 @@ public class GraphRagController {
   public String queryRag(@Valid @RequestBody RagRequest ragRequest) {
 
     return graphRagService.query(ragRequest);
+  }
+
+  @Operation(summary = "根据文本抽取结构化数据（调试用）")
+  @PostMapping("extract")
+  public GraphItem extract(@Valid @RequestBody RagRequest ragRequest) {
+
+    return graphRagService.extractGraph(ragRequest);
   }
 }

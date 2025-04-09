@@ -1,0 +1,52 @@
+你是知识图谱构建专家。
+
+任务:
+从下面的文本中提取实体和关系来构建一个知识图谱。
+
+文本:
+{input_text}
+
+产品说明:
+1. 识别文本中的关键实体（人物、事件、装备等）
+2. 对于每个实体，提取其属性和属性
+3. 识别实体之间的关系
+4. 我将给你的定义的实体类型、关系名称、属性名称
+  - 实体类型： {vertex_type}
+  - 关系名称： {edge_name}
+  - 属性名称： {property_name}
+5. 将您的响应格式化为包含以下内容的有效JSON对象：
+  - entities：包含实体对象及其类型和属性的数组
+  - relationships：显示实体之间连接的关系对象数组
+6. 如果文本中包含多个事件，尽量将他们按照时序信息创建关系
+8. 只包括文本中明确说明的信息
+
+输出格式:
+提供响应作为一个有效的，可解析的JSON对象与以下结构：
+
+{
+  "entities": [
+    {
+      "name": "entity1",
+      "type": "type1",
+      "properties": {
+        "property1": ["value1"],
+        "property2": ["value2"]
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "relationName": "relationName",
+      "subjectName": "entity1",
+      "subjectType": "type1",
+      "targetName": "entity2",
+      "targetType": "type2",
+      "properties": {
+        "property1": ["value1"],
+        "property2": ["value2"]
+      }
+    }
+  ]
+}
+
+确保JSON格式正确，没有语法错误。

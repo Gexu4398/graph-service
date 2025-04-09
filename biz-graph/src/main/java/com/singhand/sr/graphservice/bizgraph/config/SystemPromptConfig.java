@@ -21,36 +21,48 @@ public class SystemPromptConfig {
 
   private final String promptPath;
 
+  private final String extractGraphPromptPath;
+
   @Getter
   private String systemPrompt;
 
+  @Getter
+  private String extractGraphPrompt;
+
   public SystemPromptConfig(
       ResourceLoader resourceLoader,
-      @Value("${rag.system-prompt-path:classpath:prompts/system-prompt.txt}") String promptPath) {
+      @Value("classpath:prompts/system-prompt.txt") String promptPath,
+      @Value("classpath:prompts/extract_graph.txt") String extractGraphPromptPath) {
 
     this.resourceLoader = resourceLoader;
     this.promptPath = promptPath;
+    this.extractGraphPromptPath = extractGraphPromptPath;
   }
 
   @PostConstruct
-  public void init() {
+  public void init() throws IOException {
 
     loadSystemPrompt();
+    loadExtractGraphPrompt();
   }
 
-  private void loadSystemPrompt() {
+  private void loadSystemPrompt() throws IOException {
 
-    try {
-      Resource resource = resourceLoader.getResource(promptPath);
-      try (BufferedReader reader = new BufferedReader(
-          new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
-        this.systemPrompt = reader.lines().collect(Collectors.joining("\n"));
-        log.info("成功加载系统提示词配置，长度：{} 字符", this.systemPrompt.length());
-      }
-    } catch (IOException e) {
-      log.error("无法读取系统提示词配置文件: {}", promptPath, e);
-      // 提供一个默认简单提示词，避免系统崩溃
-      this.systemPrompt = "你是一个专业的图数据库知识助手。根据提供的上下文信息回答用户的查询。";
+    final var resource = resourceLoader.getResource(promptPath);
+    try (final var reader = new BufferedReader(
+        new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+      this.systemPrompt = reader.lines().collect(Collectors.joining("\n"));
+      log.info("成功加载系统提示词配置，长度：{} 字符", this.systemPrompt.length());
+    }
+  }
+
+  private void loadExtractGraphPrompt() throws IOException {
+
+    final var resource = resourceLoader.getResource(extractGraphPromptPath);
+    try (final var reader = new BufferedReader(
+        new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+      this.extractGraphPrompt = reader.lines().collect(Collectors.joining("\n"));
+      log.info("成功加载抽取提示词配置，长度：{} 字符", this.extractGraphPrompt.length());
     }
   }
 }

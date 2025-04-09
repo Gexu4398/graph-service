@@ -6,10 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OntologyPropertyRepository extends BaseRepository<OntologyProperty, Long> {
+
+  @Query("select distinct name from OntologyProperty")
+  Set<String> findAllNames();
 
   /**
    * 根据本体获取属性
