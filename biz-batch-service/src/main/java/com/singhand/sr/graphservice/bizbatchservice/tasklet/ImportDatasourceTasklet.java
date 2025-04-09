@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.StrUtil;
 import com.singhand.sr.graphservice.bizbatchservice.importer.helper.ExtractHelper;
-import com.singhand.sr.graphservice.bizgraph.model.request.RagRequest;
 import com.singhand.sr.graphservice.bizgraph.service.VertexService;
 import com.singhand.sr.graphservice.bizgraph.service.impl.GraphRagService;
 import com.singhand.sr.graphservice.bizmodel.model.jpa.Datasource;
@@ -200,14 +199,7 @@ public class ImportDatasourceTasklet implements Tasklet {
     }
 
     paragraphs.forEach(paragraph -> {
-      System.out.println(paragraph);
-      final var query = String.format(
-          "%s，中的事件内容以及实体数据三元组，结合我定义的本体数据，以json结构化数据给我，以便于我存储到数据库",
-          paragraph);
-      final var request = new RagRequest();
-      request.setQuestion(query);
-      final var response = graphRagService.query(request);
-      System.out.println(response);
+      // todo 给提示词，然后让大模型以结构化数据输出，提取事件
     });
   }
 
