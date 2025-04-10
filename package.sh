@@ -11,6 +11,7 @@ docker pull elasticsearch:8.15.3
 docker pull redis:7.4.2-alpine
 docker pull neo4j:5.26.2
 docker pull eclipse-temurin:21-jre-alpine
+docker pull nginx:alpine3.21
 
 TAG=`date +%Y%m%d%H%M%S`
 
@@ -35,3 +36,4 @@ docker save -o ./deploy/images/minio_mc.tar minio/mc:RELEASE.2025-02-21T16-00-46
 docker save -o ./deploy/images/elasticsearch.tar elasticsearch:8.15.3
 docker save -o ./deploy/images/redis.tar redis:7.4.2-alpine
 docker save -o ./deploy/images/neo4j.tar neo4j:5.26.2
+docker save -o ./deploy/images/nginx.tar nginx:alpine3.21

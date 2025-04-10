@@ -24,8 +24,8 @@ services:
       - "JAVA_OPTS=-Dapp.reset-with-demo-data=always"
       - KAFKA_HOST=kafka
       - PGSQL_HOST=postgres
-      - MINIO_HOST=10.1.141.27
-      - MINIO_PORT=9004
+      - MINIO_HOST=10.1.140.144
+      - MINIO_PORT=9002
       - KEYCLOAK_HOST=keycloak
       - KEYCLOAK_PORT=8082
       - ZOOKEEPER_HOST=zookeeper
@@ -62,13 +62,13 @@ services:
       - ./init-postgres:/docker-entrypoint-initdb.d
       - graph-postgres-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   keycloak:
     image: keycloak/keycloak:26.1.4
     environment:
       - JAVA_OPTS_KC_HEAP=-XX:MaxHeapFreeRatio=40 -XX:MaxRAMPercentage=70
-      - BASE_URL=http://localhost/
+      - BASE_URL=http://10.1.140.144:8082/
       - APP_NAME=xxxx平台
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
       - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
@@ -77,7 +77,8 @@ services:
       - KC_DB_USERNAME=root
       - KC_DB_PASSWORD=example
       - KC_HTTP_ENABLED=true
-      - KC_HOSTNAME=localhost
+      - KC_HOSTNAME=10.1.140.144
+      - KC_HTTP_PORT=8082
       - KC_HTTP_RELATIVE_PATH=/auth
       - KC_PROXY_HEADERS=xforwarded
     command: start --http-enabled=true --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
@@ -124,8 +125,8 @@ services:
     depends_on:
       - kafka
     ports:
-      - "9004:9000"
-      - "9005:9001"
+      - "9002:9000"
+      - "9003:9001"
 
   mc:
     image: minio/mc:RELEASE.2025-02-21T16-00-46Z
@@ -150,8 +151,8 @@ services:
       - graph-elasticsearch-data:/usr/share/elasticsearch/data
       - ./init-elasticsearch/plugins:/usr/share/elasticsearch/plugins
     ports:
-      - "9201:9200"
-      - "9301:9300"
+      - "9200:9200"
+      - "9300:9300"
 
   redis:
     image: redis:7.4.2-alpine
@@ -175,8 +176,8 @@ services:
       - ./init-neo4j/plugins:/plugins
       - graph-neo4j-data:/data
     ports:
-      - "7475:7474"
-      - "7688:7687"
+      - "7474:7474"
+      - "7687:7687"
     restart: always
 
 volumes:
