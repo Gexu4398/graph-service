@@ -10,6 +10,7 @@ docker pull minio/mc:RELEASE.2025-02-21T16-00-46Z
 docker pull elasticsearch:8.15.3
 docker pull redis:7.4.2-alpine
 docker pull neo4j:5.26.2
+docker pull eclipse-temurin:21-jre-alpine
 
 TAG=`date +%Y%m%d%H%M%S`
 
