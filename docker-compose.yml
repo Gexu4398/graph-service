@@ -81,11 +81,17 @@ services:
 
   mc:
     image: minio/mc:RELEASE.2025-02-21T16-00-46Z
-    entrypoint: >
+    entrypoint: |
       /bin/sh -c "
-      /usr/bin/mc config host add minio http://minio:9000 minio-root-user minio-root-password &&
-      /usr/bin/mc mb minio/graph-bucket &&
-      /usr/bin/mc anonymous set public minio/graph-bucket
+        echo 'Waiting for MinIO to be ready...'
+        while ! /usr/bin/mc config host add minio http://minio:9000 minio-root-user minio-root-password 2>/dev/null; do
+          echo 'MinIO not ready yet, waiting...'
+          sleep 3
+        done
+        echo 'MinIO is ready!'
+        /usr/bin/mc mb minio/graph-bucket
+        /usr/bin/mc anonymous set public minio/graph-bucket
+        echo 'MinIO bucket setup completed successfully!'
       "
     depends_on:
       - minio
